@@ -1,7 +1,7 @@
 """Definition of the beam type."""
 abstract type LightSource end
-struct PlaneWave <: LightSource
-    λ; λ0; θ;
+struct PlaneWave{T1} <: LightSource where {T1<:Float64}
+    λ; λ0::T1; θ;
 end
 
 """Material type definition with geometrical (physical) and optical thickness."""
