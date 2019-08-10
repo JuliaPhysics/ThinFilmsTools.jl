@@ -7,7 +7,7 @@ end
 """Material type definition with geometrical (physical) and optical thickness."""
 abstract type Material end
 Base.@kwdef struct LayerTMMO{T1, T2, T3} <: Material where {T1<:ComplexF64, T2<:Float64, T3<:Symbol}
-    type::T3;n::AbstractArray{T1}; d::T2; nλ0=[];
+    type::T3; n::AbstractArray{T1}; d::T2; nλ0=[];
 end
 
 """Wrap the output into different types."""
@@ -42,7 +42,7 @@ function TMMOptics(Beam::T1, Layers::Array{T2,N2}; emfflag::T3=false, h::T4=1, p
     nLen::Int64 = length(vec(Layers))
     idxλ0::Int64 = findmin(abs.(λ .- Beam.λ0))[2][1] # Find λ closest to λ0
     # Check if reference lambda is inside the range
-    if (Beam.λ0 < λ[end]) || (Beam.λ0 > λ[1])
+    if (Beam.λ0 < λ[end]) | (Beam.λ0 > λ[1])
         # Build the sequence of index of refractions and the array of thickness depending on the input
         d, nseq, nλ0 = buildArrays(Layers, idxλ0, Beam.λ0, nLen, λLen)
     else
@@ -50,8 +50,8 @@ function TMMOptics(Beam::T1, Layers::Array{T2,N2}; emfflag::T3=false, h::T4=1, p
         pbgflag = false
     end
     # Provide the multilayer depth considering the h division
-    temp1::Array{Float64,2} = (d[2:end-1] / h) * ones.(1,h) # outer product
-    ℓ = cumsum([0; temp1[:]], dims=1)[1:end-1] # remove last from cumsum
+    _ℓ::Array{Float64,2} = (d[2:end-1] / h) * ones.(1,h) # outer product
+    ℓ = cumsum([0; _ℓ[:]], dims=1)[1:end-1] # remove last from cumsum
     # Call transfer matrix method
     tmmout = transferMatrix(nseq, d, λ, θ, emfflag, h, nLen, λLen, θLen)
     # Photonic band gap for crystals without defects
@@ -158,9 +158,9 @@ function totalTransferMatrix(N::Array{T1,N1}, d::Array{T2,N2}, λ::T3, θ::T4, N
     # Phase shift of the thickness
     @. δ = 2 * π * N * d * cosϕ / λ
     # Total transfer matrix
-    tempp::Array = [[complex.([1. 0.; 0. 1.])]; Φ.(δ[2:end-1], ηp[2:end-1])]
-    temps::Array = [[complex.([1. 0.; 0. 1.])]; Φ.(δ[2:end-1], ηs[2:end-1])]
-    return ηs, ηp, reduce(*, tempp), reduce(*, temps), δ
+    Ψp::Array = [[complex.([1. 0.; 0. 1.])]; Φ.(δ[2:end-1], ηp[2:end-1])]
+    Ψs::Array = [[complex.([1. 0.; 0. 1.])]; Φ.(δ[2:end-1], ηs[2:end-1])]
+    return ηs, ηp, reduce(*, Ψp), reduce(*, Ψs), δ
 end # totalTransferMatrix(...)
 
 """
