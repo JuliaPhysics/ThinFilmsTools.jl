@@ -145,8 +145,8 @@ function TMMOplotNprofile(solution; wave=:b, λ=[solution.Beam.λ0], θ=[solutio
             plot!(solution.Misc.ℓ, solution.Field.emfs[aux1, aux2, :], label="", c=RGB(([0,0,0]/255)...))
             title!(@sprintf("EMF-s resonance at λ = %0.0f nm and θ = %0.0f°", λaux1, θaux2), y=1.02)
         else
-            plot!(solution.Misc.ℓ, solution.Field.emfp[aux1, aux2, :], label="EMF-p", c=RGB(([0,0,0]/255)...))
-            plot!(solution.Misc.ℓ, solution.Field.emfs[aux1, aux2, :], label="EMF-s", c=RGB(([230,159,0]/255)...))
+            plot!(solution.Misc.ℓ, solution.Field.emfp[aux1, aux2, :], label="EMF-p", c=RGB(([0,0,0]/255)...), line=(:solid))
+            plot!(solution.Misc.ℓ, solution.Field.emfs[aux1, aux2, :], label="EMF-s", c=RGB(([230,159,0]/255)...), line=(:dashdot))
             title!(@sprintf("EMF resonances at λ = %0.0f nm and θ = %0.0f°", λaux1, θaux2), y=1.02)
         end
         gui()
