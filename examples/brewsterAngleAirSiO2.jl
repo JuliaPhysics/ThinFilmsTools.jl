@@ -1,13 +1,17 @@
 # https://www.rp-photonics.com/brewsters_angle.html
 
+clearconsole()
+
+# Workig directory
+path = "/home/leniac/JuliaLangDev/ThinFilmsTools/v0.1.0/"
+cd(path)
+
 # Load modules
 using Plots, LaTeXStrings
 pyplot(reuse=false, grid=false)
 closeall()
 include("ThinFilmsTools.jl")
 using Main.ThinFilmsTools
-include("RIdb.jl")
-using Main.RIdb: air, dummy, bk7
 
 # Define beam
 λ = [1064.]
@@ -18,12 +22,12 @@ using Main.RIdb: air, dummy, bk7
 beam = PlaneWave(λ, λ0, θ)
 
 # Define layers: notice that lambda is outside the range
-layers = [ LayerTMMO(type=:GT, n=dummy(beam.λ, 1., 0.), d=0., nλ0=dummy([beam.λ0], 1., 0.)),
-           LayerTMMO(type=:GT, n=dummy(beam.λ, 1.5, 0.), d=10., nλ0=dummy([beam.λ0], 1.5, 0.)),
-           LayerTMMO(type=:GT, n=dummy(beam.λ, 1.5, 0.), d=0., nλ0=dummy([beam.λ0], 1.5, 0.)) ]
+layers = [ LayerTMMO1DIso(type=:GT, n=RIdb.dummy(beam.λ, 1., 0.), d=0., nλ0=RIdb.dummy([beam.λ0], 1., 0.)),
+           LayerTMMO1DIso(type=:GT, n=RIdb.dummy(beam.λ, 1.5, 0.), d=10., nλ0=RIdb.dummy([beam.λ0], 1.5, 0.)),
+           LayerTMMO1DIso(type=:GT, n=RIdb.dummy(beam.λ, 1.5, 0.), d=0., nλ0=RIdb.dummy([beam.λ0], 1.5, 0.)) ]
 
 # call main script
-sol = TMMOptics(beam, layers)
+sol = TMMO1DIsotropic(beam, layers)
 
 ### Optional examples to plot results
 

@@ -1,11 +1,16 @@
+#!/usr/bin/env julia
+clearconsole()
+
+# Workig directory
+path = "/home/leniac/JuliaLangDev/ThinFilmsTools/v0.1.0/"
+cd(path)
+
 # Load modules
 using Plots, LaTeXStrings
-pyplot(reuse=false, grid=false)
+pyplot(reuse=false, grid=false, size=(640,480))
 closeall()
 include("ThinFilmsTools.jl")
 using Main.ThinFilmsTools
-include("RIdb.jl") # collection of refractive indexes data
-using Main.RIdb: sno2f, air, silicon
 
 # Define beam
 λi = 400 # intial wavelength [nm]
@@ -16,12 +21,12 @@ using Main.RIdb: sno2f, air, silicon
 beam = PlaneWave(λ, λ0, θ)
 
 # Define layers
-layers = [ LayerTMMO(type=:GT, n=air(beam.λ), d=0.),
-           LayerTMMO(type=:GT, n=sno2f(beam.λ), d=150.),
-           LayerTMMO(type=:GT, n=silicon(beam.λ), d=0.) ]
+layers = [ LayerTMMO1DIso(type=:GT, n=RIdb.air(beam.λ), d=0.),
+           LayerTMMO1DIso(type=:GT, n=RIdb.sno2f(beam.λ), d=150.),
+           LayerTMMO1DIso(type=:GT, n=RIdb.silicon(beam.λ), d=0.) ]
 
 # call main script
-sol = TMMOptics(beam, layers)
+sol = TMMO1DIsotropic(beam, layers)
 
 ### Optional examples to plot results
 

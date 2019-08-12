@@ -1,11 +1,16 @@
+#!/usr/bin/env julia
+clearconsole()
+
+# Workig directory
+path = "/home/leniac/JuliaLangDev/ThinFilmsTools/v0.1.0/"
+cd(path)
+
 # Load modules
 using Plots, LaTeXStrings
 pyplot(reuse=false, grid=false)
 closeall()
 include("ThinFilmsTools.jl")
 using Main.ThinFilmsTools
-include("RIdb.jl") # collection of refractive indexes data
-using Main.RIdb: air, silicon, dummy
 
 # Define beam
 λi = 200 # intial wavelength [nm]
@@ -16,20 +21,19 @@ using Main.RIdb: air, silicon, dummy
 beam = PlaneWave(λ, λ0, θ)
 
 # Define layers
-l0 = LayerTMMO(type=:GT, n=air(beam.λ), d=0.)
-l1 = LayerTMMO(type=:OT, n=dummy(beam.λ, 1.45, 0.), d=1/4., nλ0=dummy([beam.λ0], 1.45, 0.))
-l2 = LayerTMMO(type=:OT, n=dummy(beam.λ, 3.45, 0.), d=1/4., nλ0=dummy([beam.λ0], 3.45, 0.))
+l0 = LayerTMMO1DIso(type=:GT, n=RIdb.air(beam.λ), d=0.)
+l1 = LayerTMMO1DIso(type=:OT, n=RIdb.dummy(beam.λ, 1.45, 0.), d=1/4.)
+l2 = LayerTMMO1DIso(type=:OT, n=RIdb.dummy(beam.λ, 3.45, 0.), d=1/4.)
 
 layers = [l0, l1, l2, l1, l2, l1, l2, l1, l2, l0]
 
 # call main script
-sol = TMMOptics(beam, layers; emfflag=true, h=10, pbgflag=true)
+sol = TMMO1DIsotropic(beam, layers; emfflag=true, h=10, pbgflag=true)
 
 ### Optional examples to plot results
 
 # plot the R, T and A spectra
-p1 = plot(TMMOplotSpectra1D(), sol.Beam.λ, [sol.Spectra.Rp, sol.Spectra.Tp, 1.0.-(sol.Spectra.Rp.+sol.Spectra.Tp)], label=["Reflectance" "Transmittance" "Absorbance"], line=([:solid :dash :dashdot]), ylims=(0.0,1.0), xlims=(sol.Beam.λ[1], sol.Beam.λ[end]));
-plot(p1)
+plot(TMMOplotSpectra1D(), sol.Beam.λ, [sol.Spectra.Rp, sol.Spectra.Tp, 1.0.-(sol.Spectra.Rp.+sol.Spectra.Tp)], label=["Reflectance" "Transmittance" "Absorbance"], line=([:solid :dash :dashdot]), ylims=(0.0,1.0), xlims=(sol.Beam.λ[1], sol.Beam.λ[end]));
 gui()
 
 # plot the EMF pattern for normal incidence

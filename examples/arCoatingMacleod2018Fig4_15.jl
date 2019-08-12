@@ -1,12 +1,16 @@
+#!/usr/bin/env julia
+clearconsole()
+
+# Workig directory
+path = "/home/leniac/JuliaLangDev/ThinFilmsTools/v0.1.0/"
+cd(path)
+
 # Load modules
 using Plots, LaTeXStrings
 pyplot(reuse=false, grid=false)
 closeall()
 include("ThinFilmsTools.jl")
 using Main.ThinFilmsTools
-include("RIdb.jl")
-using Main.RIdb: air, dummy, bk7
-# include("nplot.jl")
 
 # Define beam
 λi = 400 # intial wavelength [nm]
@@ -17,19 +21,19 @@ using Main.RIdb: air, dummy, bk7
 beam = PlaneWave(λ, λ0, θ)
 
 # Define layers
-layers1 = [ LayerTMMO(type=:GT, n=air(beam.λ), d=0.),
-            LayerTMMO(type=:OT, n=dummy(beam.λ, 1.38, 0.), d=1/4.),
-            LayerTMMO(type=:OT, n=dummy(beam.λ, 2.15, 0.), d=1/2.),
-            LayerTMMO(type=:GT, n=bk7(beam.λ), d=0.) ]
+layers1 = [ LayerTMMO1DIso(type=:GT, n=RIdb.air(beam.λ), d=0.),
+            LayerTMMO1DIso(type=:OT, n=RIdb.dummy(beam.λ, 1.38, 0.), d=1/4.),
+            LayerTMMO1DIso(type=:OT, n=RIdb.dummy(beam.λ, 2.15, 0.), d=1/2.),
+            LayerTMMO1DIso(type=:GT, n=RIdb.bk7(beam.λ), d=0.) ]
 
-layers2 = [ LayerTMMO(type=:GT, n=air(beam.λ), d=0.),
-            LayerTMMO(type=:OT, n=dummy(beam.λ, 1.38, 0.), d=1/4.),
-            LayerTMMO(type=:OT, n=dummy(beam.λ, 1.9, 0.), d=1/2.),
-            LayerTMMO(type=:GT, n=bk7(beam.λ), d=0.) ]
+layers2 = [ LayerTMMO1DIso(type=:GT, n=RIdb.air(beam.λ), d=0.),
+            LayerTMMO1DIso(type=:OT, n=RIdb.dummy(beam.λ, 1.38, 0.), d=1/4.),
+            LayerTMMO1DIso(type=:OT, n=RIdb.dummy(beam.λ, 1.9, 0.), d=1/2.),
+            LayerTMMO1DIso(type=:GT, n=RIdb.bk7(beam.λ), d=0.) ]
 
 # call main script
-sol1 = TMMOptics(beam, layers1)
-sol2 = TMMOptics(beam, layers2)
+sol1 = TMMO1DIsotropic(beam, layers1)
+sol2 = TMMO1DIsotropic(beam, layers2)
 
 ### Optional examples to plot results
 
