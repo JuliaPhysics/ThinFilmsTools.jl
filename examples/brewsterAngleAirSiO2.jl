@@ -1,11 +1,5 @@
 # https://www.rp-photonics.com/brewsters_angle.html
 
-clearconsole()
-
-# Workig directory
-path = "/home/leniac/JuliaLangDev/ThinFilmsTools/v0.1.0/"
-cd(path)
-
 # Load modules
 using Plots, LaTeXStrings
 pyplot(reuse=false, grid=false)

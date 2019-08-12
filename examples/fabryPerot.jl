@@ -1,11 +1,5 @@
 # Sensors and Actuators B 149 (2010) 189-193
 
-clearconsole()
-
-# Workig directory
-path = "/home/leniac/JuliaLangDev/ThinFilmsTools/v0.1.0/"
-cd(path)
-
 # Load modules
 using Plots, LaTeXStrings
 pyplot(reuse=false, grid=false)
