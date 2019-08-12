@@ -3,9 +3,32 @@ module RIdb
 using Interpolations
 using HDF5
 
-export aluminum, air, bk7, chrome, dummy, glass, gold, silicon, silicontemperature, silver, sno2f, h2o, etoh
+export aluminum, air, bk7, chrome, dummy, glass, gold, silicon, silicontemperature, silver, sno2f, h2o, etoh, Info
 
-file = "RefractiveIndicesDB.h5"
+function Info()
+    tmp1 = "Available functions for materials index of refraction:" *
+    "\n   aluminum(λ), λ ∈ []" *
+    "\n   air(λ), λ ∈ any" *
+    "\n   bk7(λ), λ ∈ []" *
+    "\n   chrome(λ), λ ∈ []" *
+    "\n   dummy(λ), λ ∈ any" *
+    "\n   glass(λ), λ ∈ []" *
+    "\n   gold(λ), λ ∈ []" *
+    "\n   silicon(λ), λ ∈ []" *
+    "\n   silicontemperature(λ, T), λ ∈ [], T ∈ [20,450]" *
+    "\n   silver(λ), λ ∈ []" *
+    "\n   sno2f(λ), λ ∈ []" *
+    "\n   h2o(λ), λ ∈ []" *
+    "\n   etoh(λ), λ ∈ []"
+    return println(tmp1)
+end
+
+function read_RIfiles_DB(material)
+    readf = h5open("RefractiveIndicesDB.h5", "r") do file
+        read(file, material)
+    end
+    readf
+end
 
 """
     Returns the index of refraction of air in complex format, for a given range of wavelengths in nm.
@@ -64,9 +87,7 @@ end # EOF etho()
     Source: http://www-swiss.ai.mit.edu/~jaffer/FreeSnell/nk.html
 """
 function aluminum(λ)
-    readf = h5open(file, "r") do file
-        read(file, "aluminum")
-    end
+    readf = read_RIfiles_DB("aluminum")
     knots = (sort(vec(readf["lambda"])).*1e9,)
     spl_n = interpolate(knots, vec(readf["n"]), Gridded(Linear()))
     spl_k = interpolate(knots, vec(readf["k"]), Gridded(Linear()))
@@ -83,9 +104,7 @@ end # EOF aluminum()
     Source: http://www-swiss.ai.mit.edu/~jaffer/FreeSnell/nk.html
 """
 function bk7(λ)
-    readf = h5open(file, "r") do file
-        read(file, "bk7")
-    end
+    readf = read_RIfiles_DB("bk7")
     knots = (sort(vec(readf["lambda"]).*1e9),)
     spl_n = interpolate(knots, vec(readf["n"]), Gridded(Linear()))
     spl_k = interpolate(knots, vec(readf["k"]), Gridded(Linear()))
@@ -102,9 +121,7 @@ end # EOF bk7()
     Source: http://www-swiss.ai.mit.edu/~jaffer/FreeSnell/nk.html
 """
 function chrome(λ)
-    readf = h5open(file, "r") do file
-        read(file, "chrome")
-    end
+    readf = read_RIfiles_DB("chrome")
     knots = (sort(vec(readf["lambda"])),)
     spl_n = interpolate(knots, vec(readf["n"]), Gridded(Linear()))
     spl_k = interpolate(knots, vec(readf["k"]), Gridded(Linear()))
@@ -121,9 +138,7 @@ end # EOF chrome()
     Source: http://www-swiss.ai.mit.edu/~jaffer/FreeSnell/nk.html
 """
 function gold(λ)
-    readf = h5open(file, "r") do file
-        read(file, "gold")
-    end
+    readf = read_RIfiles_DB("gold")
     knots = (sort(vec(readf["lambda"])),)
     spl_n = interpolate(knots, vec(readf["n"]), Gridded(Linear()))
     spl_k = interpolate(knots, vec(readf["k"]), Gridded(Linear()))
@@ -140,9 +155,7 @@ end # EOF gold()
     Source: http://www-swiss.ai.mit.edu/~jaffer/FreeSnell/nk.html
 """
 function silicon(λ)
-    readf = h5open(file, "r") do file
-        read(file, "silicon")
-    end
+    readf = read_RIfiles_DB("silicon")
     knots = (sort(vec(readf["lambda"]))*1e9,)
     spl_n = interpolate(knots, vec(readf["n"]), Gridded(Linear()))
     spl_k = interpolate(knots, vec(readf["k"]), Gridded(Linear()))
@@ -165,9 +178,7 @@ function silicontemperature(λ, t::S) where {S<:Number}
     if ( t > 450) | (t < 20 )
         error("Temperature range is invalid (20-450 C).")
     else
-        readf = h5open(file, "r") do file
-            read(file, "silicontemperature")
-        end
+        readf = read_RIfiles_DB("silicontemperature")
         # λ = vec(λ)
         lambda = sort(vec(readf["lambda"]))
         # https://discourse.julialang.org/t/a-question-on-extrapolation-with-interpolations-jl/3669/4
@@ -208,9 +219,7 @@ end # EOF silicontemperature()
     Source: http://www-swiss.ai.mit.edu/~jaffer/FreeSnell/nk.html
 """
 function silver(λ)
-    readf = h5open(file, "r") do file
-        read(file, "silver")
-    end
+    readf = read_RIfiles_DB("silver")
     knots = (sort(vec(readf["lambda"])),)
     spl_n = interpolate(knots, vec(readf["n"]), Gridded(Linear()))
     spl_k = interpolate(knots, vec(readf["k"]), Gridded(Linear()))
@@ -227,9 +236,7 @@ end # EOF silver()
     Source: Mater. Res. Soc. Symp. Proc., 426, (1996) 449
 """
 function sno2f(λ::AbstractArray{T,M}) where {T<:Number, M}
-    readf = h5open(file, "r") do file
-        read(file, "sno2f")
-    end
+    readf = read_RIfiles_DB("sno2f")
     knots = (sort(vec(readf["lambda"])*1e9),)
     spl_n = interpolate(knots, vec(readf["n"]), Gridded(Linear()))
     spl_k = interpolate(knots, vec(readf["k"]), Gridded(Linear()))
@@ -246,9 +253,7 @@ end # EOF sno2f()
     Source: http://refractiveindex.info/
 """
 function h2o(λ)
-    readf = h5open(file, "r") do file
-        read(file, "h2o")
-    end
+    readf = read_RIfiles_DB("h2o")
     knots = (sort(vec(readf["lambda"])*1000),)
     spl_n = interpolate(knots, vec(readf["n"]), Gridded(Linear()))
     spl_k = interpolate(knots, vec(readf["k"]), Gridded(Linear()))
