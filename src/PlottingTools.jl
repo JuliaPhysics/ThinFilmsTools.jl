@@ -25,9 +25,13 @@ end
 """
 struct TMMOplotSpectra1D end
 @recipe function f(::TMMOplotSpectra1D, λ, S; s=(640,480))
+    # linecolor   --> RGB(([0,0,0]/255)...)
     seriestype  :=  :path
     linestyle --> :solid
     xlabel --> "Wavelength [nm]"
+    # ylabel --> "Reflectance"
+    # xlim --> (λ[1], λ[end])
+    # ylim --> (0.0, 1.0)
     tickfont --> font(12)
     legendfont --> font(10)
     size --> s
@@ -41,9 +45,13 @@ end
 """
 struct TMMOplotSpectraAngle1D end
 @recipe function f(::TMMOplotSpectraAngle1D, θ, S; s=(640,480))
+    # linecolor   --> RGB(([0,0,0]/255)...)
     seriestype  :=  :path
-    linestyle --> :solid
+    linestyle --> :solid # :dash :dashdot]
     xlabel --> L"Angle of incidence [$\degree$]"
+    # ylabel --> "Reflectance"
+    # xlim --> (θ[1], θ[end])
+    # ylim --> (0.0, 1.0)
     tickfont --> font(12)
     legendfont --> font(10)
     size --> s
@@ -63,6 +71,8 @@ struct TMMOplotSpectra2D end
     color --> cgrad(:viridis)
     xlabel --> "Wavelength [nm]"
     ylabel --> L"Angle of incidence [$\degree$]"
+    # xlim --> (λ[1], λ[end])
+    # ylim --> (θ[1], θ[end])
     tickfont --> font(12)
     legendfont --> font(10)
     size --> s
@@ -82,6 +92,7 @@ struct TMMOplotEMF2D end
     color --> cgrad(:viridis)
     xlabel --> "Wavelength [nm]"
     ylabel --> "Depth profile [nm]"
+    # title --> "EMF Intensity for s-wave"
     tickfont --> font(12)
     size --> s
     vec(λ), vec(ℓ), Matrix(emf')
@@ -100,6 +111,7 @@ struct TMMOplotEMFAngle2D end
     color --> cgrad(:viridis)
     xlabel --> L"Angle of incidence [$\degree$]"
     ylabel --> "Depth profile [nm]"
+    # title --> "EMF Intensity"
     tickfont --> font(12)
     size --> s
     vec(θ), vec(ℓ), Matrix(emf')
@@ -128,8 +140,9 @@ function TMMOplotNprofile(solution; wave=:b, λ=[solution.Beam.λ0], θ=[solutio
     assigned_cols[1] = cols0[1]
     assigned_cols[end] = cols0[end-1]
     # Define the thickness vector with the incident and substrate medium
-    doffset = 0.2 * maximum(solution.Misc.d) # nm
+    doffset = 0.05 * sum(solution.Misc.d) # nm
     new_d = [-doffset; cumsum([0; solution.Misc.d; doffset], dims=1)]
+    # diffnew_d = diff(new_d)
     plot(TMMOplot_rectangles.(diff(new_d), solution.Misc.nλ0, new_d[1:end-1], 0.0), opacity=0.6, c=assigned_cols, line=(0.0), xaxis=("Thickness profile [nm]"), yaxis=(L"Refractive index at $\lambda_0$"), legend=false, tickfont=font(12), size=s, label="")
     gui()
     if !isempty(solution.Field.emfp)
@@ -196,13 +209,15 @@ function TMMOplotdispersion(solution; s=(640,480))
         ωl = Λ / π / (d2*sqrt(n2^2-n0^2) + d1*sqrt(n1^2-n0^2)) * acos(abs((n1^2*sqrt(n2^2-n0^2) - n2^2*sqrt(n1^2-n0^2))/(n1^2*sqrt(n2^2-n0^2) + n2^2*sqrt(n1^2-n0^2))))
         # choose better colormap
         clibrary(:colorbrewer)
+        # contourf(-qz, ω, real.(κp), levels=90, c=cgrad(:Blues, alpha=0.6), xaxis=(L"Parallel wavevector, $q_z$ (2$\pi$/$\Lambda$)"), yaxis=(L"\omega\Lambda/(2\pi)"), colorbar=false, tickfont=font(12), line=(2), annotation=(-0.8, 0.1, text("p/TE-wave", :blue, 12)))
+        # contourf!(qz, ω, real.(κs), levels=90, c=cgrad(:Reds, alpha=0.6), line=(2), annotation=(0.8, 0.1, text("s/TM-wave", :blue, 12)))
         contourf(-qz, ω, real.(κp), levels=90, c=cgrad(:Blues, alpha=0.6), xaxis=(L"Parallel wavevector, $q_z$ (2$\pi$/$\Lambda$)"), yaxis=(L"\omega\Lambda/(2\pi)"), colorbar=false, tickfont=font(12), line=(2), title="p/TM-wave                        s/TE-wave", titlefontsize=10, grid=true, gridstyle=:dot, gridlinewidth=1.5, leg=false)
         contourf!(qz, ω, real.(κs), levels=90, c=cgrad(:Reds, alpha=0.6), line=(2))
-        plot!([ω[end], ω[1]], [0.0, ω[1]], line=(:solid, 1., :black, 0.7))
-        plot!([ω[end], -ω[1]], [0.0, ω[1]], line=(:solid, 1., :black, 0.7))
+        plot!([0.0, ω[1]], [0.0, ω[1]], line=(:solid, 1., :black, 0.7))
+        plot!([0.0, -ω[1]], [0.0, ω[1]], line=(:solid, 1., :black, 0.7))
         plot!([-qz[end], qz[end]], [ωh, ωh], line=(:dash, 1, :black), lab="")
         plot!([-qz[end], qz[end]], [ωl, ωl], line=(:dash, 1, :black), lab="")
-        annotate!([(qz[end], ωh+0.05, text(L"$\omega_h$", 10)), (qz[end], ωl-0.05, text(L"$\omega_l$",10))])
+        annotate!([(qz[end]-0.05, ωh+0.03, text(L"$\omega_h$", 10)), (qz[end]-0.05, ωl-0.03, text(L"$\omega_l$",10))])
         gui()
     end
     return nothing
