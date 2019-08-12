@@ -26,7 +26,7 @@ sol = TMMO1DIsotropic(beam, layers)
 ### Optional examples to plot results
 
 # plot the R, T and A spectra
-p1 = plot(TMMOplotSpectraAngle1D(), sol.Beam.θ, [sol.Spectra.Rp[1,:], sol.Spectra.Rs[1,:], sol.Spectra.Rs[1,:]./sol.Spectra.Rp[1,:]./1000.], label=["p-wave" "s-wave" "(Rs/Rp)/1000"], line=([:solid :dash :dashdot]), xlims=(sol.Beam.θ[1], sol.Beam.θ[end]), yaxis=("Transmittance", (0.,0.2)));
+p1 = plot(TMMOplotSpectraAngle1D(), sol.Beam.θ, [sol.Spectra.Rp[1,:], sol.Spectra.Rs[1,:], sol.Spectra.Rs[1,:]./sol.Spectra.Rp[1,:]./1000.], label=["p-wave" "s-wave" "(Rs/Rp)/1000"], line=([:solid :dash :dashdot]), xlims=(sol.Beam.θ[1], sol.Beam.θ[end]), yaxis=("Reflectance", (0.,0.2)));
 plot(p1)
 gui()
 
