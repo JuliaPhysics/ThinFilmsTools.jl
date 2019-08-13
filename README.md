@@ -3,7 +3,7 @@
 [![The MIT License](https://img.shields.io/badge/license-MIT-orange.svg?style=flat-square)](http://opensource.org/licenses/MIT)
 [![Build Status](https://travis-ci.com/lnacquaroli/ThinFilmsTools.jl.svg?branch=master)](https://travis-ci.com/lnacquaroli/ThinFilmsTools.jl)
 
-The package provides tools for the design and characterisation of thin films written in Julia.
+[`ThinFilmsTools.jl`](https://github.com/lnacquaroli/ThinFilmsTools.jl/wiki/Home) provides tools for the design and characterisation of thin films written in Julia.
 
 The are two major methods working for this already: [`TMMO1DIsotropic.jl`](https://github.com/lnacquaroli/ThinFilmsTools.jl/wiki/TMMO1DIsotropic.jl) (old [`TMMOptics.jl`](https://github.com/lnacquaroli/TMMOptics.jl)) and [`ThreeOmegaMethod.jl`](https://github.com/lnacquaroli/ThinFilmsTools.jl/wiki/ThreeOmegaMethod.jl). Looking forward to expand it with other techniques.
 
@@ -17,7 +17,7 @@ julia> ]
 
 `ThinFilmsTools.jl` is compatible with Julia version 1.1 or later.
 
-So far, the package includes two main modules for the calculation of parameters of thin films: [`TMMO1DIsotropic.jl`](https://github.com/lnacquaroli/ThinFilmsTools.jl/wiki/TMMO1DIsotropic.jl) (replacing `TMMOptics.jl`) for the simulation of optical properties of thin films, and [`ThreeOmegaMethod.jl`](https://github.com/lnacquaroli/ThinFilmsTools.jl/wiki/ThreeOmegaMethod.jl) to model the thermal properties of thin films based on the 3ω method.
+So far, [`ThinFilmsTools.jl`](https://github.com/lnacquaroli/ThinFilmsTools.jl/wiki/Home) includes two main modules for the calculation of parameters of thin films: [`TMMO1DIsotropic.jl`](https://github.com/lnacquaroli/ThinFilmsTools.jl/wiki/TMMO1DIsotropic.jl) (replacing `TMMOptics.jl`) for the simulation of optical properties of thin films, and [`ThreeOmegaMethod.jl`](https://github.com/lnacquaroli/ThinFilmsTools.jl/wiki/ThreeOmegaMethod.jl) to model the thermal properties of thin films based on the 3ω method.
 
 The package also contains a number of indices of refraction for different materials in a database [`RefractiveIndicesDB.jl`](https://github.com/lnacquaroli/ThinFilmsTools.jl/wiki/RefractiveIndicesDB.jl) ready to use.
 
