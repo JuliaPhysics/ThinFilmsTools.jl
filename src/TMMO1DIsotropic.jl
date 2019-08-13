@@ -42,32 +42,40 @@ function TMMO1DIsotropic(Beam::T1, Layers::Array{T2,N2}; emfflag::T3=false, h::T
     nLen::Int64 = length(vec(Layers))
     idxλ0::Int64 = findmin(abs.(λ .- Beam.λ0))[2][1] # Find λ closest to λ0
     # Check if reference lambda is inside the range
-    if (Beam.λ0 < λ[end]) | (Beam.λ0 > λ[1])
-        # Build the sequence of index of refractions and the array of thickness depending on the input
-        d, nseq, nλ0 = buildArrays(Layers, idxλ0, Beam.λ0, nLen, λLen)
+    if λ[1] < Beam.λ0 < λ[end]
+        λinside = true
     else
-        d, nseq, nλ0 = buildArraysAlt(Layers, Beam.λ0, nLen, λLen)
-        pbgflag = false
+        λinside = false
     end
+    # Build the sequence of index of refractions and the array of thickness depending on the input
+    d, nseq, nλ0 = buildArrays(Layers, idxλ0, Beam.λ0, λinside, nLen, λLen)
     # Provide the multilayer depth considering the h division
     _ℓ::Array{Float64,2} = (d[2:end-1] / h) * ones.(1,h) # outer product
     ℓ = cumsum([0; _ℓ[:]], dims=1)[1:end-1] # remove last from cumsum
     # Call transfer matrix method
-    tmmout = transferMatrix(nseq, d, λ, θ, emfflag, h, nLen, λLen, θLen)
+    if emfflag
+        tmmout = transferMatrixEMF(nseq, d, λ, θ, h, nLen, λLen, θLen)
+    else
+        tmmout = transferMatrix(nseq, d, λ, θ, nLen, λLen, θLen)
+    end
     # Photonic band gap for crystals without defects
-    if pbgflag & (nLen > 3)
-        κp, κs, ω, Λ = pbg(λ, θ, nseq[idxλ0,2], nseq[idxλ0,3], d[2], d[3], idxλ0)
+    if λinside
+        if pbgflag & (nLen > 3)
+            κp, κs, ω, Λ = pbg(λ, rad2deg.(θ), nseq[idxλ0,2], nseq[idxλ0,3], d[2], d[3])
+        else
+            κp = []; κs = []; ω = []; Λ = []
+        end
     else
         κp = []; κs = []; ω = []; Λ = []
     end
     # Return results
-    TMMO1DIsotropic(tmmout[1], tmmout[2], Bloch(κp, κs, ω, Λ), Misc(d[2:end-1], ℓ, nλ0, nseq), tmmout[3], Beam, Layers)
+    TMMO1DIsotropic(tmmout[1], tmmout[2], Bloch(κp, κs, ω, Λ), Misc(d, ℓ, nλ0, nseq), tmmout[3], Beam, Layers)
 end # TMMO1DIsotropic(...)
 
 """
-    Build the sequence of index of refractions and the array of thickness depending on the input.
+    Build the sequence of index of refractions and the array of thickness depending on the input. This function takes the input nλ0 since the reference wavelenth λ0 is outside the λ range defined by the user. If nλ0 is not defined even for λ0 outside the λ range warning is display.
 """
-function buildArrays(layers::Array{T0,N0}, idxλ0::T1, λ0::T2, nLen::T1, λLen::T1) where {T0<:Material, N0, T1<:Int64, T2<:Float64}
+function buildArrays(layers::Array{T0,N0}, idxλ0::T1, λ0::T2, λinside::T3, nLen::T1, λLen::T1) where {T0<:Material, N0, T1<:Int64, T2<:Number, T3<:Bool}
     d = Array{Float64,1}(undef, nLen)
     nλ0 = Array{Float64,1}(undef, nLen)
     nseq = Array{ComplexF64,2}(undef, (λLen, nLen))
@@ -75,7 +83,14 @@ function buildArrays(layers::Array{T0,N0}, idxλ0::T1, λ0::T2, nLen::T1, λLen:
         # Refractive index
         nseq[:, s] = layers[s].n
         # Nice to return to plot the profile steps
-        nλ0[s] = real(layers[s].n[idxλ0])
+        if λinside
+            nλ0[s] = real(layers[s].n[idxλ0])
+        else
+            if isempty(layers[s].nλ0[1])
+                @warn "Your reference wavelength λ0 is outside the λ range, you must specify nλ0 in LayerTMMO1DIso."
+            end
+            nλ0[s] = real(layers[s].nλ0[1])
+        end
         # convert fraction of central wavelength into physical thickness or pass the input
         d[s] = layers[s].d
         if layers[s].type == :OT
@@ -86,43 +101,37 @@ function buildArrays(layers::Array{T0,N0}, idxλ0::T1, λ0::T2, nLen::T1, λLen:
 end # buildArrays(..)
 
 """
-    Build the sequence of index of refractions and the array of thickness depending on the input. This alternative function takes the input nλ0 since the reference wavelenth λ0 is outside the λ range defined by the user.
+    Computes the reflection and transmission coefficients, and their spectra. The electromagnetic field is not calculated.
 """
-function buildArraysAlt(layers::Array{T0,N0}, λ, λ0::T2, nLen::T1, λLen::T1) where {T0<:Material, N0, T1<:Int64, T2<:Float64}
-    d = Array{Float64,1}(undef, nLen)
-    nλ0 = Array{Float64,1}(undef, nLen)
-    nseq = Array{ComplexF64,2}(undef, (λLen, nLen))
-    @inbounds for s in eachindex(layers)
-        # Refractive index
-        nseq[:, s] = layers[s].n
-        # Nice to return to plot the profile steps
-        if !isempty(layers[s].nλ0)
-            nλ0[s] = real(layers[s].nλ0)
-        else
-            throw("Your reference wavelenth λ0 is outside the λ range, you must specify nλ0.")
-        end
-        # convert fraction of central wavelength into physical thickness or pass the input
-        if layers[s].type == :OT
-            d[s] = layers[s].d * λ0 / nλ0[s]
-        elseif layers[s].type == :GT
-            d[s] = layers[s].d
-        end
-    end # for s in eachindex(Layers)
-    return d, nseq, nλ0
-end # buildArraysAlt(..)
+function transferMatrix(nseq::Array{T1,N1}, d::Array{T2,N2}, λ::Array{T3,N3}, θ::Array{T4,N4}, nLen::T5, λLen::T5, θLen::T5) where {T1<:ComplexF64, N1, T2<:Float64, N2, T3<:Number, N3, T4<:Number, N4, T5<:Int64}
+    hLen::Int64 = length(d) - 2
+    τs = Array{ComplexF64,2}(undef, (λLen, θLen))
+    τp = similar(τs); ρs = similar(τs); ρp = similar(τs)
+    δ = Array{ComplexF64,3}(undef, (λLen, θLen, nLen))
+    ηs = similar(δ); ηp = similar(ηs)
+    # Calculation of complex coefficients of reflection, transmission and emf
+    @inbounds for a in eachindex(θ), l in eachindex(λ)
+        # Calculation of the optical transfer matrix for all layers
+        ηs[l, a, :], ηp[l, a, :], Ψs, Ψp, δ[l, a, :] = totalTransferMatrix(nseq[l, :], d, λ[l], θ[a], nLen)
+        # Compute the Fresnell coefficients
+        ρs[l, a] = ρ(ηs[l, a, 1], ηs[l, a, end], Ψs)
+        ρp[l, a] = ρ(ηp[l, a, 1], ηp[l, a, end], Ψp)
+        τs[l, a] = τ(ηs[l, a, 1], ηs[l, a, end], Ψs)
+        τp[l, a] = τ(ηp[l, a, 1], ηp[l, a, end], Ψp)
+    end # for l in eachindex(λ), a in eachindex(θ)
+    return (Spectra(abs2.(ρp), abs2.(ρs), real(ηp[:, :, 1] .* ηp[:, :, end]) .* abs2.(τp), real(ηs[:, :, 1] .* ηs[:, :, end]) .* abs2.(τs), ρp, ρs, τp, τs), Field([], []), AdmPhase(ηp, ηs, δ[:, :, 2:end-1]))
+end # function transferMatrix(...)
 
-"""Computes the reflection and transmission coefficients, and their spectra. The electromagnetic field is calculated if emfflag = 1."""
-function transferMatrix(nseq::Array{T1,N1}, d::Array{T2,N2}, λ::Array{T3,N3}, θ::Array{T4,N4}, emfflag::T5, h::T6, nLen::T6, λLen::T6, θLen::T6) where {T1<:ComplexF64, N1, T2<:Float64, N2, T3<:Number, N3, T4<:Number, N4, T5<:Bool, T6<:Int64}
+"""
+    Computes the reflection and transmission coefficients, and their spectra. The electromagnetic field is calculated here.
+"""
+function transferMatrixEMF(nseq::Array{T1,N1}, d::Array{T2,N2}, λ::Array{T3,N3}, θ::Array{T4,N4}, h::T5, nLen::T5, λLen::T5, θLen::T5) where {T1<:ComplexF64, N1, T2<:Float64, N2, T3<:Number, N3, T4<:Number, N4, T5<:Int64}
     hLen::Int64 = (length(d)-2) * h
     τs = Array{ComplexF64,2}(undef, (λLen, θLen))
     τp = similar(τs); ρs = similar(τs); ρp = similar(τs)
     δ = Array{ComplexF64,3}(undef, (λLen, θLen, nLen))
     ηs = similar(δ); ηp = similar(ηs)
-    if emfflag
-        emfs = Array{Float64,3}(undef, (λLen, θLen, hLen)); emfp = similar(emfs)
-    else
-        emfs = []; emfp = []
-    end
+    emfs = Array{Float64,3}(undef, (λLen, θLen, hLen)); emfp = similar(emfs)
     # Calculation of complex coefficients of reflection, transmission and emf
     @inbounds for a in eachindex(θ), l in eachindex(λ)
         # Calculation of the optical transfer matrix for all layers
@@ -133,13 +142,11 @@ function transferMatrix(nseq::Array{T1,N1}, d::Array{T2,N2}, λ::Array{T3,N3}, �
         τs[l, a] = τ(ηs[l, a, 1], ηs[l, a, end], Ψs)
         τp[l, a] = τ(ηp[l, a, 1], ηp[l, a, end], Ψp)
         # EMF
-        if emfflag == 1
-            emfs[l, a, :] = emfield(nseq[l, :], d, θ[a], nLen, h, δ[l, a, :], ηs[l, a, :], Ψs)
-            emfp[l, a, :] = emfield(nseq[l, :], d, θ[a], nLen, h, δ[l, a, :], ηp[l, a, :], Ψp)
-        end
+        emfs[l, a, :] = emfield(nseq[l, :], d, θ[a], nLen, h, δ[l, a, :], ηs[l, a, :], Ψs)
+        emfp[l, a, :] = emfield(nseq[l, :], d, θ[a], nLen, h, δ[l, a, :], ηp[l, a, :], Ψp)
     end # for l in eachindex(λ), a in eachindex(θ)
     return (Spectra(abs2.(ρp), abs2.(ρs), real(ηp[:, :, 1] .* ηp[:, :, end]) .* abs2.(τp), real(ηs[:, :, 1] .* ηs[:, :, end]) .* abs2.(τs), ρp, ρs, τp, τs), Field(emfp, emfs), AdmPhase(ηp, ηs, δ[:, :, 2:end-1]))
-end # function transferMatrix(...)
+end # function transferMatrixEMF()
 
 """
     Computes the total transfer matrix and admittance for the whole structure at each wavelenth and angle of incidence.
@@ -178,7 +185,9 @@ end # totalTransferMatrix(...)
 # Transmission coefficient
 τ(η0::T1, ηm::T1, Ψ::Array{T1,N2}) where {T1<:ComplexF64, N2} = 2 / (η0*Ψ[1,1] + Ψ[2,1] + η0*ηm*Ψ[1,2] + ηm*Ψ[2,2])
 
-"""Computes the inverse total transfer matrix for the whole structure at each wavelenth and angle of incidence and return the field."""
+"""
+    Computes the inverse total transfer matrix for the whole structure at each wavelenth and angle of incidence and return the field.
+"""
 function emfield(N::Array{T1,N1}, d::Array{T2,N2}, θ::T4, NLen::T5, h::T5, δ::Array{T6,N7}, η::Array{T6,N8}, Ψ::Array{T6,N9}) where {T1<:ComplexF64, N1, T2<:Float64, N2, T3<:Number, T4<:Number, T5<:Int64, T6<:ComplexF64, N7, N8, N9}
     m0 = Array{ComplexF64,2}(undef,2,2)
     m1 = complex.([1. 0.; 0. 1.])
@@ -195,7 +204,7 @@ function emfield(N::Array{T1,N1}, d::Array{T2,N2}, θ::T4, NLen::T5, h::T5, δ::
         g12[k] = m0[1,2]
     end # for c = 2 : NLen-1, j = 1 : h
     return FI(g11, g12, η[1], η[end], Ψ)
-end # emfield(...)
+end # emfield()
 
 """Compute the electric field distribution."""
 FI(g11::Array{T1,N1}, g12::Array{T1,N1}, s1::T1, sf::T1, Ψ::Array{T1,N2}) where {T1<:ComplexF64, N1, N2} = abs2.((g11 + sf*g12) / (0.25*(s1*Ψ[1,1] + Ψ[2,1] + s1*sf*Ψ[1,2] + sf*Ψ[2,2])))
@@ -203,12 +212,14 @@ FI(g11::Array{T1,N1}, g12::Array{T1,N1}, s1::T1, sf::T1, Ψ::Array{T1,N2}) where
 """Calculates the inverse of optical transfer matrix of a layer. φ:  phase shift of the layer, y: admittance of the layer, Τ: 2x2 optical tranfer matrix."""
 Ξ(φ::T1, s::T1) where {T1<:ComplexF64} = [cos(φ) (im*sin(φ)/s); (im*sin(φ)*s) cos(φ)]
 
-"""Computes the photonic dispersion of ordered structures (crystals only) alternating two different dielectric layers (pbgflag = 1)."""
-function pbg(λ::Array{T1,N1}, θ::Array{T2,N2}, n1::T3, n2::T3, d1::T4, d2::T4, idxλ0::T5) where {T1<:Number, N1, T2<:Number, N2, T3<:ComplexF64, T4<:Float64, T5<:Int64}
+"""
+    Computes the photonic dispersion of binary structures (crystals only) alternating two different dielectric layers.
+"""
+function pbg(λ::Array{T1,N1}, θ::Array{T2,N2}, n1::T3, n2::T3, d1::T4, d2::T4) where {T1<:Number, N1, T2<:Number, N2, T3<:ComplexF64, T4<:Float64}
     ω::Vector{Float64} = 2 * π ./ λ # Angular frequency
     L::Float64 = d1 + d2 # Unit cell
     # Angle of incidence of the second layer with Snell's law of cosine
-    cosθ1::Vector{ComplexF64} = cos.(θ)
+    cosθ1::Vector{ComplexF64} = cos.(rad2deg.(θ))
     cosθ2::Vector{ComplexF64} = cosϑ.(n1, n2, cosθ1)
     # Prefactor for Bloch wavevector
     factor_s = admFactor.(ζₛ.(n1, cosθ1), ζₛ.(n2, cosθ2))
@@ -221,15 +232,15 @@ function pbg(λ::Array{T1,N1}, θ::Array{T2,N2}, n1::T3, n2::T3, d1::T4, d2::T4,
         cosκs[b,a] = cosκ(d1*ω[b]*n1*cosθ1[a], d2*ω[b]*n2*cosθ2[a], factor_s[a])
     end # for a in eachindex(cosθ1), b in eachindex(ω)
     return acos.(cosκp)./L, acos.(cosκs)./L, ω, L
-end # function pbg(...)
+end # function pbg()
 
 """Prefactor for bloch wavevector."""
-admFactor(s1::T1, s2::T2) where {T1<:Number, T2<:Number} = 0.5 * (s1^2 + s2^2) / s1 / s2
+admFactor(η1::T1, η2::T2) where {T1<:Number, T2<:Number} = 0.5 * (η1^2 + η2^2) / η1 / η2
 
 """Bloch wavevector."""
 cosκ(a1::T1, a2::T1, f::T2) where {T1<:Number, T2<:Number} = cos(a1) * cos(a2) - f * sin(a1) * sin(a2)
 
-"""Snell's law in cosine form. Returns de cosine already."""
+"""Snell's law in cosine form. Returns the cosine already."""
 cosϑ(n1::T1, n2::T1, cosθ::T2) where {T1<:ComplexF64, T2<:Number} = sqrt(1 - (n1/n2)^2 * (1-cosθ^2) )
 
 """Admittance of the medium for p and s polarizations."""
