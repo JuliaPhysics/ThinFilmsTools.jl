@@ -119,7 +119,7 @@ function transferMatrix(nseq::Array{T1,N1}, d::Array{T2,N2}, λ::Array{T3,N3}, �
         τs[l, a] = τ(ηs[l, a, 1], ηs[l, a, end], Ψs)
         τp[l, a] = τ(ηp[l, a, 1], ηp[l, a, end], Ψp)
     end # for l in eachindex(λ), a in eachindex(θ)
-    return (Spectra(abs2.(ρp), abs2.(ρs), real(ηp[:, :, 1] .* ηp[:, :, end]) .* abs2.(τp), real(ηs[:, :, 1] .* ηs[:, :, end]) .* abs2.(τs), ρp, ρs, τp, τs), Field([], []), AdmPhase(ηp, ηs, δ[:, :, 2:end-1]))
+    return (Spectra(abs2.(ρp), abs2.(ρs), real(ηp[:, :, 1] .* ηp[:, :, end]) .* abs2.(τp), real(ηs[:, :, 1] .* ηs[:, :, end]) .* abs2.(τs), ρp, ρs, τp, τs), Field([], []), AdmPhase(ηp, ηs, δ))
 end # function transferMatrix(...)
 
 """
