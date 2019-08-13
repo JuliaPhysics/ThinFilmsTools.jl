@@ -61,7 +61,7 @@ function TMMO1DIsotropic(Beam::T1, Layers::Array{T2,N2}; emfflag::T3=false, h::T
     # Photonic band gap for crystals without defects
     if λinside
         if pbgflag & (nLen > 3)
-            κp, κs, ω, Λ = pbg(λ, rad2deg.(θ), nseq[idxλ0,2], nseq[idxλ0,3], d[2], d[3])
+            κp, κs, ω, Λ = pbg(λ, θ, nseq[idxλ0,2], nseq[idxλ0,3], d[2], d[3])
         else
             κp = []; κs = []; ω = []; Λ = []
         end
@@ -219,7 +219,7 @@ function pbg(λ::Array{T1,N1}, θ::Array{T2,N2}, n1::T3, n2::T3, d1::T4, d2::T4)
     ω::Vector{Float64} = 2 * π ./ λ # Angular frequency
     L::Float64 = d1 + d2 # Unit cell
     # Angle of incidence of the second layer with Snell's law of cosine
-    cosθ1::Vector{ComplexF64} = cos.(rad2deg.(θ))
+    cosθ1::Vector{ComplexF64} = cos.(θ)
     cosθ2::Vector{ComplexF64} = cosϑ.(n1, n2, cosθ1)
     # Prefactor for Bloch wavevector
     factor_s = admFactor.(ζₛ.(n1, cosθ1), ζₛ.(n2, cosθ2))
