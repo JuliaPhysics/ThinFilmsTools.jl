@@ -140,8 +140,9 @@ function TMMOplotNprofile(solution; wave=:b, λ=[solution.Beam.λ0], θ=[solutio
     assigned_cols[1] = cols0[1]
     assigned_cols[end] = cols0[end-1]
     # Define the thickness vector with the incident and substrate medium
-    doffset = 0.05 * sum(solution.Misc.d) # nm
-    new_d = [-doffset; cumsum([0; solution.Misc.d; doffset], dims=1)]
+    d = solution.Misc.d[2:end-1] # remove incident and emergent media
+    doffset = 0.05 * sum(d)
+    new_d = [-doffset; cumsum([0; d; doffset], dims=1)]
     # diffnew_d = diff(new_d)
     plot(TMMOplot_rectangles.(diff(new_d), solution.Misc.nλ0, new_d[1:end-1], 0.0), opacity=0.6, c=assigned_cols, line=(0.0), xaxis=("Thickness profile [nm]"), yaxis=(L"Refractive index at $\lambda_0$"), legend=false, tickfont=font(12), size=s, label="")
     gui()
@@ -203,7 +204,7 @@ function TMMOplotdispersion(solution; s=(640,480))
         κs[abs.(κs) .< 1.0] .= 1.0 # propagating waves
         κs[abs.(κs) .> 1.0] .= 0.0 # evanescent waves
         qz = sin.(deg2rad.(solution.Beam.θ)) .* π ./ 2.0 # parallel wavevector qz
-        d1 = solution.Misc.d[1]; d2 = solution.Misc.d[2]
+        d1 = solution.Misc.d[2]; d2 = solution.Misc.d[3]
         n0 = solution.Misc.nλ0[1]; n1 = solution.Misc.nλ0[2]; n2 = solution.Misc.nλ0[3]
         ωh = Λ / π / (d1*n1 + d2*n2) * acos(-abs(n1-n2)/(n1+n2))
         ωl = Λ / π / (d2*sqrt(n2^2-n0^2) + d1*sqrt(n1^2-n0^2)) * acos(abs((n1^2*sqrt(n2^2-n0^2) - n2^2*sqrt(n1^2-n0^2))/(n1^2*sqrt(n2^2-n0^2) + n2^2*sqrt(n1^2-n0^2))))
@@ -218,6 +219,8 @@ function TMMOplotdispersion(solution; s=(640,480))
         plot!([-qz[end], qz[end]], [ωh, ωh], line=(:dash, 1, :black), lab="")
         plot!([-qz[end], qz[end]], [ωl, ωl], line=(:dash, 1, :black), lab="")
         annotate!([(qz[end]-0.05, ωh+0.03, text(L"$\omega_h$", 10)), (qz[end]-0.05, ωl-0.03, text(L"$\omega_l$",10))])
+        xlims!(-qz[end], qz[end])
+        ylims!(0.0, ω[1])
         gui()
     end
     return nothing
