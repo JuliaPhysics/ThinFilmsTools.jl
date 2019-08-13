@@ -2,8 +2,7 @@
 using Plots, LaTeXStrings
 pyplot(reuse=false, grid=false)
 closeall()
-include("ThinFilmsTools.jl")
-using Main.ThinFilmsTools
+using ThinFilmsTools
 
 # Define beam
 λi = 400 # intial wavelength [nm]

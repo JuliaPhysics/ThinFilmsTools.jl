@@ -4,8 +4,7 @@
 using Plots, LaTeXStrings
 pyplot(reuse=false, grid=false)
 closeall()
-include("ThinFilmsTools.jl")
-using Main.ThinFilmsTools
+using ThinFilmsTools
 
 # Define beam
 λ = [1064.]
@@ -16,9 +15,9 @@ using Main.ThinFilmsTools
 beam = PlaneWave(λ, λ0, θ)
 
 # Define layers: notice that lambda is outside the range
-layers = [ LayerTMMO1DIso(type=:GT, n=RIdb.dummy(beam.λ, 1., 0.), d=0., nλ0=RIdb.dummy([beam.λ0], 1., 0.)),
-           LayerTMMO1DIso(type=:GT, n=RIdb.dummy(beam.λ, 1.5, 0.), d=10., nλ0=RIdb.dummy([beam.λ0], 1.5, 0.)),
-           LayerTMMO1DIso(type=:GT, n=RIdb.dummy(beam.λ, 1.5, 0.), d=0., nλ0=RIdb.dummy([beam.λ0], 1.5, 0.)) ]
+layers = [ LayerTMMO1DIso(type=:GT, n=RIdb.dummy(beam.λ, 1., 0.), d=0., nλ0=RIdb.dummy(beam.λ0, 1., 0.)),
+           LayerTMMO1DIso(type=:GT, n=RIdb.dummy(beam.λ, 1.5, 0.), d=10., nλ0=RIdb.dummy(beam.λ0, 1.5, 0.)),
+           LayerTMMO1DIso(type=:GT, n=RIdb.dummy(beam.λ, 1.5, 0.), d=0., nλ0=RIdb.dummy(beam.λ0, 1.5, 0.)) ]
 
 # call main script
 sol = TMMO1DIsotropic(beam, layers)

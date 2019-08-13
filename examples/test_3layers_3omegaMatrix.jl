@@ -4,8 +4,7 @@
 # Top layer down to substrate information arrays
 
 # Load modules
-include("ThinFilmsTools.jl")
-using Main.ThinFilmsTools
+using ThinFilmsTools
 using Plots
 pyplot(reuse=false, grid=false, size=(640,480))
 closeall()
