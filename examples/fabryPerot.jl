@@ -20,7 +20,7 @@ l0 = LayerTMMO1DIso(type=:GT, n=RIdb.air(beam.λ), d=0.)
 l1 = LayerTMMO1DIso(type=:OT, n=DF.looyengaspheres(RIdb.air(beam.λ),RIdb.silicon(beam.λ),0.86), d=1/4.)
 l2 = LayerTMMO1DIso(type=:OT, n=DF.looyengaspheres(RIdb.air(beam.λ),RIdb.silicon(beam.λ),0.54), d=1/4.)
 l3 = LayerTMMO1DIso(type=:GT, n=RIdb.glass(beam.λ), d=0.)
-layers = vec([l0 l1 l2 l1 l2 l1 l2 l1 l2 l1 l1 l1 l1 l1 l1 l1 l1 l1 l1 l2 l1 l2 l1 l2 l1 l2 l1 l3])
+layers = vec([l0 l1 l2 l1 l2 l1 l2 l1 l2 repeat([l1], 1, 10) l2 l1 l2 l1 l2 l1 l2 l1 l3])
 
 # call main script
 sol = TMMO1DIsotropic(beam, layers; emfflag=true, h=10)
