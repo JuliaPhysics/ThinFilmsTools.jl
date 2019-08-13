@@ -24,7 +24,8 @@ function Info()
 end
 
 function read_RIfiles_DB(material)
-    readf = h5open("RefractiveIndicesDB.h5", "r") do file
+    datapath = joinpath(@__DIR__, "..", "data/")
+    readf = h5open(joinpath(datapath, "RefractiveIndicesDB.h5"), "r") do file
         read(file, material)
     end
     readf
