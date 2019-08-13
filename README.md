@@ -17,9 +17,7 @@ julia> ]
 
 `ThinFilmsTools.jl` is compatible with Julia version 1.1 or later.
 
-## `ThinFilmsTools.jl`
-
-The package includes two main modules for the calculation of parameters of thin films: [`TMMO1DIsotropic.jl`](https://github.com/lnacquaroli/ThinFilmsTools.jl/wiki/TMMO1DIsotropic.jl) (replacing `TMMOptics.jl`) for the simulation of optical properties of thin films, and [`ThreeOmegaMethod.jl`](https://github.com/lnacquaroli/ThinFilmsTools.jl/wiki/ThreeOmegaMethod.jl) to model the thermal properties of thin films based on the 3ω method.
+So far, the package includes two main modules for the calculation of parameters of thin films: [`TMMO1DIsotropic.jl`](https://github.com/lnacquaroli/ThinFilmsTools.jl/wiki/TMMO1DIsotropic.jl) (replacing `TMMOptics.jl`) for the simulation of optical properties of thin films, and [`ThreeOmegaMethod.jl`](https://github.com/lnacquaroli/ThinFilmsTools.jl/wiki/ThreeOmegaMethod.jl) to model the thermal properties of thin films based on the 3ω method.
 
 The package also contains a number of indices of refraction for different materials in a database [`RefractiveIndicesDB.jl`](https://github.com/lnacquaroli/ThinFilmsTools.jl/wiki/RefractiveIndicesDB.jl) ready to use.
 
