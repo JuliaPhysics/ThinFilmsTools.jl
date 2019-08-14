@@ -144,10 +144,12 @@ function TMMOplotNprofile(solution; wave=:b, λ=[solution.Beam.λ0], θ=[solutio
     doffset = 0.05 * sum(d)
     new_d = [-doffset; cumsum([0; d; doffset], dims=1)]
     # diffnew_d = diff(new_d)
-    plot(TMMOplot_rectangles.(diff(new_d), solution.Misc.nλ0, new_d[1:end-1], 0.0), opacity=0.6, c=assigned_cols, line=(0.0), xaxis=("Thickness profile [nm]"), yaxis=(L"Refractive index at $\lambda_0$"), legend=false, tickfont=font(12), size=s, label="")
+    plot(TMMOplot_rectangles.(diff(new_d), solution.Misc.nλ0, new_d[1:end-1], 0.0), opacity=0.6, c=assigned_cols, line=(0.0), xaxis=("Thickness profile [nm]"), legend=false, tickfont=font(12), size=s, label="")
+    solution.Misc.nλ0specified ? yaxis!(L"Refractive index at $\lambda_0$") : yaxis!("Average refractive index")
     gui()
     if !isempty(solution.Field.emfp)
-        plot(TMMOplot_rectangles.(diff(new_d), solution.Misc.nλ0, new_d[1:end-1], 0.0), opacity=0.6, c=assigned_cols, line=(0.0), xaxis=("Thickness profile [nm]"), yaxis=(L"Refractive index at $\lambda_0$"), tickfont=font(12), size=s, label="")
+        plot(TMMOplot_rectangles.(diff(new_d), solution.Misc.nλ0, new_d[1:end-1], 0.0), opacity=0.6, c=assigned_cols, line=(0.0), xaxis=("Thickness profile [nm]"), tickfont=font(12), size=s, label="")
+        solution.Misc.nλ0specified ? yaxis!(L"Refractive index at $\lambda_0$") : yaxis!("Average refractive index")
         aux1 = findmin(abs.(solution.Beam.λ .- λ[1]))[2][1]
         aux2 = findmin(abs.(solution.Beam.θ .- θ[1]))[2][1]
         λaux1 = solution.Beam.λ[aux1]
