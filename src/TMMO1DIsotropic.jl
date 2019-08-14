@@ -6,8 +6,8 @@ end
 
 """Material type definition with geometrical (physical) and optical thickness."""
 abstract type Material end
-Base.@kwdef struct LayerTMMO1DIso{T1, T2, T3} <: Material where {T1<:ComplexF64, T2<:Float64, T3<:Symbol}
-    type::T3; n::AbstractArray{T1}; d::T2; nλ0=[];
+Base.@kwdef struct LayerTMMO1DIso{T1, T2, T3, T4} <: Material where {T1<:ComplexF64, T2<:Float64, T3<:Symbol, T4<:Number}
+    type::T3; n::AbstractArray{T1}; d::T2; nλ0::Array{T4}=[0.];
 end
 
 """Wrap the output into different types."""
@@ -21,8 +21,8 @@ end
 struct Bloch{T1, T2} <: Output where {T1<:Number, T2<:Float64}
     κp::Array{T1}; κs::Array{T1}; ω::Array{T2}; Λ::T2
 end
-struct Misc{T1, T2, T3, T4} <: Output where {T1<:Float64, T2<:Number, T3<:ComplexF64, T4<:Float64}
-    d::Array{T1}; ℓ::Array{T2}; nλ0::Array{T4}; nseq::Array{T3};
+struct Misc{T1, T2, T3, T4, T5} <: Output where {T1<:Float64, T2<:Number, T3<:ComplexF64, T4<:Float64, T5<:Bool}
+    d::Array{T1}; ℓ::Array{T2}; nλ0::Array{T4}; nseq::Array{T3}; nλ0specified::T5;
 end
 struct AdmPhase{T1} <: Output where {T1<:ComplexF64}
     ηp::Array{T1}; ηs::Array{T1}; δ::Array{T1};
@@ -48,7 +48,7 @@ function TMMO1DIsotropic(Beam::T1, Layers::Array{T2,N2}; emfflag::T3=false, h::T
         λinside = false
     end
     # Build the sequence of index of refractions and the array of thickness depending on the input
-    d, nseq, nλ0 = buildArrays(Layers, idxλ0, Beam.λ0, λinside, nLen, λLen)
+    d, nseq, nλ0, nλ0specified = buildArrays(Layers, idxλ0, Beam.λ0, λinside, nLen, λLen)
     # Provide the multilayer depth considering the h division
     _ℓ::Array{Float64,2} = (d[2:end-1] / h) * ones.(1,h) # outer product
     ℓ = cumsum([0; _ℓ[:]], dims=1)[1:end-1] # remove last from cumsum
@@ -69,7 +69,7 @@ function TMMO1DIsotropic(Beam::T1, Layers::Array{T2,N2}; emfflag::T3=false, h::T
         κp = []; κs = []; ω = []; Λ = []
     end
     # Return results
-    TMMO1DIsotropic(tmmout[1], tmmout[2], Bloch(κp, κs, ω, Λ), Misc(d, ℓ, nλ0, nseq), tmmout[3], Beam, Layers)
+    TMMO1DIsotropic(tmmout[1], tmmout[2], Bloch(κp, κs, ω, Λ), Misc(d, ℓ, nλ0, nseq, nλ0specified), tmmout[3], Beam, Layers)
 end # TMMO1DIsotropic(...)
 
 """
@@ -79,6 +79,9 @@ function buildArrays(layers::Array{T0,N0}, idxλ0::T1, λ0::T2, λinside::T3, nL
     d = Array{Float64,1}(undef, nLen)
     nλ0 = Array{Float64,1}(undef, nLen)
     nseq = Array{ComplexF64,2}(undef, (λLen, nLen))
+    # nλ0specified = BitArray(ones(nLen))
+    nλ0specified = true
+    w = Int.(zeros(nLen))
     @inbounds for s in eachindex(layers)
         # Refractive index
         nseq[:, s] = layers[s].n
@@ -86,10 +89,13 @@ function buildArrays(layers::Array{T0,N0}, idxλ0::T1, λ0::T2, λinside::T3, nL
         if λinside
             nλ0[s] = real(layers[s].n[idxλ0])
         else
-            if isempty(layers[s].nλ0[1])
-                @warn "Your reference wavelength λ0 is outside the λ range, you must specify nλ0 in LayerTMMO1DIso."
+            if isequal(layers[s].nλ0[1], 0.0)
+                nλ0[s] = mean(real(nseq[:, s]))
+                nλ0specified = false
+                w[s] = s
+            else
+                nλ0[s] = real(layers[s].nλ0[1])
             end
-            nλ0[s] = real(layers[s].nλ0[1])
         end
         # convert fraction of central wavelength into physical thickness or pass the input
         d[s] = layers[s].d
@@ -97,7 +103,10 @@ function buildArrays(layers::Array{T0,N0}, idxλ0::T1, λ0::T2, λinside::T3, nL
             d[s] *= (λ0 / nλ0[s])
         end
     end # for s in eachindex(Layers)
-    return d, nseq, nλ0
+    if !nλ0specified
+        @info "nλ0 was averaged for layers $(w).\n You should specify nλ0 in LayerTMMO1DIso since your reference\n wavelength λ0 is outside the λ range, or there is no range at all."
+    end
+    return d, nseq, nλ0, nλ0specified
 end # buildArrays(..)
 
 """
