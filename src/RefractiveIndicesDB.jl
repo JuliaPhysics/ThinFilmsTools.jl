@@ -57,7 +57,7 @@ end # EOF dummy()
     Returns the index of refraction of glass in complex format, for a given range of wavelengths in nm, using the Sellmeier equation.
         N = glass(λ)
     Input args:
-        λ = wavelength range (nm)
+        λ = wavelength range (nm), ∈ [300, 2500] (nm)
 
     Source: http://refractiveindex.info/
 """
@@ -70,7 +70,7 @@ end # EOF glass()
     Returns the index of refraction of liquid ethanol in complex format, for a given range of wavelengths in nm.
         N = etoh(λ)
     Input args:
-        λ = wavelength range (nm)
+        λ = wavelength range (nm), ∈ [476.5, 830] (nm)
 
     Source: http://refractiveindex.info/
 """
@@ -84,7 +84,7 @@ end # EOF etho()
     Returns the index of refraction of aluminum in complex format, for a given range of wavelengths in nm.
         N = aluminum(λ)
     Input args:
-        λ = wavelength range (nm)
+        λ = wavelength range (nm), ∈ [4.15, 31000]
 
     Source: http://www-swiss.ai.mit.edu/~jaffer/FreeSnell/nk.html
 """
@@ -101,7 +101,7 @@ end # EOF aluminum()
     Returns the index of refraction of BK7 in complex format, for a given range of wavelengths in nm.
         N = bk7(λ)
     Input args:
-        λ = wavelength range (nm)
+        λ = wavelength range (nm), ∈ [191, 1239] (nm)
 
     Source: http://www-swiss.ai.mit.edu/~jaffer/FreeSnell/nk.html
 """
@@ -118,7 +118,7 @@ end # EOF bk7()
     Returns the index of refraction of chrome in complex format, for a given range of wavelengths in nm.
         N = chrome(λ)
     Input args:
-        λ = wavelength range (nm)
+        λ = wavelength range (nm), ∈ [207, 1240] (nm)
 
     Source: http://www-swiss.ai.mit.edu/~jaffer/FreeSnell/nk.html
 """
@@ -135,7 +135,7 @@ end # EOF chrome()
     Returns the index of refraction of gold in complex format, for a given range of wavelengths in nm.
         N = gold(λ)
     Input args:
-        λ = wavelength range (nm)
+        λ = wavelength range (nm), ∈ [34.15, 10240] (nm)
 
     Source: http://www-swiss.ai.mit.edu/~jaffer/FreeSnell/nk.html
 """
@@ -152,7 +152,7 @@ end # EOF gold()
     Returns the index of refraction of crystalline silicon in complex format, for a given range of wavelengths in nm.
         N = silicon(λ)
     Input args:
-        λ = wavelength range (nm)
+        λ = wavelength range (nm), ∈ [163.15, 25000] (nm)
 
     Source: http://www-swiss.ai.mit.edu/~jaffer/FreeSnell/nk.html
 """
@@ -169,9 +169,8 @@ end # EOF silicon(...)
     Returns the index of refraction of crystalline silicon in complex format, for a given range of wavelengths in nm and a one temperature value.
         N = silicontemperature(λ, T)
     Input args:
-        λ = wavelength range (nm)
-        T = value of temperature (C)
-    Note: temperature in C (valid range: 20-450)
+        λ = wavelength range (nm), ∈ [264, 826.5]
+        T = value of temperature (C), ∈ [20, 450]
 
     Source: http://refractiveindex.info/
 """
@@ -216,7 +215,7 @@ end # EOF silicontemperature()
     Returns the index of refraction of silver in complex format, for a given range of wavelengths in nm.
         N = silver(λ)
     Input args:
-        λ = wavelength range (nm)
+        λ = wavelength range (nm), ∈ [0.124, 9919] (nm)
 
     Source: http://www-swiss.ai.mit.edu/~jaffer/FreeSnell/nk.html
 """
@@ -233,7 +232,7 @@ end # EOF silver()
     Returns the index of refraction of SnO2:F in complex format, for a given range of wavelengths in nm.
         N = sno2f(λ)
     Input args:
-        λ = wavelength range (nm)
+        λ = wavelength range (nm), ∈ [308.25, 2490.9] (nm)
 
     Source: Mater. Res. Soc. Symp. Proc., 426, (1996) 449
 """
@@ -250,7 +249,7 @@ end # EOF sno2f()
     Returns the index of refraction of liquid water in complex format, for a given range of wavelengths in nm.
         N = h2o(λ)
     Input args:
-        λ = wavelength range (nm)
+        λ = wavelength range (nm), ∈ [10.0, 1e10] (nm)
 
     Source: http://refractiveindex.info/
 """
@@ -264,3 +263,4 @@ function h2o(λ)
 end # EOF h2o()
 
 end # module RIdb
+
