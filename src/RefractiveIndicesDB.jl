@@ -7,19 +7,19 @@ export aluminum, air, bk7, chrome, dummy, glass, gold, silicon, silicontemperatu
 
 function Info()
     tmp1 = "Available functions for materials index of refraction:" *
-    "\n   aluminum(λ), λ ∈ []" *
-    "\n   air(λ), λ ∈ any" *
-    "\n   bk7(λ), λ ∈ []" *
-    "\n   chrome(λ), λ ∈ []" *
-    "\n   dummy(λ), λ ∈ any" *
-    "\n   glass(λ), λ ∈ []" *
-    "\n   gold(λ), λ ∈ []" *
-    "\n   silicon(λ), λ ∈ []" *
-    "\n   silicontemperature(λ, T), λ ∈ [], T ∈ [20,450]" *
-    "\n   silver(λ), λ ∈ []" *
-    "\n   sno2f(λ), λ ∈ []" *
-    "\n   h2o(λ), λ ∈ []" *
-    "\n   etoh(λ), λ ∈ []"
+        "\n   aluminum(λ), λ ∈ [4.15, 31000] (nm)" *
+        "\n   air(λ), λ ∈ any (nm)" *
+        "\n   bk7(λ), λ ∈ [191, 1239] (nm)" *
+        "\n   chrome(λ), λ ∈ [207, 1240] (nm)" *
+        "\n   dummy(λ), λ ∈ any (nm)" *
+        "\n   glass(λ), λ ∈ [300, 2500] (nm)" *
+        "\n   gold(λ), λ ∈ [34.15, 10240] (nm)" *
+        "\n   silicon(λ), λ ∈ [163.15, 25000] (nm)" *
+        "\n   silicontemperature(λ, T), λ ∈ [264, 826.5], T ∈ [20, 450]" *
+        "\n   silver(λ), λ ∈ [0.124, 9919] (nm)" *
+        "\n   sno2f(λ), λ ∈ [308.25, 2490.9] (nm), fluor doped!" *
+        "\n   h2o(λ), λ ∈ [10.0, 1e10] (nm)" *
+        "\n   etoh(λ), λ ∈ [476.5, 830] (nm)"
     return println(tmp1)
 end
 
@@ -54,15 +54,16 @@ function dummy(λ, x::S, y::S) where {S<:Number}
 end # EOF dummy()
 
 """
-    Returns the index of refraction of glass in complex format, for a given range of wavelengths in nm.
+    Returns the index of refraction of glass in complex format, for a given range of wavelengths in nm, using the Sellmeier equation.
         N = glass(λ)
     Input args:
         λ = wavelength range (nm)
 
-    Source: http://www.cvilaser.com/PublicPages/Pages/TechnicalTips.aspx
+    Source: http://refractiveindex.info/
 """
 function glass(λ)
-    N::Array{ComplexF64} = ones.(length(λ)) .* (1.52 + im * 0.0)
+    λsq = λ.^2
+    N = complex.(sqrt.(1.0 .+ (1.03961212 .* λsq ./ (λsq .- 0.00600069867)) .+ (0.231792344 .* λsq ./ (λsq .- 0.0200179144)) .+ (1.01046945 .* λsq ./ (λsq .- 103.560653))))
 end # EOF glass()
 
 """
