@@ -1,7 +1,7 @@
 name = "ThinFilmsTools"
 uuid = "a3f34ca4-bde2-11e9-25fa-056c263d5178"
 authors = ["leniac "]
-version = "0.1.0"
+version = "0.2.1"
 
 [deps]
 HDF5 = "f67ccb44-e63f-5c2f-98bd-6dc0ccc4ba2f"
