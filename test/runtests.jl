@@ -1,4 +1,5 @@
-ENV["PYTHON"]=""
+using Conda
+
 ENV["MPLBACKEND"]="agg" # no GUI
 
 using ThinFilmsTools
