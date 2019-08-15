@@ -21,7 +21,7 @@ thresistances = [0. 0.]
 # Define layer structure
 layers = [ LayerTOM(310.0, 1.0, 0.2e-6, 2.441e6), # heater
            LayerTOM(0.1, 1.0, 1.0e-6, 2320*700*0.1), # specimen_1
-           LayerTOM(160.0, 1.0, 525.0e-6, 2320*700.) ] # substrate]
+           LayerTOM(160.0, 1.0, 525.0e-6, 2320*700.) ] # substrate
 hgeometry = HeaterGeometry(b, l, ρh)
 source = Source(p, f)
 
