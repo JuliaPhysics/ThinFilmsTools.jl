@@ -1,3 +1,4 @@
+ENV["PYTHON"]=""
 ENV["MPLBACKEND"]="agg" # no GUI
 
 using ThinFilmsTools
