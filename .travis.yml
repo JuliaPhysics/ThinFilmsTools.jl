@@ -6,3 +6,7 @@ os:
   - linux
 notifications:
 - email: false
+env:
+- PYTHON=""
+script:
+- if [[ -a .git/shallow ]]; then git fetch --unshallow; fi
