@@ -1,5 +1,6 @@
 module ThinFilmsTools
 
+using Statistics
 using Printf: @sprintf
 using QuadGK
 using Plots
@@ -7,7 +8,7 @@ using LaTeXStrings # To use with PlottingTools.jl
 pyplot(grid=false)
 
 include("TMMO1DIsotropic.jl")
-export TMMO1DIsotropic, PlaneWave, LayerTMMO1DIso
+export TMMO1DIsotropic, PlaneWave, LayerTMMO1DIso, TransferMatrix
 
 include("ThreeOmegaMethod.jl")
 export LayerTOM, HeaterGeometry, Source, ThreeOmegaMethod
