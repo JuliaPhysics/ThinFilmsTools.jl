@@ -113,7 +113,6 @@ end # buildArrays(..)
     Computes the reflection and transmission coefficients, and their spectra. The electromagnetic field is not calculated.
 """
 function transferMatrix(nseq::Array{T1,N1}, d::Array{T2,N2}, λ::Array{T3,N3}, θ::Array{T4,N4}, nLen::T5, λLen::T5, θLen::T5) where {T1<:ComplexF64, N1, T2<:Float64, N2, T3<:Number, N3, T4<:Number, N4, T5<:Int64}
-    hLen::Int64 = length(d) - 2
     τs = Array{ComplexF64,2}(undef, (λLen, θLen))
     τp = similar(τs); ρs = similar(τs); ρp = similar(τs)
     δ = Array{ComplexF64,3}(undef, (λLen, θLen, nLen))
