@@ -21,5 +21,5 @@ The package also contains a number of indices of refraction for different materi
 
 For the simulation of index of refraction mixtures, there is also available a database [MixingRules.jl](https://github.com/lnacquaroli/ThinFilmsTools.jl/wiki/MixingRules.jl) that contains several mixing rules for this.
 
-A bunch of functions and recipes are included ([PlottingTools.jl](https://github.com/lnacquaroli/ThinFilmsTools.jl/wiki/PlottingTools.jl)) for convenience to plot results from TMMO1DIsotropic.jl, FitReflectance.jl FitTransmittance.jl and ThreeOmegaMethod.jl.
+A bunch of functions and recipes are included ([PlottingTools.jl](https://github.com/lnacquaroli/ThinFilmsTools.jl/wiki/PlottingTools.jl)) for convenience to plot results from TMMO1DIsotropic.jl, FitReflectance.jl, FitTransmittance.jl and ThreeOmegaMethod.jl.
 
