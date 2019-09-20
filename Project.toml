@@ -1,6 +1,6 @@
 name = "ThinFilmsTools"
 uuid = "b43ce1b6-c705-4b10-9901-186e3cf9680e"
-authors = ["leniac "]
+authors = ["lnacquaroli"]
 version = "0.5.0"
 
 [deps]
