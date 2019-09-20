@@ -1,7 +1,12 @@
+# Gold heater on a substrate
+# SI units throughout the script
+
+# Top layer down to substrate information arrays
+
 # Load modules
 using ThinFilmsTools
 using Plots
-pyplot(reuse=false, grid=true, size=(640,480))
+pyplot(reuse=false, grid=false, size=(640,480))
 closeall()
 
 ### Input data
