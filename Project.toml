@@ -1,10 +1,11 @@
 name = "ThinFilmsTools"
-uuid = "b43ce1b6-c705-4b10-9901-186e3cf9680e"
+uuid = "07183cb9-b9cd-4c2f-9447-424b104dd90f"
 authors = ["lnacquaroli"]
-version = "0.5.2"
+version = "0.5.3"
 
 [deps]
 DelimitedFiles = "8bb1440f-4735-579b-a4ab-409b98df4dab"
+HDF5 = "f67ccb44-e63f-5c2f-98bd-6dc0ccc4ba2f"
 Interpolations = "a98d9a8b-a2ab-59e6-89dd-64a1c18fca59"
 LaTeXStrings = "b964fa9f-0449-5b57-a5c2-d3ea65f4040f"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
