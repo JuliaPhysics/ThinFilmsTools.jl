@@ -1,7 +1,7 @@
 name = "ThinFilmsTools"
 uuid = "b43ce1b6-c705-4b10-9901-186e3cf9680e"
 authors = ["lnacquaroli"]
-version = "0.5.0"
+version = "0.5.2"
 
 [deps]
 DelimitedFiles = "8bb1440f-4735-579b-a4ab-409b98df4dab"
