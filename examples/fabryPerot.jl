@@ -10,28 +10,28 @@ using ThinFilmsTools
 λi = 400 # intial wavelength [nm]
 λf = 1000 # final wavelength [nm]
 λ = LinRange(λi, λf, λf-λi+1) # wavelength range [nm]
-λ0 = 730. # reference wavelength
 θ = [0.] # angle of incidence [degrees]
-beam = PlaneWave(λ, λ0, θ)
+beam = PlaneWave(λ, θ)
 
 # Define layers
-l0 = LayerTMMO1DIso(type=:GT, n=RIdb.air(beam.λ), d=0.)
-l1 = LayerTMMO1DIso(type=:OT, n=DF.looyengaspheres(RIdb.air(beam.λ),RIdb.silicon(beam.λ),0.86), d=1/4.)
-l2 = LayerTMMO1DIso(type=:OT, n=DF.looyengaspheres(RIdb.air(beam.λ),RIdb.silicon(beam.λ),0.54), d=1/4.)
-l3 = LayerTMMO1DIso(type=:GT, n=RIdb.glass(beam.λ), d=0.)
+l0 = LayerTMMO1DIso(RIdb.air(beam.λ))
+l1 = LayerTMMO1DIso(RI.looyengaspheresbin(0.86,RIdb.air(beam.λ),RIdb.silicon(beam.λ)); type=:OT, d=1/4.)
+l2 = LayerTMMO1DIso(RI.looyengaspheresbin(0.54,RIdb.air(beam.λ),RIdb.silicon(beam.λ)); type=:OT, d=1/4.)
+l3 = LayerTMMO1DIso(RIdb.glass(beam.λ./1e3))
 layers = vec([l0 l1 l2 l1 l2 l1 l2 l1 l2 repeat([l1], 1, 10) l2 l1 l2 l1 l2 l1 l2 l1 l3])
 
-# call main script
-sol = TMMO1DIsotropic(beam, layers; emfflag=true, h=10)
+# Reference wavelength
+λ0 = 730.
 
-### Optional examples to plot results
+# call main script
+sol = TMMO1DIsotropic(beam, layers; λ0=λ0, emfflag=true, h=10)
 
 # plot the R, T and A spectra
-plot(TMMOplotSpectra1D(), sol.Beam.λ, [sol.Spectra.Rp, sol.Spectra.Tp, 1.0.-(sol.Spectra.Rp.+sol.Spectra.Tp)], label=["Reflectance" "Transmittance" "Absorbance"], line=([:solid :dash :dashdot]), xlims=(sol.Beam.λ[1], sol.Beam.λ[end]), yaxis=("Transmittance", (0.,1.0)));
+plot(TMMOPlotSpectra1D(), sol.Beam.λ, [sol.Spectra.Rp, sol.Spectra.Tp, 1.0.-(sol.Spectra.Rp.+sol.Spectra.Tp)], label=["Reflectance" "Transmittance" "Absorbance"], line=([:solid :dash :dashdot]), xlims=(sol.Beam.λ[1], sol.Beam.λ[end]), yaxis=("Transmittance", (0.,1.0)));
 gui()
 
-plot(TMMOplotEMF2D(), sol.Beam.λ, sol.Misc.ℓ, sol.Field.emfp[:,1,:])
+plot(TMMOPlotEMF2D(), sol.Beam.λ, sol.Misc.ℓ, sol.Field.emfp[:,1,:])
 gui()
 
 # plot the refractive index profile
-TMMOplotNprofile(sol)
+TMMOPlotNprofile(sol)

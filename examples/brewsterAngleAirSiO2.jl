@@ -12,22 +12,19 @@ using ThinFilmsTools
 θi = 0.01
 θf = 90
 θ = LinRange(θi, θf, 901)
-beam = PlaneWave(λ, λ0, θ)
+beam = PlaneWave(λ, θ)
 
 # Define layers: notice that lambda is outside the range
-layers = [ LayerTMMO1DIso(type=:GT, n=RIdb.dummy(beam.λ, 1., 0.), d=0., nλ0=RIdb.dummy(beam.λ0, 1., 0.)),
-           LayerTMMO1DIso(type=:GT, n=RIdb.dummy(beam.λ, 1.5, 0.), d=10., nλ0=RIdb.dummy(beam.λ0, 1.5, 0.)),
-           LayerTMMO1DIso(type=:GT, n=RIdb.dummy(beam.λ, 1.5, 0.), d=0., nλ0=RIdb.dummy(beam.λ0, 1.5, 0.)) ]
+layers = [ LayerTMMO1DIso(RIdb.dummy(beam.λ, 1., 0.)),
+           LayerTMMO1DIso(RIdb.dummy(beam.λ, 1.5, 0.), d=10.),
+           LayerTMMO1DIso(RIdb.dummy(beam.λ, 1.5, 0.)) ]
 
 # call main script
 sol = TMMO1DIsotropic(beam, layers)
 
-### Optional examples to plot results
-
 # plot the R, T and A spectra
-p1 = plot(TMMOplotSpectraAngle1D(), sol.Beam.θ, [sol.Spectra.Rp[1,:], sol.Spectra.Rs[1,:], sol.Spectra.Rs[1,:]./sol.Spectra.Rp[1,:]./1000.], label=["p-wave" "s-wave" "(Rs/Rp)/1000"], line=([:solid :dash :dashdot]), xlims=(sol.Beam.θ[1], sol.Beam.θ[end]), yaxis=("Reflectance", (0.,0.2)));
-plot(p1)
+plot(TMMOPlotSpectraAngle1D(), sol.Beam.θ, [sol.Spectra.Rp[1,:], sol.Spectra.Rs[1,:], sol.Spectra.Rs[1,:]./sol.Spectra.Rp[1,:]./1000.], label=["p-wave" "s-wave" "(Rs/Rp)/1000"], line=([:solid :dash :dashdot]), xlims=(sol.Beam.θ[1], sol.Beam.θ[end]), yaxis=("Reflectance", (0.,0.2)))
 gui()
 
 # plot the refractive index profile
-TMMOplotNprofile(sol)
+TMMOPlotNprofile(sol)
