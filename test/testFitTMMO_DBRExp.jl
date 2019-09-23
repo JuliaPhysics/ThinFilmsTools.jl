@@ -13,7 +13,7 @@ layers = [ LayerTMMO1DIso(incident),
            ModelFit(:looyengaspheresbin; N=(incident, emergent)),
            LayerTMMO1DIso(emergent) ]
 
-Rexp = Utils.getBraggSpectrum(beam.λ)
+Rexp = SpectraDB.BraggSpectrum(beam.λ)
 
 options = Optim.Options(g_abstol=1e-8, g_reltol=1e-8, iterations=10^5, show_trace=true, store_trace=true);
 

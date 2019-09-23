@@ -14,8 +14,8 @@ layers = [ LayerTMMO1DIso(incident),
            ModelFit(:looyengaspheresbin; N=(incident, emergent)),
            LayerTMMO1DIso(emergent) ]
 
-Rexp = Utils.getSL2ExpSpectrum(beam.λ)
-Rref = Utils.getSL2RefSpectrum(beam.λ)
+Rexp = SpectraDB.SL2ExpSpectrum(beam.λ)
+Rref = SpectraDB.SL2RefSpectrum(beam.λ)
 Rthe = TheoreticalSpectrum(ftype, beam, incident, emergent)
 Rexp_norm = NormalizeReflectance(beam.λ, [beam.λ Rexp], [beam.λ Rthe], [beam.λ Rref])
 
