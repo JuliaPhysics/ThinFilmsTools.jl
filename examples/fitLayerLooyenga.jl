@@ -24,9 +24,9 @@ layers = [ LayerTMMO1DIso(incident),
            LayerTMMO1DIso(emergent) ]
 
 # Raw measured spectrum stored in Utils
-Rexp = Utils.getSL1ExpSpectrum(beam.λ)
+Rexp = SpectraDB.SL1ExpSpectrum(beam.λ)
 # Reference measured spectrum stored in Utils
-Rref = Utils.getSL1RefSpectrum(beam.λ)
+Rref = SpectraDB.SL1RefSpectrum(beam.λ)
 # Theoretical reflectance spectrum for the reference
 Rthe = TheoreticalSpectrum(ftype, beam, incident, emergent)
 # Calculate the absolute normalised measured spectra to fit 

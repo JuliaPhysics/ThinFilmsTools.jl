@@ -25,7 +25,7 @@ layers = [ LayerTMMO1DIso(n1),
            LayerTMMO1DIso(n3) ]
 
 # Absolute reflectance spectrum to fit stored in Utils
-Rexp = Utils.getFPSpectrum(beam.λ)
+Rexp = SpectraDB.FPSpectrum(beam.λ)
 plot(TMMOPlotSpectra1D(), beam.λ, Rexp)
 gui()
 

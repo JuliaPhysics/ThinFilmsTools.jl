@@ -23,7 +23,7 @@ layers = [ LayerTMMO1DIso(incident),
            LayerTMMO1DIso(emergent) ]
 
 # Absolute reflectance spectrum to fit stored in Utils
-Rexp = Utils.getBraggSpectrum(beam.λ)
+Rexp = SpectraDB.BraggSpectrum(beam.λ)
 plot(TMMOPlotSpectra1D(), beam.λ, Rexp)
 gui()
 

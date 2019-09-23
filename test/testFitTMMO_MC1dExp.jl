@@ -14,7 +14,7 @@ layers = [ LayerTMMO1DIso(n1),
            ModelFit(:looyengaspheresbin; N=(n1, n2)),
            LayerTMMO1DIso(n3) ]
 
-Rexp = Utils.getFPSpectrum(beam.λ)
+Rexp = SpectraDB.FPSpectrum(beam.λ)
 
 options = Optim.Options(g_abstol=1e-8, g_reltol=1e-8, iterations=10^6, show_trace=true, store_trace=true);
 

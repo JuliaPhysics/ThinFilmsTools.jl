@@ -13,8 +13,6 @@ struct FitReflectance <: FitProcedure end
 Reflectance() = FitReflectance()
 struct FitTransmittance <: FitProcedure end
 Transmittance() = FitTransmittance()
-struct FitEllipsometry <: FitProcedure end
-Ellipsometry() = FitEllipsometry()
 struct FitGeneric <: FitProcedure end
 Generic() = FitGeneric()
 struct FitDBR <: FitProcedure end
@@ -106,11 +104,12 @@ function SpaceSolution2D(specType::T0, b::T1, beam::T2, Xexp::Array{T3}, layers:
     d = similar(_d)
     solSpace = zeros(Float64, b.Nod, b.Np)
     beam_, _ = getBeamParameters(beam)
+    Xexp = vec(Xexp)
     @inbounds for j in eachindex(_p), i in eachindex(_d)
         neff = refractiveIndexMR(layers[2], [_p[j]], beam_.λ)
         d[i] = _d[i] / mean(real.(neff))
         X = computeTransferMatrix(specType, vec([0. d[i] 0.]), [layers[1].n neff layers[3].n], beam_)
-        solSpace[i, j] = meanSquaredError(X, Xexp)
+        solSpace[i, j] = meanSquaredError(vec(X), Xexp)
     end
     smin = findmin(solSpace)
     X = computeTransferMatrix(specType, vec([0. d[smin[2][1]] 0.]), [layers[1].n refractiveIndexMR(layers[2], [_p[smin[2][2]]], beam_.λ) layers[3].n], beam_)
@@ -123,12 +122,12 @@ end
 
         sol = FitTMMO1DIsotropic(specType, xinit, beam, Rexp, layers; options=Optim.Options(), alg=NelderMead(), lb=0.5.*xinit, ub=1.5.*xinit, arrange=Generic(), L=[1], Ld=[1], σ=ones.(length(beam.λ), 2))
 
-            specType: type of spectrum to fit, Reflectance(), Transmittance() or Ellipsometry()
+            specType: type of spectrum to fit, Reflectance() or Transmittance()
             xinit: array with the initial parameters for optimization. For instance, to optimise two layers in the system you need to wrap the seeds for the algorithm as follow: xinit = [seed1, seed2], even if it is only one single layer to fit, xinit = [seed1]. The first parameter of each seed must be always the thickness, the rest are the parameters for the selected model. The number of seeds must match that of the number of ModelFit layers.
             beam: structure from PlaneWave
             Xexp: absolute experimental spectrum
             layers: columnwise array of LayerTMMO1dIso and ModelFit with information about the layers.
-                σ: array with the standard deviation of the spectrum for each wavelength, by default is ones.(length(beam.λ), 2). Notice that for Ellipsometry() you will need one column for each spectrum
+                σ: array with the standard deviation of the spectrum for each wavelength, by default is ones.(length(beam.λ), 1).
                 options: optional Optim.Options structure
                 alg: optional algorithm method selected, by default takes SAMIN(). You can pass the options inside as well, for instance, SAMIN(rt=0.1). Right now, NelderMead() and SAMIN() are supported from Optim.jl. If you select SAMIN() you need to input lb and ub, otherwise will be set as 0.5 and 1.5 times the xinit argument, respectively.
                 lb: lower bounds for the optimisation variables, by default lb=0.5.*xinit
@@ -151,7 +150,7 @@ end
                 fitOptions: NamedTuple with information of the fitting procedure
 
 """
-function FitTMMO1DIsotropic(specType::T0, xinit::Array{Array{T5,1},1}, beam::T1, Xexp::Array{T2}, layers::Array; σ::Array{T2}=ones.(length(beam.λ), 2), options=Optim.Options(), alg=SAMIN(), lb::Array{Array{T6,1},1}=0.5.*xinit, ub::Array{Array{T6,1},1}=1.5.*xinit, arrange::T3=Generic(), L::Array{T4}=[1], Ld::Array{T4}=[1]) where{T0<:FitProcedure, T1<:PlaneWave, T2<:Float64, T3<:FitProcedure, T4<:Int64, T5<:Real, T6<:Real}
+function FitTMMO1DIsotropic(specType::T0, xinit::Array{Array{T5,1},1}, beam::T1, Xexp::Array{T2}, layers::Array; σ::Array{T2}=ones.(length(beam.λ)), options=Optim.Options(), alg=SAMIN(), lb::Array{Array{T6,1},1}=0.5.*xinit, ub::Array{Array{T6,1},1}=1.5.*xinit, arrange::T3=Generic(), L::Array{T4}=[1], Ld::Array{T4}=[1]) where{T0<:FitProcedure, T1<:PlaneWave, T2<:Float64, T3<:FitProcedure, T4<:Int64, T5<:Real, T6<:Real}
     if isa(arrange, FitDBR) || isa(arrange, FitDBRAlpha)
         length(vec(layers)) == 4 || throw("Bragg stack option accepts only 4 layers: incident medium, first lactive layer, second active layer and emergent medium.")
     end
@@ -164,7 +163,7 @@ function FitTMMO1DIsotropic(specType::T0, xinit::Array{Array{T5,1},1}, beam::T1,
     N = Array{ComplexF64,2}(undef, length(beam_.λ), length(vec(layers)))
     d = Array{Float64,1}(undef, length(vec(layers)))
     # Run the solver depending on the algorithm
-    solution = runFittingProcedure(alg, arrange, specType, float.(xinit), beam_, Xexp, σ, layers, options, float.(lb), float.(ub), d, N; L=Integer.(L[:]), Ld=Integer.(Ld[:]))
+    solution = runFittingProcedure(alg, arrange, specType, float.(xinit), beam_, vec(Xexp), σ, layers, options, float.(lb), float.(ub), d, N; L=Integer.(vec(L)), Ld=Integer.(vec(Ld)))
     return FitTMMO1DIsotropic(solution.X, Xexp, solution.xfinal, solution.solmin, beam_, layers, (fitType=specType, arrange=arrange, optimAlgorithm=Symbol(summary(solution.sol)), optimSolverInfo=solution.sol))
 end
 
@@ -198,7 +197,7 @@ end
 function runFittingProcedure end
 
 # SAMIN, Generic
-function runFittingProcedure(alg::T0, arrange::T1, specType::T2, xinit::Array{Array{T4,1},1}, beam::T3, Xexp::Array{T4}, σ::Array{T4}, layers::Array, options, lb::Array{Array{T4,1},1}, ub::Array{Array{T4,1},1}, d::Array{T4,1}, N::Array{T5,2}; kwargs...) where {T0<:SAMIN, T1<:FitGeneric, T2<:FitProcedure, T3<:PlaneWave, T4<:Float64, T5<:ComplexF64}
+function runFittingProcedure(alg::T0, arrange::T1, specType::T2, xinit::Array{Array{T4,1},1}, beam::T3, Xexp::Array{T4,1}, σ::Array{T4,1}, layers::Array, options, lb::Array{Array{T4,1},1}, ub::Array{Array{T4,1},1}, d::Array{T4,1}, N::Array{T5,2}; kwargs...) where {T0<:SAMIN, T1<:FitGeneric, T2<:FitProcedure, T3<:PlaneWave, T4<:Float64, T5<:ComplexF64}
     checkInput(xinit, layers)
     sol = optimize(x->fitMSE(x, arrange, specType, beam, Xexp, σ, layers, xinit, d, N), Utils.flattenArrays(lb), Utils.flattenArrays(ub), Utils.flattenArrays(xinit), alg, options)
     xfinal = Utils.arrayArrays(sol.minimizer, xinit)
@@ -208,7 +207,7 @@ function runFittingProcedure(alg::T0, arrange::T1, specType::T2, xinit::Array{Ar
 end
 
 # SAMIN, DBR
-function runFittingProcedure(alg::T0, arrange::T1, specType::T2, xinit::Array{Array{T4,1},1}, beam::T3, Xexp::Array{T4}, σ::Array{T4}, layers::Array, options, lb::Array{Array{T4,1},1}, ub::Array{Array{T4,1},1}, d::Array{T4,1}, N::Array{T5,2}; L::Array{T6,1}=[1], kwargs...) where {T0<:SAMIN, T1<:FitDBR, T2<:FitProcedure, T3<:PlaneWave, T4<:Float64, T5<:ComplexF64, T6<:Int64}
+function runFittingProcedure(alg::T0, arrange::T1, specType::T2, xinit::Array{Array{T4,1},1}, beam::T3, Xexp::Array{T4,1}, σ::Array{T4,1}, layers::Array, options, lb::Array{Array{T4,1},1}, ub::Array{Array{T4,1},1}, d::Array{T4,1}, N::Array{T5,2}; L::Array{T6,1}=[1], kwargs...) where {T0<:SAMIN, T1<:FitDBR, T2<:FitProcedure, T3<:PlaneWave, T4<:Float64, T5<:ComplexF64, T6<:Int64}
     checkInput(xinit, layers)
     sol = optimize(x->fitMSE(x, arrange, specType, beam, Xexp, σ, layers, xinit, d, N, L[1]), Utils.flattenArrays(lb), Utils.flattenArrays(ub), Utils.flattenArrays(xinit), alg, options)
     xfinal = Utils.arrayArrays(sol.minimizer, xinit)
@@ -219,7 +218,7 @@ function runFittingProcedure(alg::T0, arrange::T1, specType::T2, xinit::Array{Ar
 end
 
 # SAMIN, DBRAlpha
-function runFittingProcedure(alg::T0, arrange::T1, specType::T2, xinit::Array{Array{T4,1},1}, beam::T3, Xexp::Array{T4}, σ::Array{T4}, layers::Array, options, lb::Array{Array{T4,1},1}, ub::Array{Array{T4,1},1}, d::Array{T4,1}, N::Array{T5,2}; L::Array{T6,1}=[1], kwargs...) where {T0<:SAMIN, T1<:FitDBRAlpha, T2<:FitProcedure, T3<:PlaneWave, T4<:Float64, T5<:ComplexF64, T6<:Int64}
+function runFittingProcedure(alg::T0, arrange::T1, specType::T2, xinit::Array{Array{T4,1},1}, beam::T3, Xexp::Array{T4,1}, σ::Array{T4,1}, layers::Array, options, lb::Array{Array{T4,1},1}, ub::Array{Array{T4,1},1}, d::Array{T4,1}, N::Array{T5,2}; L::Array{T6,1}=[1], kwargs...) where {T0<:SAMIN, T1<:FitDBRAlpha, T2<:FitProcedure, T3<:PlaneWave, T4<:Float64, T5<:ComplexF64, T6<:Int64}
     checkInputAlpha(xinit, layers)
     sol = optimize(x->fitMSE(x, arrange, specType, beam, Xexp, σ, layers, xinit, d, N, L[1]), Utils.flattenArrays(lb), Utils.flattenArrays(ub), Utils.flattenArrays(xinit), alg, options)
     xfinal = Utils.arrayArrays(sol.minimizer[1:end-1], xinit[1:end-1])
@@ -232,7 +231,7 @@ function runFittingProcedure(alg::T0, arrange::T1, specType::T2, xinit::Array{Ar
 end
 
 # SAMIN, MC1d
-function runFittingProcedure(alg::T0, arrange::T1, specType::T2, xinit::Array{Array{T4,1},1}, beam::T3, Xexp::Array{T4}, σ::Array{T4}, layers::Array, options, lb::Array{Array{T4,1},1}, ub::Array{Array{T4,1},1}, d::Array{T4,1}, N::Array{T5,2}; L::Array{T6,1}=[1], Ld::Array{T6,1}=[1]) where {T0<:SAMIN, T1<:FitMC1d, T2<:FitProcedure, T3<:PlaneWave, T4<:Float64, T5<:ComplexF64, T6<:Int64}
+function runFittingProcedure(alg::T0, arrange::T1, specType::T2, xinit::Array{Array{T4,1},1}, beam::T3, Xexp::Array{T4,1}, σ::Array{T4,1}, layers::Array, options, lb::Array{Array{T4,1},1}, ub::Array{Array{T4,1},1}, d::Array{T4,1}, N::Array{T5,2}; L::Array{T6,1}=[1], Ld::Array{T6,1}=[1]) where {T0<:SAMIN, T1<:FitMC1d, T2<:FitProcedure, T3<:PlaneWave, T4<:Float64, T5<:ComplexF64, T6<:Int64}
     checkInput(xinit, layers)
     sol = optimize(x->fitMSE(x, arrange, specType, beam, Xexp, σ, layers, xinit, d, N, L, Ld), Utils.flattenArrays(lb), Utils.flattenArrays(ub), Utils.flattenArrays(xinit), alg, options)
     xfinal = Utils.arrayArrays(sol.minimizer, xinit)
@@ -243,7 +242,7 @@ function runFittingProcedure(alg::T0, arrange::T1, specType::T2, xinit::Array{Ar
 end
 
 # SAMIN, MC1dAlpha
-function runFittingProcedure(alg::T0, arrange::T1, specType::T2, xinit::Array{Array{T4,1},1}, beam::T3, Xexp::Array{T4}, σ::Array{T4}, layers::Array, options, lb::Array{Array{T4,1},1}, ub::Array{Array{T4,1},1}, d::Array{T4,1}, N::Array{T5,2}; L::Array{T6,1}=[1], Ld::Array{T6,1}=[1]) where {T0<:SAMIN, T1<:FitMC1dAlpha, T2<:FitProcedure, T3<:PlaneWave, T4<:Float64, T5<:ComplexF64, T6<:Int64}
+function runFittingProcedure(alg::T0, arrange::T1, specType::T2, xinit::Array{Array{T4,1},1}, beam::T3, Xexp::Array{T4,1}, σ::Array{T4,1}, layers::Array, options, lb::Array{Array{T4,1},1}, ub::Array{Array{T4,1},1}, d::Array{T4,1}, N::Array{T5,2}; L::Array{T6,1}=[1], Ld::Array{T6,1}=[1]) where {T0<:SAMIN, T1<:FitMC1dAlpha, T2<:FitProcedure, T3<:PlaneWave, T4<:Float64, T5<:ComplexF64, T6<:Int64}
     checkInputAlpha(xinit, layers)
     sol = optimize(x->fitMSE(x, arrange, specType, beam, Xexp, σ, layers, xinit, d, N, L, Ld), Utils.flattenArrays(lb), Utils.flattenArrays(ub), Utils.flattenArrays(xinit), alg, options)
     xfinal = Utils.arrayArrays(sol.minimizer[1:end-1], xinit[1:end-1])
@@ -256,7 +255,7 @@ function runFittingProcedure(alg::T0, arrange::T1, specType::T2, xinit::Array{Ar
 end
 
 # NelderMead, Generic
-function runFittingProcedure(alg::T0, arrange::T1, specType::T2, xinit::Array{Array{T4,1},1}, beam::T3, Xexp::Array{T4}, σ::Array{T4}, layers::Array, options, lb::Array{Array{T4,1},1}, ub::Array{Array{T4,1},1}, d::Array{T4,1}, N::Array{T5,2}; kwargs...) where {T0<:NelderMead, T1<:FitGeneric, T2<:FitProcedure, T3<:PlaneWave, T4<:Float64, T5<:ComplexF64}
+function runFittingProcedure(alg::T0, arrange::T1, specType::T2, xinit::Array{Array{T4,1},1}, beam::T3, Xexp::Array{T4,1}, σ::Array{T4,1}, layers::Array, options, lb::Array{Array{T4,1},1}, ub::Array{Array{T4,1},1}, d::Array{T4,1}, N::Array{T5,2}; kwargs...) where {T0<:NelderMead, T1<:FitGeneric, T2<:FitProcedure, T3<:PlaneWave, T4<:Float64, T5<:ComplexF64}
     checkInput(xinit, layers)
     sol = optimize(x->fitMSE(x, arrange, specType, beam, Xexp, σ, layers, xinit, d, N), Utils.flattenArrays(xinit), alg, options)
     xfinal = Utils.arrayArrays(sol.minimizer, xinit)
@@ -266,7 +265,7 @@ function runFittingProcedure(alg::T0, arrange::T1, specType::T2, xinit::Array{Ar
 end
 
 # NelderMead, DBR
-function runFittingProcedure(alg::T0, arrange::T1, specType::T2, xinit::Array{Array{T4,1},1}, beam::T3, Xexp::Array{T4}, σ::Array{T4}, layers::Array, options, lb::Array{Array{T4,1},1}, ub::Array{Array{T4,1},1}, d::Array{T4,1}, N::Array{T5,2}; L::Array{T6,1}=[1], kwargs...) where {T0<:NelderMead, T1<:FitDBR, T2<:FitProcedure, T3<:PlaneWave, T4<:Float64, T5<:ComplexF64, T6<:Int64}
+function runFittingProcedure(alg::T0, arrange::T1, specType::T2, xinit::Array{Array{T4,1},1}, beam::T3, Xexp::Array{T4,1}, σ::Array{T4,1}, layers::Array, options, lb::Array{Array{T4,1},1}, ub::Array{Array{T4,1},1}, d::Array{T4,1}, N::Array{T5,2}; L::Array{T6,1}=[1], kwargs...) where {T0<:NelderMead, T1<:FitDBR, T2<:FitProcedure, T3<:PlaneWave, T4<:Float64, T5<:ComplexF64, T6<:Int64}
     checkInput(xinit, layers)
     sol = optimize(x->fitMSE(x, arrange, specType, beam, Xexp, σ, layers, xinit, d, N, L[1]), Utils.flattenArrays(xinit), alg, options)
     xfinal = Utils.arrayArrays(sol.minimizer, xinit)
@@ -277,7 +276,7 @@ function runFittingProcedure(alg::T0, arrange::T1, specType::T2, xinit::Array{Ar
 end
 
 # NelderMead, DBRAlpha
-function runFittingProcedure(alg::T0, arrange::T1, specType::T2, xinit::Array{Array{T4,1},1}, beam::T3, Xexp::Array{T4}, σ::Array{T4}, layers::Array, options, lb::Array{Array{T4,1},1}, ub::Array{Array{T4,1},1}, d::Array{T4,1}, N::Array{T5,2}; L::Array{T6,1}=[1, L::Array{T6,1}, Ld::Array{T5,1}, N::Array{T6,2}, d::Array{T4,1}], kwargs...) where {T0<:NelderMead, T1<:FitDBRAlpha, T2<:FitProcedure, T3<:PlaneWave, T4<:Float64, T5<:ComplexF64, T6<:Int64}
+function runFittingProcedure(alg::T0, arrange::T1, specType::T2, xinit::Array{Array{T4,1},1}, beam::T3, Xexp::Array{T4,1}, σ::Array{T4,1}, layers::Array, options, lb::Array{Array{T4,1},1}, ub::Array{Array{T4,1},1}, d::Array{T4,1}, N::Array{T5,2}; L::Array{T6,1}=[1, L::Array{T6,1}, Ld::Array{T5,1}, N::Array{T6,2}, d::Array{T4,1}], kwargs...) where {T0<:NelderMead, T1<:FitDBRAlpha, T2<:FitProcedure, T3<:PlaneWave, T4<:Float64, T5<:ComplexF64, T6<:Int64}
     checkInputAlpha(xinit, layers)
     sol = optimize(x->fitMSE(x, arrange, specType, beam, Xexp, σ, layers, xinit, d, N, L[1]), Utils.flattenArrays(xinit), alg, options)
     xfinal = Utils.arrayArrays(sol.minimizer[1:end-1], xinit[1:end-1])
@@ -290,7 +289,7 @@ function runFittingProcedure(alg::T0, arrange::T1, specType::T2, xinit::Array{Ar
 end
 
 # NelderMead, MC1d
-function runFittingProcedure(alg::T0, arrange::T1, specType::T2, xinit::Array{Array{T4,1},1}, beam::T3, Xexp::Array{T4}, σ::Array{T4}, layers::Array, options, lb::Array{Array{T4,1},1}, ub::Array{Array{T4,1},1}, d::Array{T4,1}, N::Array{T5,2}; L::Array{T6,1}, Ld::Array{T6,1}) where {T0<:NelderMead, T1<:FitMC1d, T2<:FitProcedure, T3<:PlaneWave, T4<:Float64, T5<:ComplexF64, T6<:Int64}
+function runFittingProcedure(alg::T0, arrange::T1, specType::T2, xinit::Array{Array{T4,1},1}, beam::T3, Xexp::Array{T4,1}, σ::Array{T4,1}, layers::Array, options, lb::Array{Array{T4,1},1}, ub::Array{Array{T4,1},1}, d::Array{T4,1}, N::Array{T5,2}; L::Array{T6,1}, Ld::Array{T6,1}) where {T0<:NelderMead, T1<:FitMC1d, T2<:FitProcedure, T3<:PlaneWave, T4<:Float64, T5<:ComplexF64, T6<:Int64}
     checkInput(xinit, layers)
     sol = optimize(x->fitMSE(x, arrange, specType, beam, Xexp, σ, layers, xinit, d, N, L, Ld), Utils.flattenArrays(xinit), alg, options)
     xfinal = Utils.arrayArrays(sol.minimizer, xinit)
@@ -301,7 +300,7 @@ function runFittingProcedure(alg::T0, arrange::T1, specType::T2, xinit::Array{Ar
 end
 
 # NelderMead, MC1dAlpha
-function runFittingProcedure(alg::T0, arrange::T1, specType::T2, xinit::Array{Array{T4,1},1}, beam::T3, Xexp::Array{T4}, σ::Array{T4}, layers::Array, options, lb::Array{Array{T4,1},1}, ub::Array{Array{T4,1},1}, d::Array{T4,1}, N::Array{T5,2}; L::Array{T6,1}, Ld::Array{T6,1}) where {T0<:NelderMead, T1<:FitMC1dAlpha, T2<:FitProcedure, T3<:PlaneWave, T4<:Float64, T5<:ComplexF64, T6<:Int64}
+function runFittingProcedure(alg::T0, arrange::T1, specType::T2, xinit::Array{Array{T4,1},1}, beam::T3, Xexp::Array{T4,1}, σ::Array{T4,1}, layers::Array, options, lb::Array{Array{T4,1},1}, ub::Array{Array{T4,1},1}, d::Array{T4,1}, N::Array{T5,2}; L::Array{T6,1}, Ld::Array{T6,1}) where {T0<:NelderMead, T1<:FitMC1dAlpha, T2<:FitProcedure, T3<:PlaneWave, T4<:Float64, T5<:ComplexF64, T6<:Int64}
     checkInputAlpha(xinit, layers)
     sol = optimize(x->fitMSE(x, arrange, specType, beam, Xexp, σ, layers, xinit, d, N, L, Ld), Utils.flattenArrays(xinit), alg, options)
     xfinal = Utils.arrayArrays(sol.minimizer[1:end-1], xinit[1:end-1])
@@ -336,44 +335,44 @@ end
 function fitMSE end
 
 # Generic
-function fitMSE(x::Array{T0,1}, arrange::T1, specType::T2, beam::T3, Xexp::Array{T0}, σ::Array{T0}, layers::Array, xinit::Array{Array{T0,1},1}, d::Array{T0,1}, N::Array{T4,2}) where {T0<:Float64, T1<:FitGeneric, T2<:FitProcedure, T3<:PlaneWave, T4<:ComplexF64}
+function fitMSE(x::Array{T0,1}, arrange::T1, specType::T2, beam::T3, Xexp::Array{T0,1}, σ::Array{T0,1}, layers::Array, xinit::Array{Array{T0,1},1}, d::Array{T0,1}, N::Array{T4,2}) where {T0<:Float64, T1<:FitGeneric, T2<:FitProcedure, T3<:PlaneWave, T4<:ComplexF64}
     multilayerParameters!(N, d, Utils.arrayArrays(x, xinit), beam, layers)
     X = computeTransferMatrix(specType, d, N, beam)
-    return meanSquaredError(X, Xexp, σ)
+    return meanSquaredError(vec(X), Xexp; σ=σ)
 end
 
 # DBR
-function fitMSE(x::Array{T0,1}, arrange::T1, specType::T2, beam::T3, Xexp::Array{T0}, σ::Array{T0}, layers::Array, xinit::Array{Array{T0,1},1}, d::Array{T0,1}, N::Array{T4,2}, L::T5=1) where {T0<:Float64, T1<:FitDBR, T2<:FitProcedure, T3<:PlaneWave, T4<:ComplexF64, T5<:Int64}
+function fitMSE(x::Array{T0,1}, arrange::T1, specType::T2, beam::T3, Xexp::Array{T0,1}, σ::Array{T0,1}, layers::Array, xinit::Array{Array{T0,1},1}, d::Array{T0,1}, N::Array{T4,2}, L::T5=1) where {T0<:Float64, T1<:FitDBR, T2<:FitProcedure, T3<:PlaneWave, T4<:ComplexF64, T5<:Int64}
     multilayerParameters!(N, d, Utils.arrayArrays(x, xinit), beam, layers)
     N, d = buildArraysBragg(N, d, L)
     X = computeTransferMatrix(specType, d, N, beam)
-    return meanSquaredError(X, Xexp, σ)
+    return meanSquaredError(vec(X), Xexp; σ=σ)
 end
 
 # DBRAlpha
-function fitMSE(x::Array{T0,1}, arrange::T1, specType::T2, beam::T3, Xexp::Array{T0}, σ::Array{T0}, layers::Array, xinit::Array{Array{T0,1},1}, d::Array{T0,1}, N::Array{T4,2}, L::T5=1) where {T0<:Float64, T1<:FitDBRAlpha, T2<:FitProcedure, T3<:PlaneWave, T4<:ComplexF64, T5<:Int64}
+function fitMSE(x::Array{T0,1}, arrange::T1, specType::T2, beam::T3, Xexp::Array{T0,1}, σ::Array{T0,1}, layers::Array, xinit::Array{Array{T0,1},1}, d::Array{T0,1}, N::Array{T4,2}, L::T5=1) where {T0<:Float64, T1<:FitDBRAlpha, T2<:FitProcedure, T3<:PlaneWave, T4<:ComplexF64, T5<:Int64}
     multilayerParameters!(N, d, Utils.arrayArrays(x[1:end-1], xinit[1:end-1]), beam, layers)
     N, d = buildArraysBragg(N, d, L)
     monotonicLin!(d, x[end])
     X = computeTransferMatrix(specType, d, N, beam)
-    return meanSquaredError(X, Xexp, σ)
+    return meanSquaredError(vec(X), Xexp; σ=σ)
 end
 
 # MC1d
-function fitMSE(x::Array{T0,1}, arrange::T1, specType::T2, beam::T3, Xexp::Array{T0}, σ::Array{T0}, layers::Array, xinit::Array{Array{T0,1},1}, d::Array{T0,1}, N::Array{T4,2}, L::Array{T5,1}=[1], Ld::Array{T5,1}=[1]) where {T0<:Float64, T1<:FitMC1d, T2<:FitProcedure, T3<:PlaneWave, T4<:ComplexF64, T5<:Int64}
+function fitMSE(x::Array{T0,1}, arrange::T1, specType::T2, beam::T3, Xexp::Array{T0,1}, σ::Array{T0,1}, layers::Array, xinit::Array{Array{T0,1},1}, d::Array{T0,1}, N::Array{T4,2}, L::Array{T5,1}=[1], Ld::Array{T5,1}=[1]) where {T0<:Float64, T1<:FitMC1d, T2<:FitProcedure, T3<:PlaneWave, T4<:ComplexF64, T5<:Int64}
     multilayerParameters!(N, d, Utils.arrayArrays(x, xinit), beam, layers)
     N, d = buildArraysFP1d(N, d, L, Ld)
     X = computeTransferMatrix(specType, d, N, beam)
-    return meanSquaredError(X, Xexp, σ)
+    return meanSquaredError(vec(X), Xexp; σ=σ)
 end
 
 # MC1dAlpha
-function fitMSE(x::Array{T0,1}, arrange::T1, specType::T2, beam::T3, Xexp::Array{T0}, σ::Array{T0}, layers::Array, xinit::Array{Array{T0,1},1}, d::Array{T0,1}, N::Array{T4,2}, L::Array{T5,1}=[1], Ld::Array{T5,1}=[1]) where {T0<:Float64, T1<:FitMC1dAlpha, T2<:FitProcedure, T3<:PlaneWave, T4<:ComplexF64, T5<:Int64}
+function fitMSE(x::Array{T0,1}, arrange::T1, specType::T2, beam::T3, Xexp::Array{T0,1}, σ::Array{T0,1}, layers::Array, xinit::Array{Array{T0,1},1}, d::Array{T0,1}, N::Array{T4,2}, L::Array{T5,1}=[1], Ld::Array{T5,1}=[1]) where {T0<:Float64, T1<:FitMC1dAlpha, T2<:FitProcedure, T3<:PlaneWave, T4<:ComplexF64, T5<:Int64}
     multilayerParameters!(N, d, Utils.arrayArrays(x[1:end-1], xinit[1:end-1]), beam, layers)
     N, d = buildArraysFP1d(N, d, L, Ld)
     monotonicLin!(d, x[end])
     X = computeTransferMatrix(specType, d, N, beam)
-    return meanSquaredError(X, Xexp, σ)
+    return meanSquaredError(vec(X), Xexp; σ=σ)
 end
 
 """
@@ -382,7 +381,7 @@ end
 
         X = computeTransferMatrix(specType, d, N, beam)
 
-            specType: type of spectrum to compute, Reflectance(), Transmittance() or Ellipsometry()
+            specType: type of spectrum to compute, Reflectance() or Transmittance()
             d: thicknesses of the whole system to be updated
             N: index of refraction of the whole system to be updated
             beam: PlaneWave structure
@@ -401,11 +400,4 @@ end
 function computeTransferMatrix(specType::T0, d::Array{T1,1}, N::Array{T2,2}, beam::T3) where {T0<:FitReflectance, T1<:Float64, T2<:ComplexF64, T3<:PlaneWave}
     spectra = TransferMatrix(N, d, beam)[1]
     return Utils.averagePolarisation(beam.p, spectra.Rp, spectra.Rs)
-end
-
-# Ellipsometry
-function computeTransferMatrix(specType::T0, d::Array{T1,1}, N::Array{T2,2}, beam::T3) where {T0<:FitEllipsometry, T1<:Float64, T2<:ComplexF64, T3<:PlaneWave}
-    spectra = TransferMatrix(N, d, beam)[1]
-    ρ::Array{ComplexF64,1} = vec(spectra.ρp./spectra.ρs)
-    return hcat(atan.(abs.(ρ)), angle.(ρ))
 end
