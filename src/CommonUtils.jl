@@ -1,27 +1,19 @@
 module Utils
 
-using DelimitedFiles
-using Interpolations
-
-export build_interpolation, getSL1ExpSpectrum, getSL1RefSpectrum, getSL2ExpSpectrum, getSL2RefSpectrum, getBraggSpectrum, getFPSpectrum, getHafniaSpectrum, getScandiaSpectrum, getScandiaSpectrum_2, getHafniaSpectrumEllip, getTantalaSpectrumEllip, multipleReflections, bbRadiation, wavelength2RGB, movingAverage, flattenArrays, arrayArrays, averagePolarisation, Info
+export multipleReflections,
+	   bbRadiation,
+	   wavelength2RGB,
+	   movingAverage,
+	   flattenArrays,
+	   arrayArrays,
+	   averagePolarisation,
+	   Info
 
 function Info()
     tmp1 = "\n " *
 	"\n " *
     "\n Available functions from Utils module:" *
 	"\n " *
-    "\n     build_interpolation(X)" *
-    "\n     getSL1ExpSpectrum(λ)" *
-    "\n     getSL1RefSpectrum(λ)" *
-    "\n     getSL2ExpSpectrum(λ)" *
-    "\n     getSL2RefSpectrum(λ)" *
-    "\n     getBraggSpectrum(λ)" *
-    "\n     getFPSpectrum(λ)" *
-    "\n     getHafniaSpectrum(λ)" *
-    "\n     getScandiaSpectrum(λ)" *
-    "\n     getScandiaSpectrum_2(λ)" *
-	"\n     getHafniaSpectrumEllip(λ)" *
-	"\n     getTantalaSpectrumEllip(λ)" *
 	"\n     multipleReflections(n)" *
 	"\n     bbRadiation(λ, T)" *
 	"\n     wavelength2RGB(λ)" *
@@ -29,210 +21,10 @@ function Info()
 	"\n     flattenArrays(x)" *
 	"\n     arrayArrays(x, y)" *
 	"\n     averagePolarisation(pol, Xp, Xs)" *
-	"\n     TMMOPlotNprofile()" *
-	"\n     TMMOPlotDispersion()" *
 	"\n "
 	"\n     To use any of these functions type: Utils.function(args)." *
 	"\n "
 	return println(tmp1)
-end
-
-# Read data files for examples
-datapath = joinpath(@__DIR__, "..", "data/")
-
-"""
-
-	Build interpolation objects from Matrix. Uses a Gridded(Linear()) grid.
-
-		itp = build_interpolation(X)
-
-			X: Matrix array with first column as independent variable and second column as dependent one
-			itp: interpolation object
-
-"""
-function build_interpolation(X)
-	# Sort by ascending wavelength
-	X = X[sortperm(X[:,1]), :]
-    knots = (sort(vec(X[:,1])),)
-    return interpolate(knots, vec(X[:,2]), Gridded(Linear()))
-end
-
-"""
-
-	Raw experimental reflectance spectrum of a porous silicon thin film on a crystalline silicon substrate. Interpolates for a valid input wavelength range.
-
-		R = getSL1ExpSpectrum(λ)
-
-			λ: wavelength range (nm), ∈ [200, 1125]
-			R: reflectance
-
-"""
-function getSL1ExpSpectrum(λ::AbstractArray{T1,1}) where {T1<:Real}
-    X = readdlm(joinpath(datapath, "070910a000.txt"))
-    itp = build_interpolation(X)
-    return itp.(λ)
-end
-
-"""
-
-	Reference experimental reflectance spectrum of a crystalline silicon substrate. Interpolates for a valid input wavelength range.
-
-		R = getSL1RefSpectrum(λ)
-
-			λ: wavelength range (nm), ∈ [200, 1125]
-			R: reflectance
-
-"""
-function getSL1RefSpectrum(λ::AbstractArray{T1,1}) where {T1<:Real}
-    X = readdlm(joinpath(datapath, "070910a027.txt"))
-    itp = build_interpolation(X)
-    return itp.(λ)
-end
-
-"""
-
-	Raw experimental reflectance spectrum of a porous silicon thin film on a crystalline silicon substrate. Interpolates for a valid input wavelength range.
-
-		R = getSL2ExpSpectrum(λ)
-
-			λ: wavelength range (nm), ∈ [200, 1125]
-			R: reflectance
-
-"""
-function getSL2ExpSpectrum(λ::AbstractArray{T1,1}) where {T1<:Real}
-    X = readdlm(joinpath(datapath, "070910h000.txt"))
-    itp = build_interpolation(X)
-    return itp.(λ)
-end
-
-"""
-
-	Reference experimental reflectance spectrum of a crystalline silicon substrate. Interpolates for a valid input wavelength range.
-
-		R = getSL2RefSpectrum(λ)
-
-			λ: wavelength range (nm), ∈ [200, 1125]
-			R: reflectance
-
-"""
-function getSL2RefSpectrum(λ)
-    X = readdlm(joinpath(datapath, "070910h030.txt"))
-    itp = build_interpolation(X)
-    return itp.(λ)
-end
-
-"""
-
-	Absolute experimental reflectance spectrum of a porous silicon thin film photonic crystal (DBR or Bragg stack) on a crystalline silicon substrate. Interpolates for a valid input wavelength range.
-
-		R = getBraggSpectrum(λ)
-
-			λ: wavelength range (nm), ∈ [200, 1125]
-			R: reflectance
-
-"""
-function getBraggSpectrum(λ::AbstractArray{T1,1}) where {T1<:Real}
-    X = readdlm(joinpath(datapath, "28d10d9d000.dat"))
-    itp = build_interpolation(X)
-    return itp.(λ)
-end
-
-"""
-
-	Absolute experimental reflectance spectrum of a porous silicon thin film Fabry-Perot (MicroCavity stack) on a glass substrate. Interpolates for a valid input wavelength range.
-
-		R = getFPSpectrum(λ)
-
-			λ: wavelength range (nm), ∈ [200, 1125]
-			R: reflectance
-
-"""
-function getFPSpectrum(λ::AbstractArray{T1,1}) where {T1<:Real}
-    X = readdlm(joinpath(datapath, "m010310a.dat"))
-    itp = build_interpolation(X)
-    return itp.(λ)
-end
-
-"""
-
-	Absolute experimental transmitance spectrum of a hafnium oxide thin film on a fused silica UV substrate. Interpolates for a valid input wavelength range.
-
-		T = getHafniaSpectrum(λ)
-
-			λ: wavelength range (nm), ∈ [190, 1100]
-			T: transmitance
-
-"""
-function getHafniaSpectrum(λ::AbstractArray{T1,1}) where {T1<:Real}
-    X = readdlm(joinpath(datapath, "hafnia_130222b1_measured_130308.txt"))
-    itp = build_interpolation(X)
-    return itp.(λ)
-end
-
-"""
-
-	Absolute experimental transmitance spectrum of a scandium oxide thin film on a fused silica UV substrate. Interpolates for a valid input wavelength range.
-
-		T = getScandiaSpectrum(λ)
-
-			λ: wavelength range (nm), ∈ [190, 1100]
-			T: transmitance
-
-"""
-function getScandiaSpectrum(λ::AbstractArray{T1,1}) where {T1<:Real}
-    X = readdlm(joinpath(datapath, "scandia_L131112a.dat"))
-    itp = build_interpolation(X)
-    return itp.(λ)
-end
-
-"""
-
-	Absolute experimental transmitance spectrum of a scandium oxide thin film on a fused silica UV substrate. Interpolates for a valid input wavelength range.
-
-		T = getScandiaSpectrum(λ)
-
-			λ: wavelength range (nm), ∈ [190, 1100]
-			T: transmitance
-
-"""
-function getScandiaSpectrum_2(λ::AbstractArray{T1,1}) where {T1<:Real}
-    X = readdlm(joinpath(datapath, "L140114b_scandia_transmittance.txt"))
-    itp = build_interpolation(X)
-    return itp.(λ)
-end
-
-"""
-
-	Absolute experimental ellipsometry spectrum (Psi, Delta) of a hafnium oxide thin film on a fused silica UV substrate. Interpolates for a valid input wavelength range.
-
-		Ψ, Δ = getHafniaSpectrumEllip(λ)
-
-			λ: wavelength range (nm), ∈ [190, 1100]
-			Ψ, Δ: exllipsometry spectrum
-
-"""
-function getHafniaSpectrumEllip(λ::AbstractArray{T1,1}) where {T1<:Real}
-    X = readdlm(joinpath(datapath, "HfO2_on_VPG_130405b_PsiDelta.txt"))
-    itpΨ = build_interpolation(hcat(X[:, 1], X[:, 2]))
-	itpΔ = build_interpolation(hcat(X[:, 1], X[:, 3]))
-    return itpΨ.(λ), itpΔ.(λ)
-end
-
-"""
-
-	Absolute experimental ellipsometry spectrum (Psi, Delta) of a tantalum oxide thin film on a fused silica UV substrate. Interpolates for a valid input wavelength range.
-
-		Ψ, Δ = getTantalaSpectrumEllip(λ)
-
-			λ: wavelength range (nm), ∈ [190, 1100]
-			Ψ, Δ: exllipsometry spectrum
-
-"""
-function getTantalaSpectrumEllip(λ::AbstractArray{T1,1}) where {T1<:Real}
-    X = readdlm(joinpath(datapath, "Ta2O5_on_VPG_130425_130225d_PsiDelta.txt"))
-	itpΨ = build_interpolation(hcat(X[:, 1], X[:, 2]))
-	itpΔ = build_interpolation(hcat(X[:, 1], X[:, 3]))
-    return itpΨ.(λ), itpΔ.(λ)
 end
 
 """

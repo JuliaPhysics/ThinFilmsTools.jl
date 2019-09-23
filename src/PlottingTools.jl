@@ -237,42 +237,6 @@ end
 
 """
 
-    Recipe for plotting a comparison of the model and experimental spectra of ellipsometry data.
-
-        plot(PlotFitSpectrumEllip(), x, Xexp, Xmodel; s=(640,480))
-        gui()
-
-            x: range of variable (λ or θ)
-            Xexp: experimental spectrum
-            Xmodel: model spectrum
-                s: size of the figure
-
-"""
-struct PlotFitSpectrumEllip end
-@recipe function f(::PlotFitSpectrumEllip, x, Xexp, Xmodel; s=(640,480))
-    linecolor --> :black
-    seriestype := :path
-    linestyle --> :solid
-    @series begin
-        seriestype := :scatter
-        markershape --> [:circle :square]
-        markersize --> 5
-        markeralpha --> 0.5
-        # markercolor --> [RGBA(0.9019607843137255, 0.6235294117647059, 0.0, 0.7) RGBA(0.33725490196078434, 0.7058823529411765, 0.9137254901960784, 0.7)]
-        markerstrokewidth --> 0.5
-        # markerstrokecolor --> [RGB(0.9019607843137255, 0.6235294117647059, 0.0) RGB(0.33725490196078434, 0.7058823529411765, 0.9137254901960784)]
-        label --> ["Psi" "Delta"]
-        x, Xexp
-    end
-    label --> ["Model" ""]
-    # tickfont --> font(12)
-    # legendfont --> font(10)
-    size --> s
-    x, Xmodel
-end
-
-"""
-
     Plots the index of refraction ath certain wavelength (usually λ0) of the multilayer structure computed from TMMOptics.
 
         TMMOPlotNprofile(solution; wave=:b, λ=solution.Misc.λ0, θ=solution.Beam.θ[1], s=(640,480))

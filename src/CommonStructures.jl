@@ -49,7 +49,7 @@ end
             λ: input range of wavelengths [nm] to calculate the index of refraction of non-EMA models
 
 """
-function refractiveIndexMR(layer::T1, argin::SubArray{T2}, λ::Array{T2,1}) where {T1<:ModelFit, T2<:Float64}
+function refractiveIndexMR(layer::T1, argin::AbstractArray{T2}, λ::Array{T2,1}) where {T1<:ModelFit, T2<:Float64}
     if layer.model == :bruggemanspheresbin
         errorParametersEMA(layer)
         return RI.bruggemanspheresbin(argin[1], layer.N[1], layer.N[2])
@@ -177,8 +177,8 @@ end
             mse: mean squared error
 
 """
-function meanSquaredError(X::Array{T1}, Xexp::Array{T1}, σ::Array{T1}) where {T1<:Float64}
-    return sum(mean(abs2.((abs.(X) .- abs.(Xexp))./σ), dims=1))
+function meanSquaredError(X::Array{T1}, Xexp::Array{T1}; σ::Array{T1}=ones.(length(Xexp), 1)) where {T1<:Float64}
+    return mean(abs2.((X .- Xexp)./σ))
 end
 
 """

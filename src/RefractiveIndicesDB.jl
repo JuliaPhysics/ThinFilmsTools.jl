@@ -3,7 +3,22 @@ module RIdb
 using Interpolations
 using HDF5
 
-export aluminum, air, bk7, chrome, dummy, glass, gold, silicon, silicontemperature, silver, sno2f, h2o, etoh, fusedsilicauv, fusedsilicauv2, Info
+export aluminum,
+       air,
+       bk7,
+       chrome,
+       dummy,
+       glass,
+       gold,
+       silicon,
+       silicontemperature,
+       silver,
+       sno2f,
+       h2o,
+       etoh,
+       fusedsilicauv,
+       fusedsilicauv2,
+       Info
 
 function Info()
     tmp1 = "\n " *
@@ -23,6 +38,8 @@ function Info()
         "\n     sno2f(λ), λ ∈ [308.25, 2490.9] (nm), fluor doped!" *
         "\n     h2o(λ), λ ∈ [10.0, 1e10] (nm)" *
         "\n     etoh(λ), λ ∈ [476.5, 830] (nm)" *
+        "\n     fusedsilicauv(λ), λ ∈ [0.21, 6.7] (μm)" *
+        "\n     fusedsilicauv2(λ), λ ∈ [170.0, 3240] (nm)" *
         "\n "
     return println(tmp1)
 end
