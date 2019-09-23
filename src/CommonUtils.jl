@@ -1,6 +1,9 @@
 module Utils
 
-export multipleReflections,
+using Interpolations
+
+export build_interpolation,
+	   multipleReflections,
 	   bbRadiation,
 	   wavelength2RGB,
 	   movingAverage,
@@ -14,6 +17,7 @@ function Info()
 	"\n " *
     "\n Available functions from Utils module:" *
 	"\n " *
+	"\n     build_interpolation(X)" *
 	"\n     multipleReflections(n)" *
 	"\n     bbRadiation(λ, T)" *
 	"\n     wavelength2RGB(λ)" *
@@ -25,6 +29,23 @@ function Info()
 	"\n     To use any of these functions type: Utils.function(args)." *
 	"\n "
 	return println(tmp1)
+end
+
+"""
+
+	Build interpolation objects from Matrix. Uses a Gridded(Linear()) grid.
+
+		itp = build_interpolation(X)
+
+			X: Matrix array with first column as independent variable and second column as dependent one
+			itp: interpolation object
+
+"""
+function build_interpolation(X::Array{T1,2}) where {T1<:Float64}
+	# Sort by ascending wavelength
+	X = X[sortperm(X[:,1]), :]
+    knots = (sort(vec(X[:,1])),)
+    return interpolate(knots, vec(X[:,2]), Gridded(Linear()))
 end
 
 """
