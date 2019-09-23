@@ -22,7 +22,7 @@ layers = [ LayerTMMO1DIso(incident),
            LayerTMMO1DIso(emergent) ]
 
 # Measured absolute transmittance
-Texp = Utils.getScandiaSpectrum(beam.λ)./100
+Texp = SpectraDB.ScandiaSpectrum(beam.λ)
 plot(TMMOPlotSpectra1D(), beam.λ, Texp)
 gui()
 
