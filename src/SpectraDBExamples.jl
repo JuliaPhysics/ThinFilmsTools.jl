@@ -1,7 +1,6 @@
 module SpectraDB
 
-using Interpolations
-using HDF5
+using ..Utils: build_interpolation, readh5_file
 
 export SL1ExpSpectrum,
 	   SL1RefSpectrum,
@@ -34,32 +33,6 @@ function Info()
 	return println(tmp1)
 end
 
-"""Read the HDF5 file with the database."""
-function read_spectra_DB(x::String)
-    datapath = joinpath(@__DIR__, "..", "data/")
-    readf = h5open(joinpath(datapath, "ExampleSpectraDB.h5"), "r") do file
-        read(file, x)
-    end
-    readf
-end
-
-"""
-
-	Build interpolation objects from Matrix. Uses a Gridded(Linear()) grid.
-
-		itp = build_interpolation(X)
-
-			X: Matrix array with first column as independent variable and second column as dependent one
-			itp: interpolation object
-
-"""
-function build_interpolation(X::Array{T1,2}) where {T1<:Float64}
-	# Sort by ascending wavelength
-	X = X[sortperm(X[:,1]), :]
-    knots = (sort(vec(X[:,1])),)
-    return interpolate(knots, vec(X[:,2]), Gridded(Linear()))
-end
-
 """
 
 	Raw experimental reflectance spectrum of a porous silicon thin film on a crystalline silicon substrate. Interpolates for a valid input wavelength range.
@@ -71,7 +44,7 @@ end
 
 """
 function SL1ExpSpectrum(λ::AbstractArray{T1,1}) where {T1<:Real}
-	X = read_spectra_DB("SL1sample")
+	X = readh5_file("SL1sample", :SP)
     itp = build_interpolation(hcat(vec(X["lambda"]), vec(X["reflectance"])))
     return itp.(λ)
 end
@@ -87,7 +60,7 @@ end
 
 """
 function SL1RefSpectrum(λ::AbstractArray{T1,1}) where {T1<:Real}
-	X = read_spectra_DB("SL1reference")
+	X = readh5_file("SL1reference", :SP)
 	itp = build_interpolation(hcat(vec(X["lambda"]), vec(X["reflectance"])))
     return itp.(λ)
 end
@@ -103,7 +76,7 @@ end
 
 """
 function SL2ExpSpectrum(λ::AbstractArray{T1,1}) where {T1<:Real}
-	X = read_spectra_DB("SL2sample")
+	X = readh5_file("SL2sample", :SP)
 	itp = build_interpolation(hcat(vec(X["lambda"]), vec(X["reflectance"])))
     return itp.(λ)
 end
@@ -119,7 +92,7 @@ end
 
 """
 function SL2RefSpectrum(λ)
-	X = read_spectra_DB("SL2reference")
+	X = readh5_file("SL2reference", :SP)
 	itp = build_interpolation(hcat(vec(X["lambda"]), vec(X["reflectance"])))
     return itp.(λ)
 end
@@ -135,7 +108,7 @@ end
 
 """
 function BraggSpectrum(λ::AbstractArray{T1,1}) where {T1<:Real}
-	X = read_spectra_DB("Bragg")
+	X = readh5_file("Bragg", :SP)
 	itp = build_interpolation(hcat(vec(X["lambda"]), vec(X["reflectance"])))
     return itp.(λ)
 end
@@ -151,7 +124,7 @@ end
 
 """
 function FPSpectrum(λ::AbstractArray{T1,1}) where {T1<:Real}
-	X = read_spectra_DB("MicroCavity")
+	X = readh5_file("MicroCavity", :SP)
 	itp = build_interpolation(hcat(vec(X["lambda"]), vec(X["reflectance"])))
     return itp.(λ)
 end
@@ -167,7 +140,7 @@ end
 
 """
 function HafniaSpectrum(λ::AbstractArray{T1,1}) where {T1<:Real}
-	X = read_spectra_DB("Hafnia")
+	X = readh5_file("Hafnia", :SP)
 	itp = build_interpolation(hcat(vec(X["lambda"]), vec(X["transmitance"])))
     return itp.(λ)./100.0
 end
@@ -183,7 +156,7 @@ end
 
 """
 function ScandiaSpectrum(λ::AbstractArray{T1,1}) where {T1<:Real}
-	X = read_spectra_DB("Scandia")
+	X = readh5_file("Scandia", :SP)
 	itp = build_interpolation(hcat(vec(X["lambda"]), vec(X["transmitance"])))
     return itp.(λ)./100.0
 end
@@ -199,9 +172,9 @@ end
 
 """
 function ScandiaSpectrum_2(λ::AbstractArray{T1,1}) where {T1<:Real}
-	X = read_spectra_DB("Scandia2")
+	X = readh5_file("Scandia2", :SP)
 	itp = build_interpolation(hcat(vec(X["lambda"]), vec(X["transmitance"])))
     return itp.(λ)./100.0
 end
 
-end
+end # module

@@ -1,7 +1,6 @@
 module RIdb
 
-using Interpolations
-using HDF5
+using ..Utils: build_interpolation, readh5_file
 
 export aluminum,
        air,
@@ -42,21 +41,6 @@ function Info()
         "\n     fusedsilicauv2(λ), λ ∈ [170.0, 3240] (nm)" *
         "\n "
     return println(tmp1)
-end
-
-"""Read the HDF5 file with the database. Internal use."""
-function read_RIfiles_DB(material)
-    datapath = joinpath(@__DIR__, "..", "data/")
-    readf = h5open(joinpath(datapath, "RefractiveIndicesDB.h5"), "r") do file
-        read(file, material)
-    end
-    readf
-end
-
-"""Build interpolation objects. Internal use."""
-function build_interpolation(x, y)
-    knots = (sort(vec(x)),)
-    return interpolate(knots, vec(y), Gridded(Linear()))
 end
 
 """
@@ -154,9 +138,9 @@ end
 
 """
 function aluminum(λ::AbstractVector{T}) where {T<:Real}
-    readf = read_RIfiles_DB("aluminum")
-    spl_n = build_interpolation(vec(readf["lambda"]).*1e9, vec(readf["n"]))
-    spl_k = build_interpolation(vec(readf["lambda"]).*1e9, vec(readf["k"]))
+    readf = readh5_file("aluminum", :RI)
+    spl_n = build_interpolation(hcat(vec(readf["lambda"]).*1e9, vec(readf["n"])))
+    spl_k = build_interpolation(hcat(vec(readf["lambda"]).*1e9, vec(readf["k"])))
     return spl_n.(λ) .+ im.*spl_k.(λ)
 end
 
@@ -173,9 +157,9 @@ end
 
 """
 function bk7(λ::AbstractVector{T}) where {T<:Real}
-    readf = read_RIfiles_DB("bk7")
-    spl_n = build_interpolation(vec(readf["lambda"]).*1e9, vec(readf["n"]))
-    spl_k = build_interpolation(vec(readf["lambda"]).*1e9, vec(readf["k"]))
+    readf = readh5_file("bk7", :RI)
+    spl_n = build_interpolation(hcat(vec(readf["lambda"]).*1e9, vec(readf["n"])))
+    spl_k = build_interpolation(hcat(vec(readf["lambda"]).*1e9, vec(readf["k"])))
     return spl_n.(λ) .+ im.*spl_k.(λ)
 end
 
@@ -192,9 +176,9 @@ end
 
 """
 function chrome(λ::AbstractVector{T}) where {T<:Real}
-    readf = read_RIfiles_DB("chrome")
-    spl_n = build_interpolation(vec(readf["lambda"]), vec(readf["n"]))
-    spl_k = build_interpolation(vec(readf["lambda"]), vec(readf["k"]))
+    readf = readh5_file("chrome", :RI)
+    spl_n = build_interpolation(hcat(vec(readf["lambda"]), vec(readf["n"])))
+    spl_k = build_interpolation(hcat(vec(readf["lambda"]), vec(readf["k"])))
     return spl_n.(λ) .+ im.*spl_k.(λ)
 end
 
@@ -211,9 +195,9 @@ end
 
 """
 function gold(λ::AbstractVector{T}) where {T<:Real}
-    readf = read_RIfiles_DB("gold")
-    spl_n = build_interpolation(vec(readf["lambda"]), vec(readf["n"]))
-    spl_k = build_interpolation(vec(readf["lambda"]), vec(readf["k"]))
+    readf = readh5_file("gold", :RI)
+    spl_n = build_interpolation(hcat(vec(readf["lambda"]), vec(readf["n"])))
+    spl_k = build_interpolation(hcat(vec(readf["lambda"]), vec(readf["k"])))
     return spl_n.(λ) .+ im.*spl_k.(λ)
 end
 
@@ -230,9 +214,9 @@ end
 
 """
 function silicon(λ::AbstractVector{T}) where {T<:Real}
-    readf = read_RIfiles_DB("silicon")
-    spl_n = build_interpolation(vec(readf["lambda"]).*1e9, vec(readf["n"]))
-    spl_k = build_interpolation(vec(readf["lambda"]).*1e9, vec(readf["k"]))
+    readf = readh5_file("silicon", :RI)
+    spl_n = build_interpolation(hcat(vec(readf["lambda"]).*1e9, vec(readf["n"])))
+    spl_k = build_interpolation(hcat(vec(readf["lambda"]).*1e9, vec(readf["k"])))
     return spl_n.(λ) .+ im.*spl_k.(λ)
 end
 
@@ -251,7 +235,7 @@ end
 """
 function silicontemperature(λ::AbstractVector{T}, t::S) where {T<:Real, S<:Real}
     (20 < t < 450) || throw("Temperature range is invalid: 20 < T < 450 in C.")
-    readf = read_RIfiles_DB("silicontemperature")
+    readf = readh5_file("silicontemperature", :RI)
     lambda = sort(vec(readf["lambda"]))
     # https://discourse.julialang.org/t/a-question-on-extrapolation-with-interpolations-jl/3669/4
     lambda = [prevfloat(lambda[1]);lambda[2:end-1];nextfloat(lambda[end])]
@@ -293,9 +277,9 @@ end
 
 """
 function silver(λ::AbstractVector{T}) where {T<:Real}
-    readf = read_RIfiles_DB("silver")
-    spl_n = build_interpolation(vec(readf["lambda"]), vec(readf["n"]))
-    spl_k = build_interpolation(vec(readf["lambda"]), vec(readf["k"]))
+    readf = readh5_file("silver", :RI)
+    spl_n = build_interpolation(hcat(vec(readf["lambda"]), vec(readf["n"])))
+    spl_k = build_interpolation(hcat(vec(readf["lambda"]), vec(readf["k"])))
     return spl_n.(λ) .+ im.*spl_k.(λ)
 end
 
@@ -312,9 +296,9 @@ end
 
 """
 function sno2f(λ::AbstractVector{T}) where {T<:Real}
-    readf = read_RIfiles_DB("sno2f")
-    spl_n = build_interpolation(vec(readf["lambda"]).*1e9, vec(readf["n"]))
-    spl_k = build_interpolation(vec(readf["lambda"]).*1e9, vec(readf["k"]))
+    readf = readh5_file("sno2f", :RI)
+    spl_n = build_interpolation(hcat(vec(readf["lambda"]).*1e9, vec(readf["n"])))
+    spl_k = build_interpolation(hcat(vec(readf["lambda"]).*1e9, vec(readf["k"])))
     return spl_n.(λ) .+ im.*spl_k.(λ)
 end
 
@@ -331,9 +315,9 @@ end
 
 """
 function h2o(λ::AbstractVector{T}) where {T<:Real}
-    readf = read_RIfiles_DB("h2o")
-    spl_n = build_interpolation(vec(readf["lambda"]).*1e3, vec(readf["n"]))
-    spl_k = build_interpolation(vec(readf["lambda"]).*1e3, vec(readf["k"]))
+    readf = readh5_file("h2o", :RI)
+    spl_n = build_interpolation(hcat(vec(readf["lambda"]).*1e3, vec(readf["n"])))
+    spl_k = build_interpolation(hcat(vec(readf["lambda"]).*1e3, vec(readf["k"])))
     return spl_n.(λ) .+ im.*spl_k.(λ)
 end
 
@@ -350,9 +334,9 @@ end
 
 """
 function fusedsilicauv2(λ::AbstractVector{T}) where {T<:Real}
-    readf = read_RIfiles_DB("fusedsilicauv")
-    spl_n = build_interpolation(vec(readf["lambda"]), vec(readf["n"]))
-    spl_k = build_interpolation(vec(readf["lambda"]), vec(readf["k"]))
+    readf = readh5_file("fusedsilicauv", :RI)
+    spl_n = build_interpolation(hcat(vec(readf["lambda"]), vec(readf["n"])))
+    spl_k = build_interpolation(hcat(vec(readf["lambda"]), vec(readf["k"])))
     return spl_n.(λ) .+ im.*spl_k.(λ)
 end
 
