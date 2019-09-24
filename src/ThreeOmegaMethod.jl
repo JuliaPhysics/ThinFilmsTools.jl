@@ -1,3 +1,12 @@
+module ThreeΩMethod
+
+using QuadGK
+
+export ThreeOmegaMethod,
+       LayerTOM,
+       HeaterGeometry,
+       Source
+
 abstract type LayerTOMInformation end
 struct LayerTOM{T1} <: LayerTOMInformation where {T1<:Float64}
     ky::T1; kxy::T1; d::T1; ρC::T1
@@ -76,3 +85,5 @@ function concatenateB(λ::Array{T0,N0}, Layers::Array{T1,N1}, thresistances::Arr
     end # B = let B = B
     return B
 end # function concatenateB()
+
+end # module

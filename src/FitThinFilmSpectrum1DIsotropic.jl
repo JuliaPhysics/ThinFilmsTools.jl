@@ -1,6 +1,28 @@
+module FitThinFilmPattern
+
+using Optim
+using Statistics
+using ..CommonStructures: ModelFit, BoundariesFit, PlaneWave, LayerTMMO1DIso, refractiveIndexMR, checkInput, checkInputAlpha, multilayerParameters!, buildArraysBragg, buildArraysFP1d, monotonicLin!, meanSquaredError, getBeamParameters
+using ..Utils: build_interpolation, averagePolarisation, flattenArrays, arrayArrays
+using ..MatrixMethod1DIsotropic: TransferMatrix
+
+export SpaceSolution2D,
+       TheoreticalSpectrum,
+       NormalizeReflectance,
+       FitTMMO1DIsotropic,
+       Reflectance,
+       Transmittance,
+       Generic,
+       DBR,
+       DBRAlpha,
+       MC1d,
+       MC1dAlpha
+
+abstract type FitProcedure end
+
 """Results of the solution space parameters."""
 struct SpaceSolution2D{T1, T2} <: FitProcedure where {T1<:Float64, T2<:PlaneWave}
-    solSpace::Array{T1}; objfunMin::T1; optOD::T1; optParams::T1; optThickness::T1; spectrumFit::Array; spectrumExp::Array; od; x; beam::T2
+    solSpace::Array{T1}; objfunMin::T1; optOD::T1; optParams::T1; optThickness::T1; spectrumFit::Array; spectrumExp::Array; x1; x2; beam::T2
 end
 
 """Solution of the optimization with the Optim solver for multilayers."""
@@ -40,9 +62,9 @@ MC1dAlpha() = FitMC1dAlpha()
 """
 function NormalizeReflectance(λ::AbstractArray{T0,1}, Rexp::Array{T1,2}, Rthe::Array{T1,2}, Rref::Array{T1,2}) where {T0<:Real, T1<:Float64}
     # Interpolate for the λ range
-    spl_exp = Utils.build_interpolation(Rexp)
-    spl_ref = Utils.build_interpolation(Rref)
-    spl_the = Utils.build_interpolation(Rthe)
+    spl_exp = build_interpolation(Rexp)
+    spl_ref = build_interpolation(Rref)
+    spl_the = build_interpolation(Rthe)
     exp2ref = spl_exp.(λ) ./ spl_ref.(λ)
     # Find out if the sample is overshooting the reference
     (maximum(exp2ref) < 1.0) || return (exp2ref./ maximum(exp2ref) .* spl_the.(λ))
@@ -199,8 +221,8 @@ function runFittingProcedure end
 # SAMIN, Generic
 function runFittingProcedure(alg::T0, arrange::T1, specType::T2, xinit::Array{Array{T4,1},1}, beam::T3, Xexp::Array{T4,1}, σ::Array{T4,1}, layers::Array, options, lb::Array{Array{T4,1},1}, ub::Array{Array{T4,1},1}, d::Array{T4,1}, N::Array{T5,2}; kwargs...) where {T0<:SAMIN, T1<:FitGeneric, T2<:FitProcedure, T3<:PlaneWave, T4<:Float64, T5<:ComplexF64}
     checkInput(xinit, layers)
-    sol = optimize(x->fitMSE(x, arrange, specType, beam, Xexp, σ, layers, xinit, d, N), Utils.flattenArrays(lb), Utils.flattenArrays(ub), Utils.flattenArrays(xinit), alg, options)
-    xfinal = Utils.arrayArrays(sol.minimizer, xinit)
+    sol = optimize(x->fitMSE(x, arrange, specType, beam, Xexp, σ, layers, xinit, d, N), flattenArrays(lb), flattenArrays(ub), flattenArrays(xinit), alg, options)
+    xfinal = arrayArrays(sol.minimizer, xinit)
     multilayerParameters!(N, d, xfinal, beam, layers)
     X = computeTransferMatrix(specType, d, N, beam)
     return (sol=sol, X=X, xfinal=xfinal, solmin=sol.minimum)
@@ -209,9 +231,9 @@ end
 # SAMIN, DBR
 function runFittingProcedure(alg::T0, arrange::T1, specType::T2, xinit::Array{Array{T4,1},1}, beam::T3, Xexp::Array{T4,1}, σ::Array{T4,1}, layers::Array, options, lb::Array{Array{T4,1},1}, ub::Array{Array{T4,1},1}, d::Array{T4,1}, N::Array{T5,2}; L::Array{T6,1}=[1], kwargs...) where {T0<:SAMIN, T1<:FitDBR, T2<:FitProcedure, T3<:PlaneWave, T4<:Float64, T5<:ComplexF64, T6<:Int64}
     checkInput(xinit, layers)
-    sol = optimize(x->fitMSE(x, arrange, specType, beam, Xexp, σ, layers, xinit, d, N, L[1]), Utils.flattenArrays(lb), Utils.flattenArrays(ub), Utils.flattenArrays(xinit), alg, options)
-    xfinal = Utils.arrayArrays(sol.minimizer, xinit)
-    multilayerParameters!(N, d, Utils.arrayArrays(sol.minimizer, xfinal), beam, layers)
+    sol = optimize(x->fitMSE(x, arrange, specType, beam, Xexp, σ, layers, xinit, d, N, L[1]), flattenArrays(lb), flattenArrays(ub), flattenArrays(xinit), alg, options)
+    xfinal = arrayArrays(sol.minimizer, xinit)
+    multilayerParameters!(N, d, arrayArrays(sol.minimizer, xfinal), beam, layers)
     N, d = buildArraysBragg(N, d, L[1])
     X = computeTransferMatrix(specType, d, N, beam)
     return (sol=sol, X=X, xfinal=xfinal, solmin=sol.minimum)
@@ -220,10 +242,10 @@ end
 # SAMIN, DBRAlpha
 function runFittingProcedure(alg::T0, arrange::T1, specType::T2, xinit::Array{Array{T4,1},1}, beam::T3, Xexp::Array{T4,1}, σ::Array{T4,1}, layers::Array, options, lb::Array{Array{T4,1},1}, ub::Array{Array{T4,1},1}, d::Array{T4,1}, N::Array{T5,2}; L::Array{T6,1}=[1], kwargs...) where {T0<:SAMIN, T1<:FitDBRAlpha, T2<:FitProcedure, T3<:PlaneWave, T4<:Float64, T5<:ComplexF64, T6<:Int64}
     checkInputAlpha(xinit, layers)
-    sol = optimize(x->fitMSE(x, arrange, specType, beam, Xexp, σ, layers, xinit, d, N, L[1]), Utils.flattenArrays(lb), Utils.flattenArrays(ub), Utils.flattenArrays(xinit), alg, options)
-    xfinal = Utils.arrayArrays(sol.minimizer[1:end-1], xinit[1:end-1])
+    sol = optimize(x->fitMSE(x, arrange, specType, beam, Xexp, σ, layers, xinit, d, N, L[1]), flattenArrays(lb), flattenArrays(ub), flattenArrays(xinit), alg, options)
+    xfinal = arrayArrays(sol.minimizer[1:end-1], xinit[1:end-1])
     push!(xfinal, [sol.minimizer[end]])
-    multilayerParameters!(N, d, Utils.arrayArrays(sol.minimizer[1:end-1], xfinal[1:end-1]), beam, layers)
+    multilayerParameters!(N, d, arrayArrays(sol.minimizer[1:end-1], xfinal[1:end-1]), beam, layers)
     N, d = buildArraysBragg(N, d, L[1])
     monotonicLin!(d, sol.minimizer[end])
     X = computeTransferMatrix(specType, d, N, beam)
@@ -233,9 +255,9 @@ end
 # SAMIN, MC1d
 function runFittingProcedure(alg::T0, arrange::T1, specType::T2, xinit::Array{Array{T4,1},1}, beam::T3, Xexp::Array{T4,1}, σ::Array{T4,1}, layers::Array, options, lb::Array{Array{T4,1},1}, ub::Array{Array{T4,1},1}, d::Array{T4,1}, N::Array{T5,2}; L::Array{T6,1}=[1], Ld::Array{T6,1}=[1]) where {T0<:SAMIN, T1<:FitMC1d, T2<:FitProcedure, T3<:PlaneWave, T4<:Float64, T5<:ComplexF64, T6<:Int64}
     checkInput(xinit, layers)
-    sol = optimize(x->fitMSE(x, arrange, specType, beam, Xexp, σ, layers, xinit, d, N, L, Ld), Utils.flattenArrays(lb), Utils.flattenArrays(ub), Utils.flattenArrays(xinit), alg, options)
-    xfinal = Utils.arrayArrays(sol.minimizer, xinit)
-    multilayerParameters!(N, d, Utils.arrayArrays(sol.minimizer, xfinal), beam, layers)
+    sol = optimize(x->fitMSE(x, arrange, specType, beam, Xexp, σ, layers, xinit, d, N, L, Ld), flattenArrays(lb), flattenArrays(ub), flattenArrays(xinit), alg, options)
+    xfinal = arrayArrays(sol.minimizer, xinit)
+    multilayerParameters!(N, d, arrayArrays(sol.minimizer, xfinal), beam, layers)
     N, d = buildArraysFP1d(N, d, L, Ld)
     X = computeTransferMatrix(specType, d, N, beam)
     return (sol=sol, X=X, xfinal=xfinal, solmin=sol.minimum)
@@ -244,10 +266,10 @@ end
 # SAMIN, MC1dAlpha
 function runFittingProcedure(alg::T0, arrange::T1, specType::T2, xinit::Array{Array{T4,1},1}, beam::T3, Xexp::Array{T4,1}, σ::Array{T4,1}, layers::Array, options, lb::Array{Array{T4,1},1}, ub::Array{Array{T4,1},1}, d::Array{T4,1}, N::Array{T5,2}; L::Array{T6,1}=[1], Ld::Array{T6,1}=[1]) where {T0<:SAMIN, T1<:FitMC1dAlpha, T2<:FitProcedure, T3<:PlaneWave, T4<:Float64, T5<:ComplexF64, T6<:Int64}
     checkInputAlpha(xinit, layers)
-    sol = optimize(x->fitMSE(x, arrange, specType, beam, Xexp, σ, layers, xinit, d, N, L, Ld), Utils.flattenArrays(lb), Utils.flattenArrays(ub), Utils.flattenArrays(xinit), alg, options)
-    xfinal = Utils.arrayArrays(sol.minimizer[1:end-1], xinit[1:end-1])
+    sol = optimize(x->fitMSE(x, arrange, specType, beam, Xexp, σ, layers, xinit, d, N, L, Ld), flattenArrays(lb), flattenArrays(ub), flattenArrays(xinit), alg, options)
+    xfinal = arrayArrays(sol.minimizer[1:end-1], xinit[1:end-1])
     push!(xfinal, [sol.minimizer[end]])
-    multilayerParameters!(N, d, Utils.arrayArrays(sol.minimizer[1:end-1], xfinal[1:end-1]), beam, layers)
+    multilayerParameters!(N, d, arrayArrays(sol.minimizer[1:end-1], xfinal[1:end-1]), beam, layers)
     N, d = buildArraysFP1d(N, d, L, Ld)
     monotonicLin!(d, sol.minimizer[end])
     X = computeTransferMatrix(specType, d, N, beam)
@@ -257,8 +279,8 @@ end
 # NelderMead, Generic
 function runFittingProcedure(alg::T0, arrange::T1, specType::T2, xinit::Array{Array{T4,1},1}, beam::T3, Xexp::Array{T4,1}, σ::Array{T4,1}, layers::Array, options, lb::Array{Array{T4,1},1}, ub::Array{Array{T4,1},1}, d::Array{T4,1}, N::Array{T5,2}; kwargs...) where {T0<:NelderMead, T1<:FitGeneric, T2<:FitProcedure, T3<:PlaneWave, T4<:Float64, T5<:ComplexF64}
     checkInput(xinit, layers)
-    sol = optimize(x->fitMSE(x, arrange, specType, beam, Xexp, σ, layers, xinit, d, N), Utils.flattenArrays(xinit), alg, options)
-    xfinal = Utils.arrayArrays(sol.minimizer, xinit)
+    sol = optimize(x->fitMSE(x, arrange, specType, beam, Xexp, σ, layers, xinit, d, N), flattenArrays(xinit), alg, options)
+    xfinal = arrayArrays(sol.minimizer, xinit)
     multilayerParameters!(N, d, xfinal, beam, layers)
     X = computeTransferMatrix(specType, d, N, beam)
     return (sol=sol, X=X, xfinal=xfinal, solmin=sol.minimum)
@@ -267,9 +289,9 @@ end
 # NelderMead, DBR
 function runFittingProcedure(alg::T0, arrange::T1, specType::T2, xinit::Array{Array{T4,1},1}, beam::T3, Xexp::Array{T4,1}, σ::Array{T4,1}, layers::Array, options, lb::Array{Array{T4,1},1}, ub::Array{Array{T4,1},1}, d::Array{T4,1}, N::Array{T5,2}; L::Array{T6,1}=[1], kwargs...) where {T0<:NelderMead, T1<:FitDBR, T2<:FitProcedure, T3<:PlaneWave, T4<:Float64, T5<:ComplexF64, T6<:Int64}
     checkInput(xinit, layers)
-    sol = optimize(x->fitMSE(x, arrange, specType, beam, Xexp, σ, layers, xinit, d, N, L[1]), Utils.flattenArrays(xinit), alg, options)
-    xfinal = Utils.arrayArrays(sol.minimizer, xinit)
-    multilayerParameters!(N, d, Utils.arrayArrays(sol.minimizer, xfinal), beam, layers)
+    sol = optimize(x->fitMSE(x, arrange, specType, beam, Xexp, σ, layers, xinit, d, N, L[1]), flattenArrays(xinit), alg, options)
+    xfinal = arrayArrays(sol.minimizer, xinit)
+    multilayerParameters!(N, d, arrayArrays(sol.minimizer, xfinal), beam, layers)
     N, d = buildArraysBragg(N, d, L[1])
     X = computeTransferMatrix(specType, d, N, beam)
     return (sol=sol, X=X, xfinal=xfinal, solmin=sol.minimum)
@@ -278,10 +300,10 @@ end
 # NelderMead, DBRAlpha
 function runFittingProcedure(alg::T0, arrange::T1, specType::T2, xinit::Array{Array{T4,1},1}, beam::T3, Xexp::Array{T4,1}, σ::Array{T4,1}, layers::Array, options, lb::Array{Array{T4,1},1}, ub::Array{Array{T4,1},1}, d::Array{T4,1}, N::Array{T5,2}; L::Array{T6,1}=[1, L::Array{T6,1}, Ld::Array{T5,1}, N::Array{T6,2}, d::Array{T4,1}], kwargs...) where {T0<:NelderMead, T1<:FitDBRAlpha, T2<:FitProcedure, T3<:PlaneWave, T4<:Float64, T5<:ComplexF64, T6<:Int64}
     checkInputAlpha(xinit, layers)
-    sol = optimize(x->fitMSE(x, arrange, specType, beam, Xexp, σ, layers, xinit, d, N, L[1]), Utils.flattenArrays(xinit), alg, options)
-    xfinal = Utils.arrayArrays(sol.minimizer[1:end-1], xinit[1:end-1])
+    sol = optimize(x->fitMSE(x, arrange, specType, beam, Xexp, σ, layers, xinit, d, N, L[1]), flattenArrays(xinit), alg, options)
+    xfinal = arrayArrays(sol.minimizer[1:end-1], xinit[1:end-1])
     push!(xfinal, [sol.minimizer[end]])
-    multilayerParameters!(N, d, Utils.arrayArrays(sol.minimizer[1:end-1], xfinal[1:end-1]), beam, layers)
+    multilayerParameters!(N, d, arrayArrays(sol.minimizer[1:end-1], xfinal[1:end-1]), beam, layers)
     N, d = buildArraysBragg(N, d, L[1])
     monotonicLin!(d, sol.minimizer[end])
     X = computeTransferMatrix(specType, d, N, beam)
@@ -291,9 +313,9 @@ end
 # NelderMead, MC1d
 function runFittingProcedure(alg::T0, arrange::T1, specType::T2, xinit::Array{Array{T4,1},1}, beam::T3, Xexp::Array{T4,1}, σ::Array{T4,1}, layers::Array, options, lb::Array{Array{T4,1},1}, ub::Array{Array{T4,1},1}, d::Array{T4,1}, N::Array{T5,2}; L::Array{T6,1}, Ld::Array{T6,1}) where {T0<:NelderMead, T1<:FitMC1d, T2<:FitProcedure, T3<:PlaneWave, T4<:Float64, T5<:ComplexF64, T6<:Int64}
     checkInput(xinit, layers)
-    sol = optimize(x->fitMSE(x, arrange, specType, beam, Xexp, σ, layers, xinit, d, N, L, Ld), Utils.flattenArrays(xinit), alg, options)
-    xfinal = Utils.arrayArrays(sol.minimizer, xinit)
-    multilayerParameters!(N, d, Utils.arrayArrays(sol.minimizer, xfinal), beam, layers)
+    sol = optimize(x->fitMSE(x, arrange, specType, beam, Xexp, σ, layers, xinit, d, N, L, Ld), flattenArrays(xinit), alg, options)
+    xfinal = arrayArrays(sol.minimizer, xinit)
+    multilayerParameters!(N, d, arrayArrays(sol.minimizer, xfinal), beam, layers)
     N, d = buildArraysFP1d(N, d, L, Ld)
     X = computeTransferMatrix(specType, d, N, beam)
     return (sol=sol, X=X, xfinal=xfinal, solmin=sol.minimum)
@@ -302,10 +324,10 @@ end
 # NelderMead, MC1dAlpha
 function runFittingProcedure(alg::T0, arrange::T1, specType::T2, xinit::Array{Array{T4,1},1}, beam::T3, Xexp::Array{T4,1}, σ::Array{T4,1}, layers::Array, options, lb::Array{Array{T4,1},1}, ub::Array{Array{T4,1},1}, d::Array{T4,1}, N::Array{T5,2}; L::Array{T6,1}, Ld::Array{T6,1}) where {T0<:NelderMead, T1<:FitMC1dAlpha, T2<:FitProcedure, T3<:PlaneWave, T4<:Float64, T5<:ComplexF64, T6<:Int64}
     checkInputAlpha(xinit, layers)
-    sol = optimize(x->fitMSE(x, arrange, specType, beam, Xexp, σ, layers, xinit, d, N, L, Ld), Utils.flattenArrays(xinit), alg, options)
-    xfinal = Utils.arrayArrays(sol.minimizer[1:end-1], xinit[1:end-1])
+    sol = optimize(x->fitMSE(x, arrange, specType, beam, Xexp, σ, layers, xinit, d, N, L, Ld), flattenArrays(xinit), alg, options)
+    xfinal = arrayArrays(sol.minimizer[1:end-1], xinit[1:end-1])
     push!(xfinal, [sol.minimizer[end]])
-    multilayerParameters!(N, d, Utils.arrayArrays(sol.minimizer[1:end-1], xfinal[1:end-1]), beam, layers)
+    multilayerParameters!(N, d, arrayArrays(sol.minimizer[1:end-1], xfinal[1:end-1]), beam, layers)
     N, d = buildArraysFP1d(N, d, L, Ld)
     monotonicLin!(d, sol.minimizer[end])
     X = computeTransferMatrix(specType, d, N, beam)
@@ -336,14 +358,14 @@ function fitMSE end
 
 # Generic
 function fitMSE(x::Array{T0,1}, arrange::T1, specType::T2, beam::T3, Xexp::Array{T0,1}, σ::Array{T0,1}, layers::Array, xinit::Array{Array{T0,1},1}, d::Array{T0,1}, N::Array{T4,2}) where {T0<:Float64, T1<:FitGeneric, T2<:FitProcedure, T3<:PlaneWave, T4<:ComplexF64}
-    multilayerParameters!(N, d, Utils.arrayArrays(x, xinit), beam, layers)
+    multilayerParameters!(N, d, arrayArrays(x, xinit), beam, layers)
     X = computeTransferMatrix(specType, d, N, beam)
     return meanSquaredError(vec(X), Xexp; σ=σ)
 end
 
 # DBR
 function fitMSE(x::Array{T0,1}, arrange::T1, specType::T2, beam::T3, Xexp::Array{T0,1}, σ::Array{T0,1}, layers::Array, xinit::Array{Array{T0,1},1}, d::Array{T0,1}, N::Array{T4,2}, L::T5=1) where {T0<:Float64, T1<:FitDBR, T2<:FitProcedure, T3<:PlaneWave, T4<:ComplexF64, T5<:Int64}
-    multilayerParameters!(N, d, Utils.arrayArrays(x, xinit), beam, layers)
+    multilayerParameters!(N, d, arrayArrays(x, xinit), beam, layers)
     N, d = buildArraysBragg(N, d, L)
     X = computeTransferMatrix(specType, d, N, beam)
     return meanSquaredError(vec(X), Xexp; σ=σ)
@@ -351,7 +373,7 @@ end
 
 # DBRAlpha
 function fitMSE(x::Array{T0,1}, arrange::T1, specType::T2, beam::T3, Xexp::Array{T0,1}, σ::Array{T0,1}, layers::Array, xinit::Array{Array{T0,1},1}, d::Array{T0,1}, N::Array{T4,2}, L::T5=1) where {T0<:Float64, T1<:FitDBRAlpha, T2<:FitProcedure, T3<:PlaneWave, T4<:ComplexF64, T5<:Int64}
-    multilayerParameters!(N, d, Utils.arrayArrays(x[1:end-1], xinit[1:end-1]), beam, layers)
+    multilayerParameters!(N, d, arrayArrays(x[1:end-1], xinit[1:end-1]), beam, layers)
     N, d = buildArraysBragg(N, d, L)
     monotonicLin!(d, x[end])
     X = computeTransferMatrix(specType, d, N, beam)
@@ -360,7 +382,7 @@ end
 
 # MC1d
 function fitMSE(x::Array{T0,1}, arrange::T1, specType::T2, beam::T3, Xexp::Array{T0,1}, σ::Array{T0,1}, layers::Array, xinit::Array{Array{T0,1},1}, d::Array{T0,1}, N::Array{T4,2}, L::Array{T5,1}=[1], Ld::Array{T5,1}=[1]) where {T0<:Float64, T1<:FitMC1d, T2<:FitProcedure, T3<:PlaneWave, T4<:ComplexF64, T5<:Int64}
-    multilayerParameters!(N, d, Utils.arrayArrays(x, xinit), beam, layers)
+    multilayerParameters!(N, d, arrayArrays(x, xinit), beam, layers)
     N, d = buildArraysFP1d(N, d, L, Ld)
     X = computeTransferMatrix(specType, d, N, beam)
     return meanSquaredError(vec(X), Xexp; σ=σ)
@@ -368,7 +390,7 @@ end
 
 # MC1dAlpha
 function fitMSE(x::Array{T0,1}, arrange::T1, specType::T2, beam::T3, Xexp::Array{T0,1}, σ::Array{T0,1}, layers::Array, xinit::Array{Array{T0,1},1}, d::Array{T0,1}, N::Array{T4,2}, L::Array{T5,1}=[1], Ld::Array{T5,1}=[1]) where {T0<:Float64, T1<:FitMC1dAlpha, T2<:FitProcedure, T3<:PlaneWave, T4<:ComplexF64, T5<:Int64}
-    multilayerParameters!(N, d, Utils.arrayArrays(x[1:end-1], xinit[1:end-1]), beam, layers)
+    multilayerParameters!(N, d, arrayArrays(x[1:end-1], xinit[1:end-1]), beam, layers)
     N, d = buildArraysFP1d(N, d, L, Ld)
     monotonicLin!(d, x[end])
     X = computeTransferMatrix(specType, d, N, beam)
@@ -393,11 +415,13 @@ function computeTransferMatrix end
 # Transmittance
 function computeTransferMatrix(specType::T0, d::Array{T1,1}, N::Array{T2,2}, beam::T3) where {T0<:FitTransmittance, T1<:Float64, T2<:ComplexF64, T3<:PlaneWave}
     spectra = TransferMatrix(N, d, beam)[1]
-    return Utils.averagePolarisation(beam.p, spectra.Tp, spectra.Ts)
+    return averagePolarisation(beam.p, spectra.Tp, spectra.Ts)
 end
 
 # Reflectance
 function computeTransferMatrix(specType::T0, d::Array{T1,1}, N::Array{T2,2}, beam::T3) where {T0<:FitReflectance, T1<:Float64, T2<:ComplexF64, T3<:PlaneWave}
     spectra = TransferMatrix(N, d, beam)[1]
-    return Utils.averagePolarisation(beam.p, spectra.Rp, spectra.Rs)
+    return averagePolarisation(beam.p, spectra.Rp, spectra.Rs)
 end
+
+end # module

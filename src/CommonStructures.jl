@@ -1,3 +1,22 @@
+module CommonStructures
+
+using Statistics
+using ..RI
+
+export ModelFit,
+       BoundariesFit,
+       PlaneWave,
+       LayerTMMO1DIso,
+       refractiveIndexMR,
+       checkInput,
+       checkInputAlpha,
+       multilayerParameters!,
+       buildArraysBragg,
+       buildArraysFP1d,
+       monotonicLin!,
+       meanSquaredError,
+       getBeamParameters
+
 # Defined the abstract type for all the fitting
 abstract type FitProcedure end
 
@@ -197,3 +216,5 @@ end
 function getBeamParameters(beam::PlaneWave)
     return PlaneWave(float.(beam.λ), deg2rad.(beam.θ)), (λLen=length(beam.λ), θLen=length(beam.θ))
 end
+
+end # module

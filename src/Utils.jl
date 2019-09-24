@@ -1,8 +1,10 @@
 module Utils
 
 using Interpolations
+using HDF5
 
 export build_interpolation,
+	   readh5_file,
 	   multipleReflections,
 	   bbRadiation,
 	   wavelength2RGB,
@@ -29,6 +31,20 @@ function Info()
 	"\n     To use any of these functions type: Utils.function(args)." *
 	"\n "
 	return println(tmp1)
+end
+
+"""Read the HDF5 file with the database."""
+function readh5_file(x::String, y::Symbol)
+    datapath = joinpath(@__DIR__, "..", "data/")
+	if isequal(y, :RI)
+		fid = "RefractiveIndicesDB.h5"
+	elseif isequal(y, :SP)
+		fid = "ExampleSpectraDB.h5"
+	end
+    readf = h5open(joinpath(datapath, fid), "r") do file
+        read(file, x)
+    end
+    readf
 end
 
 """
@@ -225,4 +241,4 @@ function averagePolarisation(pol::T1, Xp::Array{T1}, Xs::Array{T1}) where {T1<:F
     return pol.*Xp .+ (1.0 - pol).*Xs
 end
 
-end # CommonUtils
+end # Utils

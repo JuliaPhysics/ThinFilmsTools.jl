@@ -1,31 +1,7 @@
 module ThinFilmsTools
 
-using Statistics
-using LinearAlgebra
-using Printf
-using QuadGK
-using Plots # using RecipesBase
-using LaTeXStrings
-using Interpolations
-using Optim
-
-include("CommonStructures.jl")
-export PlaneWave,
-       LayerTMMO1DIso,
-       ModelFit,
-       BoundariesFit
-
-include("CommonUtils.jl")
+include("Utils.jl")
 export Utils
-
-include("TMMO1DIsotropic.jl")
-export TMMO1DIsotropic
-
-include("ThreeOmegaMethod.jl")
-export ThreeOmegaMethod,
-       LayerTOM,
-       HeaterGeometry,
-       Source
 
 include("RefractiveIndicesDB.jl")
 export RIdb
@@ -33,10 +9,22 @@ export RIdb
 include("RefractiveIndicesModels.jl")
 export RI
 
+include("CommonStructures.jl")
+using .CommonStructures
+export PlaneWave,
+       LayerTMMO1DIso,
+       ModelFit,
+       BoundariesFit
+
 include("SpectraDBExamples.jl")
 export SpectraDB
 
-include("FitThinFilmSpectrum.jl")
+include("MatrixMethod1DIsotropic.jl")
+using .MatrixMethod1DIsotropic
+export TMMO1DIsotropic
+
+include("FitThinFilmSpectrum1DIsotropic.jl")
+using .FitThinFilmPattern
 export SpaceSolution2D,
        TheoreticalSpectrum,
        NormalizeReflectance,
@@ -49,8 +37,16 @@ export SpaceSolution2D,
        MC1d,
        MC1dAlpha
 
+include("ThreeOmegaMethod.jl")
+using .ThreeΩMethod
+export ThreeOmegaMethod,
+       LayerTOM,
+       HeaterGeometry,
+       Source
+
 include("PlottingTools.jl")
-export TOMplot,
+using .PlottingTools
+export TOMPlot,
        TMMOPlotSpectra1D,
        TMMOPlotSpectraAngle1D,
        TMMOPlotSpectra2D,
@@ -59,7 +55,6 @@ export TOMplot,
        TMMOPlotNprofile,
        TMMOPlotDispersion,
        PlotFitSpectrum,
-       SpaceSolutionOFplot,
-       PlotFitSpectrumEllip
+       SpaceSolutionOFplot
 
 end # ThinFilmsTools

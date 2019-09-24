@@ -1,3 +1,11 @@
+module MatrixMethod1DIsotropic
+
+using Statistics
+using LinearAlgebra
+using ..CommonStructures: getBeamParameters, PlaneWave, LayerTMMO1DIso
+
+export TMMO1DIsotropic
+
 """Wrap the output into different types."""
 abstract type Output end
 struct Spectra{T1, T2} <: Output where {T1<:Float64, T2<:ComplexF64}
@@ -16,7 +24,7 @@ end
 struct AdmPhase{T1} <: Output where {T1<:ComplexF64}
     ηp::Array{T1}; ηs::Array{T1}; δ::Array{T1};
 end
-struct TMMO1DIsotropic{T1, T2, T3, T4, T5, T6, T7} <: Output where {T1<:Spectra, T2<:Field, T3<:Bloch, T4<:Misc, T5<:AdmPhase, T6<:PlaneWave, T7<:Material}
+struct TMMO1DIsotropic{T1, T2, T3, T4, T5, T6, T7} <: Output where {T1<:Spectra, T2<:Field, T3<:Bloch, T4<:Misc, T5<:AdmPhase, T6<:PlaneWave, T7<:LayerTMMO1DIso}
     Spectra::T1; Field::T2; Bloch::T3; Misc::T4; AdmPhase::T5; Beam::T6; Layers::Array{T7};
 end
 
@@ -25,7 +33,7 @@ end
     Data conditioning and main calculations.
 
 """
-function TMMO1DIsotropic(beam::T1, layers::Array{T2,N2}; emfflag::T3=false, h::T4=10, pbgflag::T3=false, λ0::T5=-eps()) where {T1<:PlaneWave, T2<:Material, N2, T3<:Bool, T4<:Int64, T5<:Float64}
+function TMMO1DIsotropic(beam::T1, layers::Array{T2,N2}; emfflag::T3=false, h::T4=10, pbgflag::T3=false, λ0::T5=-eps()) where {T1<:PlaneWave, T2<:LayerTMMO1DIso, N2, T3<:Bool, T4<:Int64, T5<:Float64}
     # Check if λ0 ∈ λ
     λ0 = checkλ0(λ0, beam)
     # Find beam.λ closest to λ0
@@ -71,7 +79,7 @@ end
     Build the sequence of indices of refraction and thicknesses depending on the input. It follows some logic depending on whether nλ0 was input.
 
 """
-function buildArrays!(d::Array{T0,1}, layers_n::Array{T1,2}, nλ0::Array{T0,1}, idxλ0::T4, λ0::T0, layers::Array{T2,1}, beam::T5) where {T0<:Float64, T1<:ComplexF64, T2<:Material, T3<:Bool, T4<:Int64, T5<:PlaneWave}
+function buildArrays!(d::Array{T0,1}, layers_n::Array{T1,2}, nλ0::Array{T0,1}, idxλ0::T4, λ0::T0, layers::Array{T2,1}, beam::T5) where {T0<:Float64, T1<:ComplexF64, T2<:LayerTMMO1DIso, T3<:Bool, T4<:Int64, T5<:PlaneWave}
     @inbounds for s in eachindex(layers)
         # Refractive index
         @views layers_n[:, s] = layers[s].n
@@ -300,3 +308,5 @@ cosϑ(n1::T1, n2::T1, cosθ::T2) where {T1<:ComplexF64, T2<:Number} = sqrt(1.0 -
 """
 ζp(n::T1, cosθ::T2) where {T1<:ComplexF64, T2<:Number} = n/cosθ
 ζs(n::T1, cosθ::T2) where {T1<:ComplexF64, T2<:Number} = n*cosθ
+
+end # module

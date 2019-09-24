@@ -1,3 +1,20 @@
+module PlottingTools
+
+using Plots
+using LaTeXStrings
+using Printf: @sprintf
+
+export TOMPlot,
+       TMMOPlotSpectra1D,
+       TMMOPlotSpectraAngle1D,
+       TMMOPlotSpectra2D,
+       TMMOPlotEMF2D,
+       TMMOPlotEMFAngle2D,
+       TMMOPlotNprofile,
+       TMMOPlotDispersion,
+       PlotFitSpectrum,
+       SpaceSolutionOFplot
+
 """
 
     All the recipes included in this file works with Plots.jl
@@ -104,7 +121,7 @@ struct TMMOPlotSpectra2D end
     seriestype  :=  :contour
     fill --> true
     levels --> num_levels
-    # color --> cgrad(:viridis)
+    color --> cgrad(:viridis)
     xlabel --> "Wavelength [nm]"
     ylabel --> L"Angle of incidence [$\degree$]"
     # xlim --> (λ[1], λ[end])
@@ -134,7 +151,7 @@ struct TMMOPlotEMF2D end
     seriestype  :=  :contour
     fill --> true
     levels --> num_levels
-    # color --> cgrad(:viridis)
+    color --> cgrad(:viridis)
     xlabel --> "Wavelength [nm]"
     ylabel --> "Depth profile [nm]"
     # title --> "EMF Intensity for s-wave"
@@ -162,7 +179,7 @@ struct TMMOPlotEMFAngle2D end
     seriestype  :=  :contour
     fill --> true
     levels --> num_levels
-    # color --> cgrad(:viridis)
+    color --> cgrad(:viridis)
     xlabel --> L"Angle of incidence [$\degree$]"
     ylabel --> "Depth profile [nm]"
     # title --> "EMF Intensity"
@@ -194,7 +211,7 @@ struct PlotFitSpectrum end
         markershape --> :circle
         markersize --> 5
         markeralpha --> 0.5
-        # markercolor --> RGBA(0,0,0,0.5)
+        markercolor --> RGBA(0,0,0,0.5)
         markerstrokewidth --> 0.5
         label --> "Data"
         x, Xexp
@@ -227,7 +244,7 @@ struct SpaceSolutionOFplot end
     seriestype := :contour
     fill --> true
     levels --> num_levels
-    # color --> cgrad(:viridis)
+    color --> cgrad(:viridis)
     # tickfont --> font(12)
     size --> s
     xlims --> (lims[1], lims[2])
@@ -368,3 +385,5 @@ function TMMOPlotDispersion(solution; s=(640,480))
     end
     return nothing
 end
+
+end # module
