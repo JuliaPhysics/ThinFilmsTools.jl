@@ -39,9 +39,9 @@ Rexp_norm = NormalizeReflectance(beam.λ, [beam.λ Rexp], [beam.λ Rthe], [beam.
 b = BoundariesFit(7000.0, 7300.0, 0.5, 0.65)
 
 # Brute force search
-sol = SpaceSolution2D(ftype, b, beam, Rexp_norm, layers)
+sol = SpaceSolutionEMA(ftype, b, beam, Rexp_norm, layers)
 
-plot(SpaceSolutionOFplot(), sol.x1, sol.x2, sol.solSpace, xaxis=("Optical thickness [nm]"), yaxis=("Porosity"); num_levels=50)
+plot(SpaceSolutionOFplot(), sol.od, sol.p, sol.solSpace, xaxis=("Optical thickness [nm]"), yaxis=("Porosity"); num_levels=50)
 gui()
 plot(PlotFitSpectrum(), sol.beam.λ, sol.spectrumExp, sol.spectrumFit, xaxis=("Wavelength [nm]"), yaxis=("Reflectance"))
 gui()
