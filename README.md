@@ -7,8 +7,6 @@
 
 [ThinFilmsTools.jl](https://github.com/lnacquaroli/ThinFilmsTools.jl/wiki/Home) provides tools for the design and characterisation of thin films written in Julia. More documentation, examples and details can be found in the [Wiki](https://github.com/lnacquaroli/ThinFilmsTools.jl/wiki/Home) page.
 
-The are two major methods working for this already: [TMMO1DIsotropic](https://github.com/lnacquaroli/ThinFilmsTools.jl/wiki/TMMO1DIsotropic) (old [TMMOptics.jl](https://github.com/lnacquaroli/TMMOptics.jl)) and [ThreeOmegaMethod](https://github.com/lnacquaroli/ThinFilmsTools.jl/wiki/ThreeOmegaMethod). Looking forward to expand it with other techniques.
-
 ## Installation
 
 This package is not yet registered. It can be installed in Julia with the following ([see further](https://docs.julialang.org/en/v1/stdlib/Pkg/index.html#Adding-unregistered-packages-1)):
