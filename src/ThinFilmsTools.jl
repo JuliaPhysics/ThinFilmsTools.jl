@@ -25,7 +25,7 @@ export TMMO1DIsotropic
 
 include("FitThinFilmSpectrum1DIsotropic.jl")
 using .FitThinFilmPattern
-export SpaceSolution2D,
+export SpaceSolutionEMA,
        TheoreticalSpectrum,
        NormalizeReflectance,
        FitTMMO1DIsotropic,

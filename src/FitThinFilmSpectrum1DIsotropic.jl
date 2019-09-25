@@ -6,7 +6,7 @@ using ..CommonStructures: ModelFit, BoundariesFit, PlaneWave, LayerTMMO1DIso, re
 using ..Utils: build_interpolation, averagePolarisation, flattenArrays, arrayArrays
 using ..MatrixMethod1DIsotropic: TransferMatrix
 
-export SpaceSolution2D,
+export SpaceSolutionEMA,
        TheoreticalSpectrum,
        NormalizeReflectance,
        FitTMMO1DIsotropic,
@@ -23,6 +23,10 @@ abstract type FitProcedure end
 """Results of the solution space parameters."""
 struct SpaceSolution2D{T1, T2} <: FitProcedure where {T1<:Float64, T2<:PlaneWave}
     solSpace::Array{T1}; objfunMin::T1; optOD::T1; optParams::T1; optThickness::T1; spectrumFit::Array; spectrumExp::Array; x1; x2; beam::T2
+end
+
+struct SpaceSolutionEMA{T1, T2} <: FitProcedure where {T1<:Float64, T2<:PlaneWave}
+    solSpace::Array{T1}; objfunMin::T1; optOD::T1; optParams::T1; optThickness::T1; spectrumFit::Array; spectrumExp::Array; od; p; beam::T2
 end
 
 """Solution of the optimization with the Optim solver for multilayers."""
@@ -91,11 +95,11 @@ end
 
 """
 
-    Computes the solution space for a window range of two parameters, for instance, the optical thickness and porosity. Only works with two parameters and for a single layer between incident and emergent media.
+    Computes the solution space for a window range of two parameters, the optical thickness and porosity. Only works with these two parameters and for a single layer between incident and emergent media.
 
     It uses the mean(abs(Xexp - X)) objective function, where Xexp and X are the experimental and modelled spectra.
 
-        sol = SpaceSolution2D(specType, b, beam, Xexp, layers)
+        sol = SpaceSolutionEMA(specType, b, beam, Xexp, layers)
 
             specType: type of spectrum to compute, Reflectance() or Transmittance()
             b: lower and upper boundaries for the optical thickness and porosity (e.g. [odl, odu,
@@ -103,7 +107,7 @@ end
             beam: structure from PlaneWave
             Xexp: absolute experimental spectrum
             layers: columnwise array of three LayerTMMO1dIso and ModelFit with information about the layers.
-                    For SpaceSolution2D: length(vec(layers)) = 3
+                    For SpaceSolutionEMA: length(vec(layers)) = 3
                         The typeof first and third layers = LayerTMMO1DIso
                         The typeof second layers = ModelFit
             sol: structure with the solution
@@ -115,11 +119,11 @@ end
                 spectrumFit: optimum spectrum obtained with dopt and xopt
                 spectrumExp: experimental spectrum
                 od: range of optical thicknesses explored
-                x: range of porosities explored
+                p: range of porosities explored
                 beam: information of the light used
 
 """
-function SpaceSolution2D(specType::T0, b::T1, beam::T2, Xexp::Array{T3}, layers::Array) where{T0<:FitProcedure, T1<:BoundariesFit, T2<:PlaneWave, T3<:Float64}
+function SpaceSolutionEMA(specType::T0, b::T1, beam::T2, Xexp::Array{T3}, layers::Array) where{T0<:FitProcedure, T1<:BoundariesFit, T2<:PlaneWave, T3<:Float64}
     # Generate grids
     _d = LinRange(b.odlo, b.odup, b.Nod)
     _p = LinRange(b.plo, b.pup, b.Np)
@@ -135,7 +139,7 @@ function SpaceSolution2D(specType::T0, b::T1, beam::T2, Xexp::Array{T3}, layers:
     end
     smin = findmin(solSpace)
     X = computeTransferMatrix(specType, vec([0. d[smin[2][1]] 0.]), [layers[1].n refractiveIndexMR(layers[2], [_p[smin[2][2]]], beam_.λ) layers[3].n], beam_)
-    return SpaceSolution2D(solSpace, smin[1], _d[smin[2][1]], _p[smin[2][2]], d[smin[2][1]], X, Xexp, _d, _p, beam_)
+    return SpaceSolutionEMA(solSpace, smin[1], _d[smin[2][1]], _p[smin[2][2]], d[smin[2][1]], X, Xexp, _d, _p, beam_)
 end
 
 """
