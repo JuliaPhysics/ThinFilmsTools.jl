@@ -20,7 +20,7 @@ Rthe = TheoreticalSpectrum(ftype, beam, incident, emergent)
 Rexp_norm = NormalizeReflectance(beam.λ, [beam.λ Rexp], [beam.λ Rthe], [beam.λ Rref])
 
 b = BoundariesFit(7000.0, 7300.0, 0.5, 0.65)
-sol = SpaceSolution2D(ftype, b, beam, Rexp_norm, layers)
+sol = SpaceSolutionEMA(ftype, b, beam, Rexp_norm, layers)
 
 options = Optim.Options(g_abstol=1e-8, g_reltol=1e-8, iterations=10^5, store_trace=true, show_trace=true)
 
