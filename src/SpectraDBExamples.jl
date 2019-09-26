@@ -16,7 +16,7 @@ export SL1ExpSpectrum,
 function Info()
 	tmp1 = "\n " *
 	"\n " *
-	"\n Available functions from Utils module:" *
+	"\n Available functions from SpectraDB module:" *
 	"\n " *
 	"\n     SL1ExpSpectrum(λ)" *
 	"\n     SL1RefSpectrum(λ)" *
