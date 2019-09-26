@@ -62,7 +62,7 @@ function TMMO1DIsotropic(beam::T1, layers::Array{T2,N2}; emfflag::T3=false, h::T
         κp = []; κs = []; ω = []; Λ = 0.0
     end
     # Return results
-    TMMO1DIsotropic(tmmout[1], tmmout[2], Bloch(κp, κs, ω, Λ), Misc(d, ℓ, nλ0, layers_n, λ0), tmmout[3], beam_, layers)
+    TMMO1DIsotropic(tmmout[1], tmmout[2], Bloch(κp, κs, ω, Λ), Misc(d, ℓ, nλ0, layers_n, λ0), tmmout[3], beam, layers)
 end
 
 """
