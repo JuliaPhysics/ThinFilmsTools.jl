@@ -3,7 +3,6 @@
 
 # Top layer down to substrate information arrays
 
-cd(path)
 # Load modules
 using ThinFilmsTools
 using Plots
