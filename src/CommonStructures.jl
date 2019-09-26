@@ -52,7 +52,7 @@ end
 abstract type Material end
 struct LayerTMMO1DIso{T1, N1, T2, T3, T4} <: Material where {T1<:ComplexF64, N1, T2<:Symbol, T3<:Float64, T4<:Number}
     n::Array{T1,1}; type::T2; d::T3; nλ0::Array{T4}
-    function LayerTMMO1DIso(n::AbstractArray{T1,N1}; type::T2=:GT, d::T3=0.0, nλ0::Array{T4}=[-eps()]) where {T1<:ComplexF64, N1, T2<:Symbol, T3<:Float64, T4<:Number}
+    function LayerTMMO1DIso(n::AbstractArray{T1,N1}; type::T2=:GT, d::T3=1/4., nλ0::Array{T4}=[-eps()]) where {T1<:ComplexF64, N1, T2<:Symbol, T3<:Float64, T4<:Number}
         return new{T1, N1, T2, T3, T4}(n, type, d, nλ0)
     end
 end
