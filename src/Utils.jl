@@ -2,6 +2,7 @@ module Utils
 
 using Interpolations
 using HDF5
+using SpecialFunctions
 
 export build_interpolation,
 	   readh5_file,
@@ -12,6 +13,12 @@ export build_interpolation,
 	   flattenArrays,
 	   arrayArrays,
 	   averagePolarisation,
+	   Gaussian1,
+	   Gaussian2,
+	   Lorentzian1,
+	   Lorentzian2,
+	   Voigt1,
+	   Voigt2,
 	   Info
 
 function Info()
@@ -27,6 +34,12 @@ function Info()
 	"\n     flattenArrays(x)" *
 	"\n     arrayArrays(x, y)" *
 	"\n     averagePolarisation(pol, Xp, Xs)" *
+	"\n     Gaussian1(x, p)" *
+	"\n     Gaussian2(x, p)" *
+	"\n     Lorentzian1(x, p)" *
+	"\n     Lorentzian2(x, p)" *
+	"\n     Voigt1(x, p)" *
+	"\n     Voigt2(x, p)" *
 	"\n "
 	"\n     To use any of these functions type: Utils.function(args)." *
 	"\n "
@@ -240,5 +253,122 @@ end
 function averagePolarisation(pol::T1, Xp::Array{T1}, Xs::Array{T1}) where {T1<:Float64}
     return pol.*Xp .+ (1.0 - pol).*Xs
 end
+
+"""
+
+	Single peak Gaussian PDF curve.
+
+		model1g = Gaussian1(x, p)
+
+			x = vector with data of the x-axis
+			p = [p0, A, μ, σ]
+				p0: offset of the curve
+				A: amplitude of the curve
+				μ: position of the peak (mean or expectation of the distribution)
+				σ: standard deviation
+
+	Source: https://en.wikipedia.org/wiki/Normal_distribution
+
+"""
+Gaussian1(x, p) = @. p[1] + p[2]*exp(-((x - p[3])/p[4])^2)
+
+"""
+
+	Double peak Gaussian PDF curve. (Normal distribution)
+
+		model2g = Gaussian2(x, p)
+
+			x = vector with data of the x-axis
+			p = [p0, A1, μ1, σ1, A2, μ2, σ2]
+				p0: offset of the total curve
+				Ai: amplitude of the peaks
+				μi: position of the peaks
+				σi: standard deviation of the peaks
+				i = 1, 2
+
+	Source: https://en.wikipedia.org/wiki/Normal_distribution
+
+"""
+Gaussian2(x, p) = @. p[1] + p[2]*exp(-((x - p[3])/p[4])^2) + p[5]*exp(-((x - p[6])/p[7])^2)
+
+"""
+
+	Single peak Cauchy-Lorentz PDF curve.
+
+		model1l = Lorentzian1(x, p)
+
+			x = vector with data of the x-axis
+			p = [p0, A, μ, Γ]
+				p0: offset of the total curve
+				A: amplitude of the curve
+				μ: position of the peak (location parameter)
+				Γ: half-width at half-maximum (HWHM)
+
+	Source: https://en.wikipedia.org/wiki/Cauchy_distribution
+
+"""
+Lorentzian1(x, p) = @. p[1] + p[2]/(1.0 + ((x - p[3])/p[4])^2)
+
+"""
+
+	Double peak Cauchy-Lorentz PDF curve.
+
+		model2l = Lorentzian2(x, p)
+
+			x = vector with data of the x-axis
+			p = [p0, A1, μ1, Γ1, A2, μ2, Γ2]
+				p0: offset of the total curve
+				Ai: amplitude of the peaks
+				μi: position of the peaks (location parameters)
+				Γi: half-width at half-maximum (HWHM)
+				i = 1, 2
+
+	Source: https://en.wikipedia.org/wiki/Cauchy_distribution
+
+"""
+Lorentzian2(x, p) = @. p[1] + p[2]/(1.0 + ((x - p[3])/p[4])^2) + p[5]/(1.0 + ((x - p[6])/p[7])^2)
+
+"""
+
+	Single peak Voigt PDF curve. The function is computed using the Fadeeva's function through the scaled complementary error function of x erfcx.
+
+		model1v = Voigt1(x, p)
+
+			x = vector with data of the x-axis
+			p = [p0, A, μ, σ, Γ]
+				p0: offset of the total curve
+				A: amplitude of the curve
+				μ: position of the peak (location parameter)
+				σ: Gaussian standard deviation
+				Γ: Lorentzian half-width at half-maximum (HWHM)
+
+		The μ parameter has been included in a custom fashion to allow the distribution to be uncentered.
+
+	Source: https://en.wikipedia.org/wiki/Voigt_profile
+
+"""
+Voigt1(x, p) = @. p[1] + p[2]*real(erfcx(-im*((x - p[3] + im*p[4])/sqrt(2)/p[5])))
+
+"""
+
+	Double peak Voigt PDF curve. The function is computed using the Fadeeva's function through the scaled complementary error function of x erfcx.
+
+		model2v = Voigt2(x, p)
+
+			x = vector with data of the x-axis
+			p = [p0, Ai, μi, σi, Γi]
+				p0: offset of the total curve. It is not the real amplitude because I could not find a way to normalize it.
+				Ai: amplitude of the peaks
+				μi: position of the peaks (location parameter)
+				σi: Gaussian standard deviation of the peaks
+				Γi: Lorentzian half-width at half-maximum (HWHM) of the peaks
+				i = 1, 2
+
+		The μi parameters have been included in a custom fashion to allow the distribution to be uncentered.
+
+	Source: https://en.wikipedia.org/wiki/Voigt_profile
+
+"""
+Voigt2(x, p) = @. p[1] + p[2]*real(erfcx(-im*((x - p[3] + im*p[4])/sqrt(2)/p[5]))) + p[6]*real(erfcx(-im*((x - p[7] + im*p[8])/sqrt(2)/p[9])))
 
 end # Utils

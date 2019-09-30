@@ -57,4 +57,9 @@ export TOMPlot,
        PlotFitSpectrum,
        SpaceSolutionOFplot
 
+include("FitBellShapeCurves.jl")
+using .FitBellShapeCurves
+export CurveModelSolution,
+       FitCurveModel
+
 end # ThinFilmsTools
