@@ -1,5 +1,11 @@
 # This file is machine-generated - editing it directly is not advised
 
+[[Arpack]]
+deps = ["BinaryProvider", "Libdl", "LinearAlgebra"]
+git-tree-sha1 = "07a2c077bdd4b6d23a40342a8a108e2ee5e58ab6"
+uuid = "7d9fca2a-8960-54d3-9f78-7d1dccf2cb97"
+version = "0.3.1"
+
 [[ArrayInterface]]
 deps = ["LinearAlgebra", "Requires", "SparseArrays"]
 git-tree-sha1 = "981354dab938901c2b607a213e62d9defa50b698"
@@ -122,6 +128,12 @@ version = "0.0.10"
 deps = ["Random", "Serialization", "Sockets"]
 uuid = "8ba89e20-285c-5b6f-9357-94700520ee1b"
 
+[[Distributions]]
+deps = ["LinearAlgebra", "PDMats", "Printf", "QuadGK", "Random", "SpecialFunctions", "Statistics", "StatsBase", "StatsFuns"]
+git-tree-sha1 = "56a158bc0abe4af5d4027af2275fde484261ca6d"
+uuid = "31c24e10-a181-5473-b8eb-7969acd0382f"
+version = "0.19.2"
+
 [[FFMPEG]]
 deps = ["BinaryProvider", "Libdl"]
 git-tree-sha1 = "f65cf703281fb7917beca5ead1c67e6d60ef9597"
@@ -209,6 +221,12 @@ uuid = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 [[Logging]]
 uuid = "56ddb016-857b-54e1-b83d-db4d58db5568"
 
+[[LsqFit]]
+deps = ["Distributions", "LinearAlgebra", "NLSolversBase", "OptimBase", "Random", "StatsBase", "Test"]
+git-tree-sha1 = "186c2afbdb3cd52191078cfc6176f7084ed9dfb7"
+uuid = "2fda8390-95c7-5789-9bda-21331edee243"
+version = "0.8.1"
+
 [[Markdown]]
 deps = ["Base64"]
 uuid = "d6f4376e-aef5-505a-96c1-9c027394607a"
@@ -250,11 +268,23 @@ git-tree-sha1 = "2bda07c4b28036258d76729f06ef845a7d1d9daf"
 uuid = "429524aa-4258-5aef-a3af-852621145aeb"
 version = "0.19.3"
 
+[[OptimBase]]
+deps = ["Compat", "NLSolversBase", "Printf", "Reexport", "Test"]
+git-tree-sha1 = "92667ab46a66ad502ec3044f65c41ea68b2e0e9c"
+uuid = "87e2bd06-a317-5318-96d9-3ecbac512eee"
+version = "2.0.0"
+
 [[OrderedCollections]]
 deps = ["Random", "Serialization", "Test"]
 git-tree-sha1 = "c4c13474d23c60d20a67b217f1d7f22a40edf8f1"
 uuid = "bac558e1-5e72-5ebc-8fee-abe8a469f55d"
 version = "1.1.0"
+
+[[PDMats]]
+deps = ["Arpack", "LinearAlgebra", "SparseArrays", "SuiteSparse", "Test"]
+git-tree-sha1 = "035f8d60ba2a22cb1d2580b1e0e5ce0cb05e4563"
+uuid = "90014a1f-27ba-587c-ab20-58faa44d9150"
+version = "0.9.10"
 
 [[Parameters]]
 deps = ["OrderedCollections"]
@@ -337,6 +367,12 @@ git-tree-sha1 = "f6fbf4ba64d295e146e49e021207993b6b48c7d1"
 uuid = "ae029012-a4dd-5104-9daa-d747884805df"
 version = "0.5.2"
 
+[[Rmath]]
+deps = ["BinaryProvider", "Libdl", "Random", "Statistics", "Test"]
+git-tree-sha1 = "9a6c758cdf73036c3239b0afbea790def1dabff9"
+uuid = "79098fc4-a85e-5d69-aa6a-4863f24498fa"
+version = "0.5.0"
+
 [[SHA]]
 uuid = "ea8e919c-243c-51af-8825-aaa63cd721ce"
 
@@ -387,6 +423,16 @@ deps = ["DataAPI", "DataStructures", "LinearAlgebra", "Missings", "Printf", "Ran
 git-tree-sha1 = "c53e809e63fe5cf5de13632090bc3520649c9950"
 uuid = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
 version = "0.32.0"
+
+[[StatsFuns]]
+deps = ["Rmath", "SpecialFunctions", "Test"]
+git-tree-sha1 = "b3a4e86aa13c732b8a8c0ba0c3d3264f55e6bb3e"
+uuid = "4c63d2b9-4356-54db-8cca-17b64c39e42c"
+version = "0.8.0"
+
+[[SuiteSparse]]
+deps = ["Libdl", "LinearAlgebra", "Serialization", "SparseArrays"]
+uuid = "4607b0f0-06f3-5cda-b6b1-a6196a1729e9"
 
 [[Test]]
 deps = ["Distributed", "InteractiveUtils", "Logging", "Random"]
