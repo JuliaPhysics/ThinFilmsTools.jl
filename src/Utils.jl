@@ -15,10 +15,13 @@ export build_interpolation,
 	   averagePolarisation,
 	   Gaussian1,
 	   Gaussian2,
+	   Gaussian3,
 	   Lorentzian1,
 	   Lorentzian2,
+	   Lorentzian3,
 	   Voigt1,
 	   Voigt2,
+	   Voigt3,
 	   Info
 
 function Info()
@@ -36,10 +39,13 @@ function Info()
 	"\n     averagePolarisation(pol, Xp, Xs)" *
 	"\n     Gaussian1(x, p)" *
 	"\n     Gaussian2(x, p)" *
+	"\n     Gaussian3(x, p)" *
 	"\n     Lorentzian1(x, p)" *
 	"\n     Lorentzian2(x, p)" *
+	"\n     Lorentzian3(x, p)" *
 	"\n     Voigt1(x, p)" *
 	"\n     Voigt2(x, p)" *
+	"\n     Voigt3(x, p)" *
 	"\n "
 	"\n     To use any of these functions type: Utils.function(args)." *
 	"\n "
@@ -293,6 +299,25 @@ Gaussian2(x, p) = @. p[1] + p[2]*exp(-((x - p[3])/p[4])^2) + p[5]*exp(-((x - p[6
 
 """
 
+	Triple peak Gaussian PDF curve. (Normal distribution)
+
+		model3g = Gaussian3(x, p)
+
+			x = vector with data of the x-axis
+			p = [p0, A1, μ1, σ1, A2, μ2, σ2, A3, μ3, σ3]
+				p0: offset of the total curve
+				Ai: amplitude of the peaks
+				μi: position of the peaks
+				σi: standard deviation of the peaks
+				i = 1, 2, 3
+
+	Source: https://en.wikipedia.org/wiki/Normal_distribution
+
+"""
+Gaussian3(x, p) = @. p[1] + p[2]*exp(-((x - p[3])/p[4])^2) + p[5]*exp(-((x - p[6])/p[7])^2) + p[8]*exp(-((x - p[9])/p[10])^2)
+
+"""
+
 	Single peak Cauchy-Lorentz PDF curve.
 
 		model1l = Lorentzian1(x, p)
@@ -330,6 +355,25 @@ Lorentzian2(x, p) = @. p[1] + p[2]/(1.0 + ((x - p[3])/p[4])^2) + p[5]/(1.0 + ((x
 
 """
 
+	Triple peak Cauchy-Lorentz PDF curve.
+
+		model3l = Lorentzian3(x, p)
+
+			x = vector with data of the x-axis
+			p = [p0, A1, μ1, Γ1, A2, μ2, Γ2, A3, μ3, Γ3]
+				p0: offset of the total curve
+				Ai: amplitude of the peaks
+				μi: position of the peaks (location parameters)
+				Γi: half-width at half-maximum (HWHM)
+				i = 1, 2, 3
+
+	Source: https://en.wikipedia.org/wiki/Cauchy_distribution
+
+"""
+Lorentzian3(x, p) = @. p[1] + p[2]/(1.0 + ((x - p[3])/p[4])^2) + p[5]/(1.0 + ((x - p[6])/p[7])^2) + p[8]/(1.0 + ((x - p[9])/p[10])^2)
+
+"""
+
 	Single peak Voigt PDF curve. The function is computed using the Fadeeva's function through the scaled complementary error function of x erfcx.
 
 		model1v = Voigt1(x, p)
@@ -356,7 +400,7 @@ Voigt1(x, p) = @. p[1] + p[2]*real(erfcx(-im*((x - p[3] + im*p[4])/sqrt(2)/p[5])
 		model2v = Voigt2(x, p)
 
 			x = vector with data of the x-axis
-			p = [p0, Ai, μi, σi, Γi]
+			p = [p0, A1, μ1, σ1, Γ1, A2, μ2, σ2, Γ2]
 				p0: offset of the total curve. It is not the real amplitude because I could not find a way to normalize it.
 				Ai: amplitude of the peaks
 				μi: position of the peaks (location parameter)
@@ -370,5 +414,27 @@ Voigt1(x, p) = @. p[1] + p[2]*real(erfcx(-im*((x - p[3] + im*p[4])/sqrt(2)/p[5])
 
 """
 Voigt2(x, p) = @. p[1] + p[2]*real(erfcx(-im*((x - p[3] + im*p[4])/sqrt(2)/p[5]))) + p[6]*real(erfcx(-im*((x - p[7] + im*p[8])/sqrt(2)/p[9])))
+
+"""
+
+	Triple peak Voigt PDF curve. The function is computed using the Fadeeva's function through the scaled complementary error function of x erfcx.
+
+		model3v = Voigt3(x, p)
+
+			x = vector with data of the x-axis
+			p = [p0, A1, μ1, σ1, Γ1, A2, μ2, σ2, Γ2, A3, μ3, σ3, Γ3]
+				p0: offset of the total curve. It is not the real amplitude because I could not find a way to normalize it.
+				Ai: amplitude of the peaks
+				μi: position of the peaks (location parameter)
+				σi: Gaussian standard deviation of the peaks
+				Γi: Lorentzian half-width at half-maximum (HWHM) of the peaks
+				i = 1, 2, 3
+
+		The μi parameters have been included in a custom fashion to allow the distribution to be uncentered.
+
+	Source: https://en.wikipedia.org/wiki/Voigt_profile
+
+"""
+Voigt3(x, p) = @. p[1] + p[2]*real(erfcx(-im*((x - p[3] + im*p[4])/sqrt(2)/p[5]))) + p[6]*real(erfcx(-im*((x - p[7] + im*p[8])/sqrt(2)/p[9]))) + p[10]*real(erfcx(-im*((x - p[11] + im*p[12])/sqrt(2)/p[13])))
 
 end # Utils
