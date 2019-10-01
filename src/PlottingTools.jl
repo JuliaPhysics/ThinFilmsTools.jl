@@ -34,7 +34,7 @@ export TOMPlot,
 
 """
 struct TOMPlot end
-@recipe function f(::TOMPlot, solution; s=(640,480), customcolors=[:black :orange])
+@recipe function f(::TOMPlot, solution; s=(640,480), customcolors=[RGB(([230,159,0]/255)...) RGB(([ 86, 180, 233] / 255)...)])
     linecolor --> customcolors
     seriestype  :=  :path
     linestyle --> [:solid :dashdot]
@@ -52,17 +52,18 @@ end
 
     Plot the spectrum of Reflectance, Transmittance and Absorbance as input.
 
-        plot(TMMOPlotSpectra1D(), λ, S; s=(640,480))
+        plot(TMMOPlotSpectra1D(), λ, S; s=(640,480), customcolors=RGB(0,0,0))
         gui()
 
             λ: wavelength range
             S: spectrum
                 s: size of the figure
+                customcolors: color for the line
 
 """
 struct TMMOPlotSpectra1D end
-@recipe function f(::TMMOPlotSpectra1D, λ, S; s=(640,480))
-    # linecolor   --> customcolors
+@recipe function f(::TMMOPlotSpectra1D, λ, S; s=(640,480), customcolors=RGB(0,0,0))
+    linecolor   --> customcolors
     seriestype  :=  :path
     linestyle --> :solid
     xlabel --> "Wavelength [nm]"
@@ -79,17 +80,18 @@ end
 
     Plot the spectrum of Reflectance, Transmittance and Absorbance as input for angle of incidence.
 
-        plot(TMMOPlotSpectraAngle1D(), θ, S, s=(640,480))
+        plot(TMMOPlotSpectraAngle1D(), θ, S, s=(640,480), customcolors=RGB(0,0,0))
         gui()
 
             θ: angle of incidence
             S: spectrum
                 s: size of the figure
+                customcolors: color for the line
 
 """
 struct TMMOPlotSpectraAngle1D end
-@recipe function f(::TMMOPlotSpectraAngle1D, θ, S; s=(640,480))
-    # linecolor   --> RGB(([0,0,0]/255)...)
+@recipe function f(::TMMOPlotSpectraAngle1D, θ, S; s=(640,480), customcolors=RGB(0,0,0))
+    linecolor   --> customcolors
     seriestype  :=  :path
     linestyle --> :solid # :dash :dashdot]
     xlabel --> L"Angle of incidence [$\degree$]"
@@ -192,18 +194,19 @@ end
 
     Recipe for plotting a comparison of the model and experimental spectra.
 
-        plot(PlotFitSpectrum(), x, Xexp, Xmodel; s=(640,480))
+        plot(PlotFitSpectrum(), x, Xexp, Xmodel; s=(640,480), customcolors=RGB(([86,180,233]/255)...))
         gui()
 
             x: range of variable (λ or θ)
             Xexp: experimental spectrum
             Xmodel: model spectrum
                 s: size of the figure
+                customcolors: color for the line
 
 """
 struct PlotFitSpectrum end
-@recipe function f(::PlotFitSpectrum, x, Xexp, Xmodel; s=(640,480), customcolor=:black)
-    linecolor --> customcolor
+@recipe function f(::PlotFitSpectrum, x, Xexp, Xmodel; s=(640,480), customcolors=RGB(([86,180,233]/255)...))
+    linecolor --> customcolors
     seriestype := :path
     linestyle --> :solid
     @series begin

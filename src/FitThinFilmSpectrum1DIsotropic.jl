@@ -71,8 +71,8 @@ function NormalizeReflectance(λ::AbstractArray{T0,1}, Rexp::Array{T1,2}, Rthe::
     spl_the = build_interpolation(Rthe)
     exp2ref = spl_exp.(λ) ./ spl_ref.(λ)
     # Find out if the sample is overshooting the reference
-    (maximum(exp2ref) < 1.0) || return (exp2ref./ maximum(exp2ref) .* spl_the.(λ))
-    return exp2ref .* spl_the.(λ)
+    (maximum(exp2ref) < 1.0) || return (exp2ref./maximum(exp2ref).*spl_the.(λ))
+    return exp2ref.*spl_the.(λ)
 end
 
 """

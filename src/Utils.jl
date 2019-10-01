@@ -3,25 +3,22 @@ module Utils
 using Interpolations
 using HDF5
 using SpecialFunctions
+using LinearAlgebra
 
 export build_interpolation,
 	   readh5_file,
 	   multipleReflections,
+	   findClosest,
 	   bbRadiation,
 	   wavelength2RGB,
 	   movingAverage,
+	   savitzkyGolay,
 	   flattenArrays,
 	   arrayArrays,
 	   averagePolarisation,
-	   Gaussian1,
-	   Gaussian2,
-	   Gaussian3,
-	   Lorentzian1,
-	   Lorentzian2,
-	   Lorentzian3,
-	   Voigt1,
-	   Voigt2,
-	   Voigt3,
+	   Gaussian,
+	   Lorentzian,
+	   Voigtian,
 	   Info
 
 function Info()
@@ -31,25 +28,36 @@ function Info()
 	"\n " *
 	"\n     build_interpolation(X)" *
 	"\n     multipleReflections(n)" *
+	"\n     findClosest(x, x0)" *
 	"\n     bbRadiation(λ, T)" *
 	"\n     wavelength2RGB(λ)" *
 	"\n     movingAverage(x, w)" *
+	"\n     savitzkyGolay(x, k, p)" *
 	"\n     flattenArrays(x)" *
 	"\n     arrayArrays(x, y)" *
 	"\n     averagePolarisation(pol, Xp, Xs)" *
-	"\n     Gaussian1(x, p)" *
-	"\n     Gaussian2(x, p)" *
-	"\n     Gaussian3(x, p)" *
-	"\n     Lorentzian1(x, p)" *
-	"\n     Lorentzian2(x, p)" *
-	"\n     Lorentzian3(x, p)" *
-	"\n     Voigt1(x, p)" *
-	"\n     Voigt2(x, p)" *
-	"\n     Voigt3(x, p)" *
+	"\n     Gaussian(x, p)" *
+	"\n     Lorentzian(x, p)" *
+	"\n     Voigtian(x, p)" *
 	"\n "
 	"\n     To use any of these functions type: Utils.function(args)." *
 	"\n "
 	return println(tmp1)
+end
+
+"""
+
+	Find the index of the closest element in an array x to a given number x0.
+
+		idx = findClosest(x, x0)
+
+			x: Data array
+			x0: Element to search in x
+			idx: Index
+
+"""
+function findClosest(x::Array, x0::Number)
+  return findmin(abs.(x .- x0))[2]
 end
 
 """Read the HDF5 file with the database."""
@@ -212,6 +220,43 @@ function movingAverage(x::AbstractVector{T1}, w::T2) where {T1<:Real, T2<:Int64}
     return y
 end
 
+
+"""
+
+	Polynomial smoothing with the Savitzky Golay filters. I adapted it for julia >= 1.0.
+
+		ysmooth = savitzkyGolay(x, windowSize, polyOrder; deriv=0)
+
+			x: array of noisy data to smooth
+			windowSize: Window size must be an odd integer
+			polyOrder: Polynomial order must me lower than window size
+			deriv: Derivative order to slice out
+			ysmooth: smoothed data
+
+	Sources: https://github.com/BBN-Q/Qlab.jl/blob/master/src/SavitskyGolay.jl
+
+"""
+function savitzkyGolay(x::Vector, windowSize::Int, polyOrder::Int; deriv::Int=0)
+  isodd(windowSize) || throw("Window size must be an odd integer.")
+  polyOrder < windowSize || throw("Polynomial order must me less than window size.")
+  halfWindow = Int( ceil((windowSize-1)/2) )
+  # Setup the S matrix of basis vectors
+  S = zeros.(windowSize, polyOrder+1)
+  for ct = 0:polyOrder
+    S[:,ct+1] = (-halfWindow:halfWindow).^(ct)
+  end
+  ## Compute the filter coefficients for all orders
+  # From the scipy code it seems pinv(S) and taking rows should be enough
+  G = S * pinv(S' * S)
+  # Slice out the derivative order we want
+  filterCoeffs = G[:, deriv+1] * factorial(deriv)
+  # Pad the signal with the endpoints and convolve with filter
+  paddedX = [x[1]*ones(halfWindow); x; x[end]*ones(halfWindow)]
+  y = conv(filterCoeffs[end:-1:1], paddedX)
+  # Return the valid midsection
+  return y[2*halfWindow+1:end-2*halfWindow]
+end
+
 """
 
     Convert Array{Array{Real,1},1} to an Array{Real,1}.
@@ -262,115 +307,55 @@ end
 
 """
 
-	Single peak Gaussian PDF curve.
+	Multipeak Gaussian PDF curve.
 
-		model1g = Gaussian1(x, p)
+		modelg = Gaussian(x, p)
 
 			x = vector with data of the x-axis
-			p = [p0, A, μ, σ]
-				p0: offset of the curve
-				A: amplitude of the curve
-				μ: position of the peak (mean or expectation of the distribution)
-				σ: standard deviation
+			p = [[p0], [A1, μ1, σ1], [A2, μ2, σ2],...]
+				p0: offset of the total curve
+				Ai: amplitude of peak i
+				μi: position of peak i (mean or expectation of the distribution)
+				σi: standard deviation of peak i
+				i = 1,...,n
 
 	Source: https://en.wikipedia.org/wiki/Normal_distribution
 
 """
-Gaussian1(x, p) = @. p[1] + p[2]*exp(-((x - p[3])/p[4])^2)
+function Gaussian(x, p)
+    isequal(length(flattenArrays(p)[2:end]), 3*(length(p)-1)) || throw("The inputs are not correct. For the Gaussian curve, each peak has three parameters plus the offset.")
+    y = ones(length(x)).*p[1][1] # offset
+    for i = 2:length(p)
+        @. y += p[i][1]*exp(-((x - p[i][2])/p[i][3])^2)
+    end
+    return y
+end
 
 """
 
-	Double peak Gaussian PDF curve. (Normal distribution)
+	Multipeak Cauchy-Lorentz PDF curve.
 
-		model2g = Gaussian2(x, p)
+		modell = Lorentzian(x, p)
 
 			x = vector with data of the x-axis
-			p = [p0, A1, μ1, σ1, A2, μ2, σ2]
+			p = [[p0], [A1, μ1, Γ1], [A2, μ2, Γ2],...]
 				p0: offset of the total curve
-				Ai: amplitude of the peaks
-				μi: position of the peaks
-				σi: standard deviation of the peaks
-				i = 1, 2
-
-	Source: https://en.wikipedia.org/wiki/Normal_distribution
-
-"""
-Gaussian2(x, p) = @. p[1] + p[2]*exp(-((x - p[3])/p[4])^2) + p[5]*exp(-((x - p[6])/p[7])^2)
-
-"""
-
-	Triple peak Gaussian PDF curve. (Normal distribution)
-
-		model3g = Gaussian3(x, p)
-
-			x = vector with data of the x-axis
-			p = [p0, A1, μ1, σ1, A2, μ2, σ2, A3, μ3, σ3]
-				p0: offset of the total curve
-				Ai: amplitude of the peaks
-				μi: position of the peaks
-				σi: standard deviation of the peaks
-				i = 1, 2, 3
-
-	Source: https://en.wikipedia.org/wiki/Normal_distribution
-
-"""
-Gaussian3(x, p) = @. p[1] + p[2]*exp(-((x - p[3])/p[4])^2) + p[5]*exp(-((x - p[6])/p[7])^2) + p[8]*exp(-((x - p[9])/p[10])^2)
-
-"""
-
-	Single peak Cauchy-Lorentz PDF curve.
-
-		model1l = Lorentzian1(x, p)
-
-			x = vector with data of the x-axis
-			p = [p0, A, μ, Γ]
-				p0: offset of the total curve
-				A: amplitude of the curve
-				μ: position of the peak (location parameter)
-				Γ: half-width at half-maximum (HWHM)
+				Ai: amplitude of peak i
+				μi: position of peak i (location parameter)
+				Γi: half-width at half-maximum (HWHM) of peak i
+				i = 1,...,n
 
 	Source: https://en.wikipedia.org/wiki/Cauchy_distribution
 
 """
-Lorentzian1(x, p) = @. p[1] + p[2]/(1.0 + ((x - p[3])/p[4])^2)
-
-"""
-
-	Double peak Cauchy-Lorentz PDF curve.
-
-		model2l = Lorentzian2(x, p)
-
-			x = vector with data of the x-axis
-			p = [p0, A1, μ1, Γ1, A2, μ2, Γ2]
-				p0: offset of the total curve
-				Ai: amplitude of the peaks
-				μi: position of the peaks (location parameters)
-				Γi: half-width at half-maximum (HWHM)
-				i = 1, 2
-
-	Source: https://en.wikipedia.org/wiki/Cauchy_distribution
-
-"""
-Lorentzian2(x, p) = @. p[1] + p[2]/(1.0 + ((x - p[3])/p[4])^2) + p[5]/(1.0 + ((x - p[6])/p[7])^2)
-
-"""
-
-	Triple peak Cauchy-Lorentz PDF curve.
-
-		model3l = Lorentzian3(x, p)
-
-			x = vector with data of the x-axis
-			p = [p0, A1, μ1, Γ1, A2, μ2, Γ2, A3, μ3, Γ3]
-				p0: offset of the total curve
-				Ai: amplitude of the peaks
-				μi: position of the peaks (location parameters)
-				Γi: half-width at half-maximum (HWHM)
-				i = 1, 2, 3
-
-	Source: https://en.wikipedia.org/wiki/Cauchy_distribution
-
-"""
-Lorentzian3(x, p) = @. p[1] + p[2]/(1.0 + ((x - p[3])/p[4])^2) + p[5]/(1.0 + ((x - p[6])/p[7])^2) + p[8]/(1.0 + ((x - p[9])/p[10])^2)
+function Lorentzian(x, p)
+    isequal(length(flattenArrays(p)[2:end]), 3*(length(p)-1)) || throw("The inputs are not correct. For the Lorentzian curve, each peak has three parameters plus the offset.")
+    y = ones(length(x)).*p[1][1] # offset
+    for i = 2:length(p)
+        @. y += p[i][1]/(1.0 + ((x - p[i][2])/p[i][3])^2)
+    end
+    return y
+end
 
 """
 
@@ -379,62 +364,26 @@ Lorentzian3(x, p) = @. p[1] + p[2]/(1.0 + ((x - p[3])/p[4])^2) + p[5]/(1.0 + ((x
 		model1v = Voigt1(x, p)
 
 			x = vector with data of the x-axis
-			p = [p0, A, μ, σ, Γ]
+			p = [[p0], [A1, μ1, σ1, Γ1], [A2, μ2, σ2, Γ2],...]
 				p0: offset of the total curve
-				A: amplitude of the curve
-				μ: position of the peak (location parameter)
-				σ: Gaussian standard deviation
-				Γ: Lorentzian half-width at half-maximum (HWHM)
+				Ai: amplitude of the curve
+				μi: position of peak i (location parameter)
+				σi: Gaussian standard deviation of peak i
+				Γi: Lorentzian half-width at half-maximum (HWHM) of peak i
+				i = 1,...,n
 
 		The μ parameter has been included in a custom fashion to allow the distribution to be uncentered.
 
 	Source: https://en.wikipedia.org/wiki/Voigt_profile
 
 """
-Voigt1(x, p) = @. p[1] + p[2]*real(erfcx(-im*((x - p[3] + im*p[4])/sqrt(2)/p[5])))
-
-"""
-
-	Double peak Voigt PDF curve. The function is computed using the Fadeeva's function through the scaled complementary error function of x erfcx.
-
-		model2v = Voigt2(x, p)
-
-			x = vector with data of the x-axis
-			p = [p0, A1, μ1, σ1, Γ1, A2, μ2, σ2, Γ2]
-				p0: offset of the total curve. It is not the real amplitude because I could not find a way to normalize it.
-				Ai: amplitude of the peaks
-				μi: position of the peaks (location parameter)
-				σi: Gaussian standard deviation of the peaks
-				Γi: Lorentzian half-width at half-maximum (HWHM) of the peaks
-				i = 1, 2
-
-		The μi parameters have been included in a custom fashion to allow the distribution to be uncentered.
-
-	Source: https://en.wikipedia.org/wiki/Voigt_profile
-
-"""
-Voigt2(x, p) = @. p[1] + p[2]*real(erfcx(-im*((x - p[3] + im*p[4])/sqrt(2)/p[5]))) + p[6]*real(erfcx(-im*((x - p[7] + im*p[8])/sqrt(2)/p[9])))
-
-"""
-
-	Triple peak Voigt PDF curve. The function is computed using the Fadeeva's function through the scaled complementary error function of x erfcx.
-
-		model3v = Voigt3(x, p)
-
-			x = vector with data of the x-axis
-			p = [p0, A1, μ1, σ1, Γ1, A2, μ2, σ2, Γ2, A3, μ3, σ3, Γ3]
-				p0: offset of the total curve. It is not the real amplitude because I could not find a way to normalize it.
-				Ai: amplitude of the peaks
-				μi: position of the peaks (location parameter)
-				σi: Gaussian standard deviation of the peaks
-				Γi: Lorentzian half-width at half-maximum (HWHM) of the peaks
-				i = 1, 2, 3
-
-		The μi parameters have been included in a custom fashion to allow the distribution to be uncentered.
-
-	Source: https://en.wikipedia.org/wiki/Voigt_profile
-
-"""
-Voigt3(x, p) = @. p[1] + p[2]*real(erfcx(-im*((x - p[3] + im*p[4])/sqrt(2)/p[5]))) + p[6]*real(erfcx(-im*((x - p[7] + im*p[8])/sqrt(2)/p[9]))) + p[10]*real(erfcx(-im*((x - p[11] + im*p[12])/sqrt(2)/p[13])))
+function Voigtian(x, p)
+    isequal(length(flattenArrays(p)[2:end]), 4*(length(p)-1)) || throw("The inputs are not correct. For the Voigtian curve, each peak has four parameters plus the offset.")
+    y = ones(length(x)).*p[1][1] # offset
+    for i = 2:length(p)
+        @. y += p[i][1]*real(erfcx(-im*((x - p[i][2] + im*p[i][3])/sqrt(2)/p[i][4])))
+    end
+    return y
+end
 
 end # Utils
