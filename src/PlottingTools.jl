@@ -1,6 +1,7 @@
 module PlottingTools
 
-using Plots
+using Colors
+using RecipesBase
 using LaTeXStrings
 using Printf: @sprintf
 
@@ -10,10 +11,14 @@ export TOMPlot,
        TMMOPlotSpectra2D,
        TMMOPlotEMF2D,
        TMMOPlotEMFAngle2D,
-       TMMOPlotNprofile,
-       TMMOPlotDispersion,
        PlotFitSpectrum,
-       SpaceSolutionOFplot
+       SpaceSolutionOFplot,
+       TMMOPlotNprofile,
+       TMMOPlotDispersion1D,
+       TMMOPlotDispersion1Dalt,
+       TMMOPlotDispersion1Dimre,
+       TMMOPlotDispersion2D,
+       TMMOPlotDispersion2Dalt
 
 """
 
@@ -25,17 +30,15 @@ export TOMPlot,
 
     Recipe for producing the ThreeOmegaMethod solution plot.
 
-        plot(TOMPlot(), solution; s=(640,480), customcolors=[black orange])
+        plot(TOMPlot(), solution; s=(640,480))
         gui()
 
             solution: structure from the ThreeOmegaMethod
                 s: size of the figure
-                customcolors: array with colors for the two lines
 
 """
 struct TOMPlot end
-@recipe function f(::TOMPlot, solution; s=(640,480), customcolors=[RGB(([230,159,0]/255)...) RGB(([ 86, 180, 233] / 255)...)])
-    linecolor --> customcolors
+@recipe function f(::TOMPlot, solution; s=(640,480))
     seriestype  :=  :path
     linestyle --> [:solid :dashdot]
     xlabel --> "Frequency [Hz]"
@@ -52,18 +55,16 @@ end
 
     Plot the spectrum of Reflectance, Transmittance and Absorbance as input.
 
-        plot(TMMOPlotSpectra1D(), λ, S; s=(640,480), customcolors=RGB(0,0,0))
+        plot(TMMOPlotSpectra1D(), λ, S; s=(640,480))
         gui()
 
             λ: wavelength range
             S: spectrum
                 s: size of the figure
-                customcolors: color for the line
 
 """
 struct TMMOPlotSpectra1D end
-@recipe function f(::TMMOPlotSpectra1D, λ, S; s=(640,480), customcolors=RGB(0,0,0))
-    linecolor   --> customcolors
+@recipe function f(::TMMOPlotSpectra1D, λ, S; s=(640,480))
     seriestype  :=  :path
     linestyle --> :solid
     xlabel --> "Wavelength [nm]"
@@ -80,18 +81,16 @@ end
 
     Plot the spectrum of Reflectance, Transmittance and Absorbance as input for angle of incidence.
 
-        plot(TMMOPlotSpectraAngle1D(), θ, S, s=(640,480), customcolors=RGB(0,0,0))
+        plot(TMMOPlotSpectraAngle1D(), θ, S, s=(640,480))
         gui()
 
             θ: angle of incidence
             S: spectrum
                 s: size of the figure
-                customcolors: color for the line
 
 """
 struct TMMOPlotSpectraAngle1D end
-@recipe function f(::TMMOPlotSpectraAngle1D, θ, S; s=(640,480), customcolors=RGB(0,0,0))
-    linecolor   --> customcolors
+@recipe function f(::TMMOPlotSpectraAngle1D, θ, S; s=(640,480))
     seriestype  :=  :path
     linestyle --> :solid # :dash :dashdot]
     xlabel --> L"Angle of incidence [$\degree$]"
@@ -116,14 +115,14 @@ end
             S: spectrum
                 num_levels: number of levels for the contour plot
                 s: size of the figure
-
+:black
 """
 struct TMMOPlotSpectra2D end
 @recipe function f(::TMMOPlotSpectra2D, λ, θ, S; num_levels=80, s=(640,480))
     seriestype  :=  :contour
     fill --> true
     levels --> num_levels
-    color --> cgrad(:viridis)
+    # color --> colormap("RdBu")
     xlabel --> "Wavelength [nm]"
     ylabel --> L"Angle of incidence [$\degree$]"
     # xlim --> (λ[1], λ[end])
@@ -153,7 +152,7 @@ struct TMMOPlotEMF2D end
     seriestype  :=  :contour
     fill --> true
     levels --> num_levels
-    color --> cgrad(:viridis)
+    # color --> colormap("RdBu")
     xlabel --> "Wavelength [nm]"
     ylabel --> "Depth profile [nm]"
     # title --> "EMF Intensity for s-wave"
@@ -181,7 +180,7 @@ struct TMMOPlotEMFAngle2D end
     seriestype  :=  :contour
     fill --> true
     levels --> num_levels
-    color --> cgrad(:viridis)
+    # color --> colormap("RdBu")
     xlabel --> L"Angle of incidence [$\degree$]"
     ylabel --> "Depth profile [nm]"
     # title --> "EMF Intensity"
@@ -194,19 +193,18 @@ end
 
     Recipe for plotting a comparison of the model and experimental spectra.
 
-        plot(PlotFitSpectrum(), x, Xexp, Xmodel; s=(640,480), customcolors=RGB(([86,180,233]/255)...))
+        plot(PlotFitSpectrum(), x, Xexp, Xmodel; s=(640,480))
         gui()
 
             x: range of variable (λ or θ)
             Xexp: experimental spectrum
             Xmodel: model spectrum
                 s: size of the figure
-                customcolors: color for the line
 
 """
 struct PlotFitSpectrum end
-@recipe function f(::PlotFitSpectrum, x, Xexp, Xmodel; s=(640,480), customcolors=RGB(([86,180,233]/255)...))
-    linecolor --> customcolors
+@recipe function f(::PlotFitSpectrum, x, Xexp, Xmodel; s=(640,480))
+    # linecolor --> customcolors[1]
     seriestype := :path
     linestyle --> :solid
     @series begin
@@ -214,7 +212,7 @@ struct PlotFitSpectrum end
         markershape --> :circle
         markersize --> 5
         markeralpha --> 0.5
-        markercolor --> RGBA(0,0,0,0.5)
+        # markercolor --> customcolors[2]
         markerstrokewidth --> 0.5
         label --> "Data"
         x, Xexp
@@ -247,7 +245,7 @@ struct SpaceSolutionOFplot end
     seriestype := :contour
     fill --> true
     levels --> num_levels
-    color --> cgrad(:viridis)
+    # color --> colormap("RdBu")
     # tickfont --> font(12)
     size --> s
     xlims --> (lims[1], lims[2])
@@ -257,7 +255,7 @@ end
 
 """
 
-    Plots the index of refraction ath certain wavelength (usually λ0) of the multilayer structure computed from TMMOptics.
+    Plots the index of refraction ath certain wavelength (usually λ0) of the multilayer structure.
 
         TMMOPlotNprofile(solution; wave=:b, λ=solution.Misc.λ0, θ=solution.Beam.θ[1], s=(640,480))
 
@@ -268,44 +266,67 @@ end
                 s: size of the figure
 
 """
-function TMMOPlotNprofile(solution; wave=:b, λ=[solution.Misc.λ0], θ=[solution.Beam.θ[1]], s=(640,480))
-    # Generate colors for different layers
-    assigned_cols = colorsUniqueLayers(solution.Misc.d)
-    # Define the thickness vector with the incident and substrate medium
+struct TMMOPlotNprofile end
+@recipe function f(::TMMOPlotNprofile, solution; plotemf=false, wave=:b, λ=[solution.Misc.λ0], θ=[solution.Beam.θ[1]], s=(640,480))
     d = solution.Misc.d[2:end-1] # remove incident and emergent media
     doffset = 0.05*sum(d)
     new_d = [-doffset; cumsum([0; d; doffset], dims=1)]
-    # diffnew_d = diff(new_d)
-    plot(TMMOPlot_rectangles.(diff(new_d), solution.Misc.nλ0, new_d[1:end-1], 0.0), opacity=0.6, c=assigned_cols, line=(0.0), xaxis=("Thickness profile [nm]"), legend=false, tickfont=font(12), size=s, label="", yaxis=(L"Refractive index at $\lambda_0$"))
-    gui()
-    if !isempty(solution.Field.emfp)
-        plot(TMMOPlot_rectangles.(diff(new_d), solution.Misc.nλ0, new_d[1:end-1], 0.0), opacity=0.6, c=assigned_cols, line=(0.0), xaxis=("Thickness profile [nm]"), tickfont=font(12), size=s, label="", yaxis=(L"Refractive index at $\lambda_0$"))
-        aux1 = findmin(abs.(solution.Beam.λ .- λ[1]))[2][1]
-        aux2 = findmin(abs.(solution.Beam.θ .- θ[1]))[2][1]
-        λaux1 = solution.Beam.λ[aux1]
-        θaux2 = solution.Beam.θ[aux2]
-        if wave == :p
-            plot!(solution.Misc.ℓ, solution.Field.emfp[aux1, aux2, :], label="", c=RGB(([0,0,0]/255)...))
-            title!(@sprintf("EMF-p resonance at λ = %0.0f nm and θ = %0.0f°", λaux1, θaux2), y=1.02)
-        elseif wave == :s
-            plot!(solution.Misc.ℓ, solution.Field.emfs[aux1, aux2, :], label="", c=RGB(([0,0,0]/255)...))
-            title!(@sprintf("EMF-s resonance at λ = %0.0f nm and θ = %0.0f°", λaux1, θaux2), y=1.02)
-        else
-            plot!(solution.Misc.ℓ, solution.Field.emfp[aux1, aux2, :], label="EMF-p", c=RGB(([0,0,0]/255)...), line=(:solid))
-            plot!(solution.Misc.ℓ, solution.Field.emfs[aux1, aux2, :], label="EMF-s", c=RGB(([230,159,0]/255)...), line=(:dashdot))
-            title!(@sprintf("EMF resonances at λ = %0.0f nm and θ = %0.0f°", λaux1, θaux2), y=1.02)
-        end
-        gui()
+    w = diff(new_d)
+    h = solution.Misc.nλ0
+    x = new_d[1:end-1]
+    y = zeros(length(x))
+    block1 = [x[i] .+ vcat(0.0, w[i], w[i], 0.0) for i=1:length(x)]
+    block2 = [y[i] .+ vcat(0.0, 0.0, h[i], h[i]) for i=1:length(x)]
+    xlabel --> "Thickness profile [nm]"
+    ylabel --> L"Refractive index at $\lambda_0$"
+    @series begin
+        seriestype := :shape
+        linewidth --> 0.0
+        legend --> false
+        size --> s
+        label --> ""
+        # Generate colors for different layers
+        color --> Array(colorsUniqueLayers(solution.Misc.d)')
+        alpha --> 0.6
+        block1, block2
     end
-    return nothing
+    if plotemf # overlap EMF
+        if ~isempty(solution.Field.emfp) # Check is not empty
+            aux1 = findmin(abs.(solution.Beam.λ .- λ[1]))[2][1]
+            aux2 = findmin(abs.(solution.Beam.θ .- θ[1]))[2][1]
+            λaux1 = solution.Beam.λ[aux1]
+            θaux2 = solution.Beam.θ[aux2]
+            if isequal(wave, :b)
+                @series begin
+                    seriestype := :path
+                    linestyle --> :solid
+                    label --> "EMF-p"
+                    solution.Misc.ℓ, solution.Field.emfp[aux1, aux2, :]
+                end
+                @series begin
+                    seriestype := :path
+                    linestyle --> :dash
+                    label --> "EMF-s"
+                    solution.Misc.ℓ, solution.Field.emfs[aux1, aux2, :]
+                end
+            elseif isequal(wave, :p)
+                @series begin
+                    seriestype := :path
+                    linestyle --> :solid
+                    label --> "EMF-p"
+                    solution.Misc.ℓ, solution.Field.emfp[aux1, aux2, :]
+                end
+            elseif isequal(wave, :s)
+                @series begin
+                    seriestype := :path
+                    linestyle --> :solid
+                    label --> "EMF-s"
+                    solution.Misc.ℓ, solution.Field.emfs[aux1, aux2, :]
+                end
+            end # if isequal(wave, :b)
+        end # if ~isempty(solution.Field.emfp) # Check is not empty
+    end # if plotemf
 end
-
-"""
-
-    Draw rectangles for the indices of refraction profile. (IU only)
-
-"""
-TMMOPlot_rectangles(w, h, x, y) = Shape(x .+ [0,w,w,0], y .+ [0,0,h,h])
 
 """
 
@@ -332,61 +353,286 @@ end
 
 """
 
-    Plots the photonic dispersion of the multilayer structure processed.
+    Plots the photonic dispersion (Bloch wavevector) of a photonic crystal structure, computed for a range of frequencies (wavelengths) and one angle of incidence.
 
-        TMMOPlotDispersion(solution; s=(640,480))
+    Takes both polarisation types and renders them into one piece. You need to pass either the real or imaginary parts of them.
 
-            solution: structure solution from TMMO1DIsotropic
+        TMMOPlotDispersion1Dalt(Bloch; kpart=:real, s=(640,480))
+        gui()
+
+            solution.Bloch: Bloch structure of the solution
+            kpart: either real (:real, default) or imginary (:imag)
                 s: size of the figure
 
 """
-function TMMOPlotDispersion(solution; s=(640,480))
-    Λ = solution.Bloch.Λ # periodicity
-    ω = solution.Bloch.ω .* Λ ./ 2.0 ./ π # frequency range normalized
-    kblochs = solution.Bloch.κs .* Λ ./ π
-    kblochp = solution.Bloch.κp .* Λ ./ π
-    cc = [RGB(([0,0,0]/255)...) RGB(([230,159,0]/255)...) RGB(([86,180,233]/255)...)]
-    if length(solution.Beam.θ) == 1
-        tmp1 = ceil(maximum(abs.(imag.(kblochp))), digits=1) # carefull for small numbers like 0.001
-        tmp2 = ceil(maximum(abs.(imag.(kblochs))), digits=1)
-        p1 = plot(solution.Spectra.Rp, ω, c=cc[1], yaxis=(L"\omega\Lambda/(2\pi)"), xaxis=("Reflectance", (0.0,1.0)), label="p-wave", xticks=(0:0.25:1, string.(0.0:0.25:1)))
-        plot!(p1, solution.Spectra.Rs, ω, c=cc[1], line=(:dashdot), label="s-wave")
-        p2 = plot(-real.(kblochp), ω, c=cc[2], yaxis=(""), xaxis=(L"K^{r}_{Bloch}\Lambda/\pi", (-1.0,1.0)), label="", title=("p/TM     s/TE"), xticks=(-1:0.5:1, string.([1.0, 0.5, 0.0, 0.5, 1.0])), titlefontsize=12, yticks=([0.], [" "]))
-        plot!(p2, real.(kblochs), ω, c=cc[2], yaxis=("", ), label="", line=(:dashdot))
-        vline!([0], c=cc[1], line=(:dash), label="")
-        p3 = plot(-abs.(imag.(kblochp)), ω, c=cc[3], yaxis=(""), xaxis=(L"K^{i}_{Bloch}\Lambda/\pi"), label="", title=("p/TM     s/TE"), titlefontsize=12, xticks=([-tmp1,0.,tmp2], string.([tmp1, 0.0, tmp2])), yticks=([0.], [""]), size=s)
-        plot!(p3, abs.(imag.(kblochs)), ω, c=cc[3], yaxis=(""), label="", line=(:dashdot))
-        vline!([0], c=cc[1], line=(:dash), label="")
-        plot(p1, p2, p3, layout=(1,3), tickfont=font(12))
-        gui()
-    else
-        # k normalized for angle-frequency dependence
-        # logical matrices, used to select points which belong to the forbidden bands
-        κp = cos.(kblochp .* π) # rhs equation 45 in the paper, π comes from previous normalization
-        κs = cos.(kblochs .* π) # rhs equation 45 in the paper
-        κp[abs.(κp) .< 1.0] .= 1.0 # propagating waves
-        κp[abs.(κp) .> 1.0] .= 0.0 # evanescent waves
-        κs[abs.(κs) .< 1.0] .= 1.0 # propagating waves
-        κs[abs.(κs) .> 1.0] .= 0.0 # evanescent waves
-        qz = sin.(deg2rad.(solution.Beam.θ)) .* π ./ 2.0 # parallel wavevector qz
-        d1 = solution.Misc.d[2]; d2 = solution.Misc.d[3]
-        n0 = solution.Misc.nλ0[1]; n1 = solution.Misc.nλ0[2]; n2 = solution.Misc.nλ0[3]
-        ωh = Λ / π / (d1*n1 + d2*n2) * acos(-abs(n1-n2)/(n1+n2))
-        ωl = Λ / π / (d2*sqrt(n2^2-n0^2) + d1*sqrt(n1^2-n0^2)) * acos(abs((n1^2*sqrt(n2^2-n0^2) - n2^2*sqrt(n1^2-n0^2))/(n1^2*sqrt(n2^2-n0^2) + n2^2*sqrt(n1^2-n0^2))))
-        # choose better colormap
-        clibrary(:colorbrewer)
-        contourf(-qz, ω, real.(κp), levels=90, c=cgrad(:Blues, alpha=0.6), xaxis=(L"Parallel wavevector, $q_z$ (2$\pi$/$\Lambda$)"), yaxis=(L"\omega\Lambda/(2\pi)"), colorbar=false, tickfont=font(12), line=(2), title="p/TM-wave                        s/TE-wave", titlefontsize=10, grid=true, gridstyle=:dot, gridlinewidth=1.5, leg=false, size=s)
-        contourf!(qz, ω, real.(κs), levels=90, c=cgrad(:Reds, alpha=0.6), line=(2))
-        plot!([0.0, ω[1]], [0.0, ω[1]], line=(:solid, 1., :black, 0.7))
-        plot!([0.0, -ω[1]], [0.0, ω[1]], line=(:solid, 1., :black, 0.7))
-        plot!([-qz[end], qz[end]], [ωh, ωh], line=(:dash, 1, :black), lab="")
-        plot!([-qz[end], qz[end]], [ωl, ωl], line=(:dash, 1, :black), lab="")
-        annotate!([(qz[end]-0.05, ωh+0.03, text(L"$\omega_h$", 10)), (qz[end]-0.05, ωl-0.03, text(L"$\omega_l$",10))])
-        xlims!(-qz[end], qz[end])
-        ylims!(0.0, ω[1])
-        gui()
+struct TMMOPlotDispersion1Dalt end
+@recipe function f(::TMMOPlotDispersion1Dalt, Bloch; kpart=:real, s=(640,480))
+    ω = Bloch.ω .* Bloch.Λ ./ 2.0 ./ π # frequency range normalized
+    xlabel --> L"K_{Bloch}\Lambda/\pi"
+    ylabel --> L"\omega\Lambda/(2\pi)"
+    # title --> "p/TM     s/TE"
+    xticks --> (-1:0.5:1, string.([1.0, 0.5, 0.0, 0.5, 1.0]))
+    yticks --> ([0.], [" "])
+    size --> s
+    framestyle --> :zerolines
+    @series begin
+        seriestype := :path
+        linestyle --> :solid
+        label --> "p/TM"
+        κ = Bloch.κp .* Bloch.Λ ./ π
+        isequal(kpart, :real) ? -real.(κ) : -imag.(κ), vec(ω)
     end
-    return nothing
+    @series begin
+        seriestype := :path
+        linestyle --> :dashdot
+        label --> "s/TE"
+        κ = Bloch.κs .* Bloch.Λ ./ π
+        isequal(kpart, :real) ? real.(κ) : imag.(κ), vec(ω)
+    end
+end
+
+"""
+
+    Plots the photonic dispersion (Bloch wavevector) of a photonic crystal structure, computed for a range of frequencies (wavelengths) and one angle of incidence.
+
+    Takes one polarisation type in complex format, and plots on the left the imaginary part and on the right the real part.
+
+        TMMOPlotDispersion1Dimre(Bloch; s=(640,480))
+        gui()
+
+            solution.Bloch: Bloch structure of the solution
+            wave: either p-wave (:p, default) or s-wave (:s)
+                s: size of the figure
+
+"""
+struct TMMOPlotDispersion1Dimre end
+@recipe function f(::TMMOPlotDispersion1Dimre, Bloch; wave=:p, s=(640,480))
+    ω = Bloch.ω .* Bloch.Λ ./ 2.0 ./ π # frequency range normalized
+    xlabel --> L"K_{Bloch}\Lambda/\pi"
+    ylabel --> L"\omega\Lambda/(2\pi)"
+    xticks --> (-1:0.5:1, string.([1.0, 0.5, 0.0, 0.5, 1.0]))
+    yticks --> ([0.], [" "])
+    size --> s
+    framestyle --> :zerolines
+    if isequal(wave, :p)
+        κ = Bloch.κp .* Bloch.Λ ./ π
+    elseif isequal(wave, :s)
+    else
+        throw("The wave parameter must be equal to :p or :s.")
+    end
+    @series begin
+        seriestype := :path
+        linestyle --> :solid
+        label --> "Imag"
+        -abs.(imag.(κ)), vec(ω)
+    end
+    @series begin
+        seriestype := :path
+        linestyle --> :dashdot
+        label --> "Real"
+        real.(κ), vec(ω)
+    end
+end
+
+"""
+
+    Plots the photonic dispersion (Bloch wavevector) of a photonic crystal structure, computed for a range of frequencies (wavelengths) and one angle of incidence.
+
+    Takes only one polarisation. If you want you can pass optionally the part of the wavevector to plot. By default, plots the real one (as the imaginary does not reresent much).
+
+        TMMOPlotDispersion1D(solution.Bloch; wave=:p, kpart=:real, s=(640,480))
+        gui()
+
+            solution.Bloch: Bloch structure of the solution
+                wave: either p-wave (:p, default) or s-wave (:s)
+                kpart: either real (:real, default) or imginary (:imag)
+                s: size of the figure
+
+"""
+struct TMMOPlotDispersion1D end
+@recipe function f(::TMMOPlotDispersion1D, Bloch; kpart=:real, wave=:p, s=(640,480))
+    ω = Bloch.ω .* Bloch.Λ ./ 2.0 ./ π # frequency range normalized
+    if isequal(wave, :p)
+        κ = Bloch.κp .* Bloch.Λ ./ π
+    elseif isequal(wave, :s)
+        κ = Bloch.κs .* Bloch.Λ ./ π
+    else
+        throw("The wave parameter should be either :p or :s.")
+    end
+    seriestype := :path
+    linestyle --> :solid
+    xlabel --> L"K_{Bloch}\Lambda/\pi"
+    ylabel --> L"\omega\Lambda/(2\pi)"
+    label --> ""
+    size --> s
+    isequal(kpart, :real) ? real.(κ) : imag.(κ), ω
+end
+
+"""
+
+    Plots the photonic dispersion (Bloch wavevector) of a photonic crystal structure, computed for a range of frequencies (wavelengths) and a range of angle of incidences.
+
+        TMMOPlotDispersion2Dalt(solution.Bloch; s=(640,480), num_levels=90)
+        gui()
+
+            solution: solution structure from TMMO1DIsotropic
+                s: size of the figure
+
+"""
+struct TMMOPlotDispersion2Dalt end
+@recipe function f(::TMMOPlotDispersion2Dalt, Bloch; s=(640,480), num_levels=90)
+    qz = Bloch.qz; ωh = Bloch.ωh; ωl = Bloch.ωl
+    ω = Bloch.ω .* Bloch.Λ ./ 2.0 ./ π # frequency range normalized
+    # k normalized for angle-frequency dependence
+    # logical matrices, used to select points which belong to the forbidden bands
+    κp = cos.(Bloch.κp .* Bloch.Λ) # rhs equation 45 in the paper, π comes from previous normalization
+    κs = cos.(Bloch.κs .* Bloch.Λ) # rhs equation 45 in the paper
+    κp[abs.(κp) .< 1.0] .= 1.0 # propagating p wave
+    κp[abs.(κp) .> 1.0] .= 0.0 # evanescent p wave
+    κs[abs.(κs) .< 1.0] .= 1.0 # propagating s wave
+    κs[abs.(κs) .> 1.0] .= 0.0 # evanescent s wave
+    size --> s
+    xlabel --> L"Parallel wavevector, $q_z$ (2$\pi$/$\Lambda$)"
+    ylabel --> L"$\omega\Lambda/(2\pi)$"
+    title --> "p/TM-wave                        s/TE-wave"
+    grid --> true
+    # legend --> false
+    gridstyle --> :dot
+    gridlinewidth --> 1.5
+    xlims --> (-qz[end], qz[end])
+    ylims --> (0.0, ω[1])
+    @series begin
+        seriestype := :contour
+        color --> colormap("Blues")
+        # linewidth --> 2.0
+        colorbar_entry --> false
+        fill --> true
+        levels --> num_levels
+        # alpha --> 0.3
+        label --> ""
+        -vec(qz), vec(ω), real.(κp)
+    end
+    @series begin
+        seriestype := :contour
+        color --> colormap("Reds")
+        # linewidth --> 2.0
+        colorbar_entry --> false
+        fill --> true
+        levels --> num_levels
+        # alpha --> 0.3
+        label --> ""
+        vec(qz), vec(ω), real.(κs)
+    end
+    @series begin
+        seriestype := :path
+        linestyle --> :solid
+        linewidth --> 1.5
+        linecolor --> RGBA(0.0, 0.0, 0.0, 0.7)
+        label --> "Light line"
+        [0.0, ω[1]], [0.0, ω[1]]
+    end
+    @series begin
+        seriestype := :path
+        linestyle --> :solid
+        linewidth --> 1.5
+        linecolor --> RGBA(0.0, 0.0, 0.0, 0.7)
+        label --> ""
+        [0.0, -ω[1]], [0.0, ω[1]]
+    end
+    @series begin
+        seriestype := :path
+        linestyle --> :dash
+        linewidth --> 1.5
+        linecolor --> RGBA(0.0, 0.0, 0.0, 0.7)
+        label --> L"\omega_h"
+        [-qz[end], qz[end]], [ωh, ωh]
+    end
+    @series begin
+        seriestype := :path
+        linestyle --> :dashdot
+        linewidth --> 1.5
+        linecolor --> RGBA(0.0, 0.0, 0.0, 0.7)
+        label --> L"\omega_l"
+        [-qz[end], qz[end]], [ωl, ωl]
+    end
+end
+
+"""
+
+    Plots the photonic dispersion (Bloch wavevector) of a photonic crystal structure, computed for a range of frequencies (wavelengths) and a range of angle of incidences.
+
+    This function plots the Bloch wavevector for only one of the polarisation types.
+
+        TMMOPlotDispersion2D(solution.Bloch; wave=:p, s=(640,480), num_levels=90)
+        gui()
+
+            solution.Bloch: solution.Bloch structure from TMMO1DIsotropic
+                wave: either :p (p-wave, default) or :s (s-wave)
+                s: size of the figure
+
+"""
+struct TMMOPlotDispersion2D end
+@recipe function f(::TMMOPlotDispersion2D, Bloch; wave=:p, s=(640,480), num_levels=90)
+    qz = Bloch.qz; ωh = Bloch.ωh; ωl = Bloch.ωl
+    Λ = Bloch.Λ # periodicity
+    ω = Bloch.ω .* Λ ./ 2.0 ./ π # frequency range normalized
+    if isequal(wave, :p)
+        kbloch = Bloch.κp .* Λ# ./ π
+        cmap = colormap("Blues")
+    elseif isequal(wave, :s)
+        kbloch = Bloch.κs .* Λ# ./ π
+        cmap = colormap("Reds")
+    else
+        throw("The wave type must be either :p or :s.")
+    end
+    # k normalized for angle-frequency dependence
+    # logical matrices, used to select points which belong to the forbidden bands
+    κ = cos.(kbloch)#.*π) # rhs equation 45 in the paper, π comes from previous normalization
+    κ[abs.(κ) .< 1.0] .= 1.0 # propagating wave
+    κ[abs.(κ) .> 1.0] .= 0.0 # evanescent wave
+    size --> s
+    xlabel --> L"Parallel wavevector, $q_z$ (2$\pi$/$\Lambda$)"
+    ylabel --> L"\omega\Lambda/(2\pi)"
+    grid --> true
+    # legend --> false
+    gridstyle --> :dot
+    gridlinewidth --> 1.5
+    xlims --> (0.0, qz[end])
+    ylims --> (0.0, ω[1])
+    @series begin
+        seriestype := :contour
+        fill --> true
+        levels --> num_levels
+        colorbar_entry --> false
+        color --> cmap
+        # alpha --> 0.9
+        label --> ""
+        vec(qz), vec(ω), real.(κ)
+    end
+    @series begin
+        seriestype := :path
+        linestyle --> :solid
+        linewidth --> 1.5
+        linecolor --> RGBA(0.0, 0.0, 0.0, 0.7)
+        label --> "Light line"
+        [0.0, ω[1]], [0.0, ω[1]]
+    end
+    @series begin
+        seriestype := :path
+        linestyle --> :dash
+        linewidth --> 1.5
+        linecolor --> RGBA(0.0, 0.0, 0.0, 0.7)
+        label --> L"$\omega_h$"
+        [0.0, qz[end]], [ωh, ωh]
+    end
+    @series begin
+        seriestype := :path
+        linestyle --> :dashdot
+        linewidth --> 1.0
+        linecolor --> RGBA(0.0, 0.0, 0.0, 0.7)
+        label --> L"$\omega_l$"
+        [0.0, qz[end]], [ωl, ωl]
+    end
 end
 
 end # module

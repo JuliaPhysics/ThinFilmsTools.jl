@@ -52,14 +52,17 @@ export TOMPlot,
        TMMOPlotSpectra2D,
        TMMOPlotEMF2D,
        TMMOPlotEMFAngle2D,
-       TMMOPlotNprofile,
-       TMMOPlotDispersion,
        PlotFitSpectrum,
-       SpaceSolutionOFplot
+       SpaceSolutionOFplot,
+       TMMOPlotNprofile,
+       TMMOPlotDispersion1D,
+       TMMOPlotDispersion1Dalt,
+       TMMOPlotDispersion1Dimre,
+       TMMOPlotDispersion2D,
+       TMMOPlotDispersion2Dalt
 
 include("FitBellShapeCurves.jl")
 using .FitBellShapeCurves
-export CurveModelSolution,
-       FitCurveModel
+export FitCurveModel
 
 end # ThinFilmsTools

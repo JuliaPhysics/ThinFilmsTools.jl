@@ -3,7 +3,6 @@ module Utils
 using Interpolations
 using HDF5
 using SpecialFunctions
-using LinearAlgebra
 
 export build_interpolation,
 	   readh5_file,
@@ -359,9 +358,9 @@ end
 
 """
 
-	Single peak Voigt PDF curve. The function is computed using the Fadeeva's function through the scaled complementary error function of x erfcx.
+	Single peak Voigt PDF curve. The function is computed using the Faddeeva's function through the scaled complementary error function of x erfcx.
 
-		model1v = Voigt1(x, p)
+		modelv = Voigtian(x, p)
 
 			x = vector with data of the x-axis
 			p = [[p0], [A1, μ1, σ1, Γ1], [A2, μ2, σ2, Γ2],...]
