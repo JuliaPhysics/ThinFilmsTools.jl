@@ -255,9 +255,13 @@ end
 
 """
 
-    Plots the index of refraction ath certain wavelength (usually λ0) of the multilayer structure.
+    Plots the index of refraction ath certain wavelength (usually λ0) of the
+    multilayer structure.
 
-        TMMOPlotNprofile(solution; wave=:b, λ=solution.Misc.λ0, θ=solution.Beam.θ[1], s=(640,480))
+        plot(TMMOPlotNprofile(), solution;
+             plotemf=false, wave=:b, λ=[solution.Misc.λ0],
+             θ=[solution.Beam.θ[1]], s=(640,480))
+        gui()
 
             solution: structure solution from TMMO1DIsotropic
                 wave = :b (both, default), :p (p-wave), :s (s-wave) of the EMF to overlap
@@ -353,15 +357,18 @@ end
 
 """
 
-    Plots the photonic dispersion (Bloch wavevector) of a photonic crystal structure, computed for a range of frequencies (wavelengths) and one angle of incidence.
+    Plots the photonic dispersion (Bloch wavevector) of a photonic crystal
+    structure, computed for a range of frequencies (wavelengths) and one angle
+    of incidence.
 
-    Takes both polarisation types and renders them into one piece. You need to pass either the real or imaginary parts of them.
+    Takes both polarisation types and renders them into one piece. You need to
+    pass either the real or imaginary parts of them.
 
-        TMMOPlotDispersion1Dalt(Bloch; kpart=:real, s=(640,480))
+        plot(TMMOPlotDispersion1Dalt(), Bloch; kpart=:real, s=(640,480))
         gui()
 
-            solution.Bloch: Bloch structure of the solution
-            kpart: either real (:real, default) or imginary (:imag)
+            Bloch: solution.Bloch structure of the solution
+                kpart: either real (:real, default) or imginary (:imag)
                 s: size of the figure
 
 """
@@ -393,15 +400,18 @@ end
 
 """
 
-    Plots the photonic dispersion (Bloch wavevector) of a photonic crystal structure, computed for a range of frequencies (wavelengths) and one angle of incidence.
+    Plots the photonic dispersion (Bloch wavevector) of a photonic crystal
+    structure, computed for a range of frequencies (wavelengths) and one angle
+    of incidence.
 
-    Takes one polarisation type in complex format, and plots on the left the imaginary part and on the right the real part.
+    Takes one polarisation type in complex format, and plots on the left the
+    imaginary part and on the right the real part.
 
-        TMMOPlotDispersion1Dimre(Bloch; s=(640,480))
+        plot(TMMOPlotDispersion1Dimre(), Bloch; wave=:p, s=(640,480))
         gui()
 
-            solution.Bloch: Bloch structure of the solution
-            wave: either p-wave (:p, default) or s-wave (:s)
+            Bloch: solution.Bloch structure of the solution
+                wave: either p-wave (:p, default) or s-wave (:s)
                 s: size of the figure
 
 """
@@ -436,14 +446,18 @@ end
 
 """
 
-    Plots the photonic dispersion (Bloch wavevector) of a photonic crystal structure, computed for a range of frequencies (wavelengths) and one angle of incidence.
+    Plots the photonic dispersion (Bloch wavevector) of a photonic crystal
+    structure, computed for a range of frequencies (wavelengths) and one
+    angle of incidence.
 
-    Takes only one polarisation. If you want you can pass optionally the part of the wavevector to plot. By default, plots the real one (as the imaginary does not reresent much).
+    Takes only one polarisation. If you want you can pass optionally the
+    part of the wavevector to plot. By default, plots the real one (as the
+    imaginary does not reresent much).
 
-        TMMOPlotDispersion1D(solution.Bloch; wave=:p, kpart=:real, s=(640,480))
+        plot(TMMOPlotDispersion1D(), Bloch; kpart=:real, wave=:p, s=(640,480))
         gui()
 
-            solution.Bloch: Bloch structure of the solution
+            Bloch: solution.Bloch structure of the solution
                 wave: either p-wave (:p, default) or s-wave (:s)
                 kpart: either real (:real, default) or imginary (:imag)
                 s: size of the figure
@@ -470,12 +484,14 @@ end
 
 """
 
-    Plots the photonic dispersion (Bloch wavevector) of a photonic crystal structure, computed for a range of frequencies (wavelengths) and a range of angle of incidences.
+    Plots the photonic dispersion (Bloch wavevector) of a photonic crystal
+    structure, computed for a range of frequencies (wavelengths) and a range
+    of angle of incidences.
 
-        TMMOPlotDispersion2Dalt(solution.Bloch; s=(640,480), num_levels=90)
+        plot(TMMOPlotDispersion2Dalt(), Bloch; s=(640,480), num_levels=90)
         gui()
 
-            solution: solution structure from TMMO1DIsotropic
+            Bloch: solution.Bloch structure from TMMO1DIsotropic
                 s: size of the figure
 
 """
@@ -559,14 +575,16 @@ end
 
 """
 
-    Plots the photonic dispersion (Bloch wavevector) of a photonic crystal structure, computed for a range of frequencies (wavelengths) and a range of angle of incidences.
+    Plots the photonic dispersion (Bloch wavevector) of a photonic crystal
+    structure, computed for a range of frequencies (wavelengths) and a range
+    of angle of incidences.
 
     This function plots the Bloch wavevector for only one of the polarisation types.
 
-        TMMOPlotDispersion2D(solution.Bloch; wave=:p, s=(640,480), num_levels=90)
+        plot(TMMOPlotDispersion2D(), Bloch; wave=:p, s=(640,480), num_levels=90)
         gui()
 
-            solution.Bloch: solution.Bloch structure from TMMO1DIsotropic
+            Bloch: solution.Bloch structure from TMMO1DIsotropic
                 wave: either :p (p-wave, default) or :s (s-wave)
                 s: size of the figure
 
