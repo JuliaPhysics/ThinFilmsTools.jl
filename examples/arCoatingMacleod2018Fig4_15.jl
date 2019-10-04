@@ -38,10 +38,12 @@ plot!(TMMOPlotSpectra1D(),
 gui()
 
 # plot the refractive index profile
-TMMOPlotNprofile(sol1)
+plot(TMMOPlotNprofile(), sol1)
+gui()
 ### Note that if you choose θ outside the range it will show the EMF for one extrema. Same for λ.
 # title!(L"Ta$_2$O$_5$")
 
-TMMOPlotNprofile(sol2)
+plot(TMMOPlotNprofile(), sol2)
+gui()
 ### Note that if you choose θ outside the range it will show the EMF for one extrema. Same for λ.
 # title!(L"Y$_2$O$_3$")

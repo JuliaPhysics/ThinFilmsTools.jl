@@ -1,6 +1,6 @@
 # Load modules
 using Plots, LaTeXStrings
-pyplot(reuse=false, grid=false)
+pyplot()
 using ThinFilmsTools
 
 function main()
@@ -26,4 +26,11 @@ plot(TMMOPlotSpectra1D(),
 gui()
 
 # plot the refractive index profile
-TMMOPlotNprofile(sol)
+plot(TMMOPlotNprofile(), sol)
+gui()
+plot(TMMOPlotNprofile(), sol; plotemf=true, wave=:p)
+gui()
+plot(TMMOPlotNprofile(), sol; plotemf=true, wave=:s)
+gui()
+plot(TMMOPlotNprofile(), sol; plotemf=true)
+gui()
