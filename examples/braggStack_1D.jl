@@ -36,7 +36,16 @@ plot(plt1, plt2, layout=(2,1))
 gui()
 
 # plot the refractive index profile
-TMMOPlotNprofile(sol)
+plot(TMMOPlotNprofile(), sol; plotemf=true)
+gui()
+### Note that if you choose θ outside the range it will show the EMF for one extrema. Same for λ.
 
 # plot the photonic dispersion with custom function
-TMMOPlotDispersion(sol)
+plot(TMMOPlotDispersion1D(), sol.Bloch)
+gui()
+
+plot(TMMOPlotDispersion1Dalt(), sol.Bloch)
+gui()
+
+plot(TMMOPlotDispersion1Dimre(), sol.Bloch)
+gui()

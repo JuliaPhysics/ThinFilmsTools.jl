@@ -36,13 +36,19 @@ t80 = findmin(abs.(sol.Beam.θ .- 80.0))[2][1]
 
 p1 = plot(TMMOPlotSpectra1D(),
           sol.Beam.λ, [sol.Spectra.Rp[:,1,:], sol.Spectra.Rs[:,1,:]],
-          label=["p-wave" "s-wave"], yaxis=("Reflectance", (0., 1.)), xlims=(sol.Beam.λ[1], sol.Beam.λ[end]), title=(L"$\theta$ = 0 [$\degree$]"), line=([:solid :dashdot]));
+          label=["p-wave" "s-wave"], yaxis=("Reflectance", (0., 1.)),
+          xlims=(sol.Beam.λ[1], sol.Beam.λ[end]),
+          title=(L"$\theta$ = 0 [$\degree$]"), line=([:solid :dashdot]));
 p2 = plot(TMMOPlotSpectra1D(),
           sol.Beam.λ, [sol.Spectra.Rp[:,t45,:], sol.Spectra.Rs[:,t45,:]],
-          label=["p-wave" "s-wave"], yaxis=("Reflectance", (0., 1.)), xlims=(sol.Beam.λ[1], sol.Beam.λ[end]), title=(L"$\theta$ = 45 [$\degree$]"), line=([:solid :dashdot]));
+          label=["p-wave" "s-wave"], yaxis=("Reflectance", (0., 1.)),
+          xlims=(sol.Beam.λ[1], sol.Beam.λ[end]),
+          title=(L"$\theta$ = 45 [$\degree$]"), line=([:solid :dashdot]));
 p3 = plot(TMMOPlotSpectra1D(),
           sol.Beam.λ, [sol.Spectra.Rp[:,t80,:], sol.Spectra.Rs[:,t80,:]],
-          label=["p-wave" "s-wave"], yaxis=("Reflectance", (0., 1.)), xlims=(sol.Beam.λ[1], sol.Beam.λ[end]), title=(L"$\theta$ = 80 [$\degree$]"), line=([:solid :dashdot]));
+          label=["p-wave" "s-wave"], yaxis=("Reflectance", (0., 1.)), 
+          xlims=(sol.Beam.λ[1], sol.Beam.λ[end]), 
+          title=(L"$\theta$ = 80 [$\degree$]"), line=([:solid :dashdot]));
 plot(p1, p2, p3, layout=(3,1))
 gui()
 
@@ -54,8 +60,10 @@ plot(
      layout=(2,1))
 gui()
 
-# Plot the refractive index profile
-TMMOPlotNprofile(sol)
+# plot the refractive index profile
+plot(TMMOPlotNprofile(), sol)
+gui()
 
-# Plot the photonic dispersion with custom function
-TMMOPlotDispersion(sol)
+# plot the photonic dispersion with custom function
+plot(TMMOPlotDispersion2Dalt(), sol.Bloch)
+gui()

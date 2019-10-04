@@ -16,7 +16,7 @@ struct Field{T1} <: Output where {T1<:Float64}
     emfp::Array{T1}; emfs::Array{T1};
 end
 struct Bloch{T1, T2} <: Output where {T1<:ComplexF64, T2<:Float64}
-    κp::Array{T1}; κs::Array{T1}; ω::Array{T2}; Λ::T2
+    κp::Array{T1}; κs::Array{T1}; ω::Array{T2}; Λ::T2; ωl::T2; ωh::T2; qz::Array
 end
 struct Misc{T1, T2} <: Output where {T1<:Float64, T2<:ComplexF64}
     d::Array{T1}; ℓ::Array{T1}; nλ0::Array{T1}; layers_n::Array{T2}; λ0::T1
@@ -56,13 +56,18 @@ function TMMO1DIsotropic(beam::T1, layers::Array{T2,N2}; emfflag::T3=false, h::T
         ω = Array{Float64,1}(undef, length(beam_.λ))
         κp = Array{ComplexF64,2}(undef, (length(beam_.λ), length(beam_.θ)))
         κs = similar(κp)
+        qz::Array{Float64,1} = sin.(beam_.θ).*π./2.0 # parallel wavevector qz
         Λ::Float64 = sum(d[2:3])
-        photonicDispersion!(κp, κs, ω, beam_, layers_n[idxλ0, 2:3], d[2:3])
+        d1, d2 = d[2], d[3]
+        n0, n1, n2 = nλ0[1], nλ0[2], nλ0[3]
+        ωh::Float64 = Λ/π/(d1*n1 + d2*n2)*acos(-abs(n1 - n2)/(n1 + n2))
+        ωl::Float64 = Λ/π/(d2*sqrt(n2^2 - n0^2) + d1*sqrt(n1^2 - n0^2))*acos(abs((n1^2*sqrt(n2^2 - n0^2) - n2^2*sqrt(n1^2 - n0^2))/(n1^2*sqrt(n2^2 - n0^2) + n2^2*sqrt(n1^2 - n0^2))))
+        photonicDispersion!(κp, κs, ω, Λ, beam_, layers_n[idxλ0, 2:3], d[2:3])
     else
-        κp = []; κs = []; ω = []; Λ = 0.0
+        κp = []; κs = []; ω = []; Λ = 0.0; ωl = 0.0; ωh = 0.0; qz = []
     end
     # Return results
-    TMMO1DIsotropic(tmmout[1], tmmout[2], Bloch(κp, κs, ω, Λ), Misc(d, ℓ, nλ0, layers_n, λ0), tmmout[3], beam, layers)
+    TMMO1DIsotropic(tmmout[1], tmmout[2], Bloch(κp, κs, ω, Λ, ωl, ωh, qz), Misc(d, ℓ, nλ0, layers_n, λ0), tmmout[3], beam, layers)
 end
 
 """
@@ -263,9 +268,8 @@ FI(g11::Array{T1,1}, g12::Array{T1,1}, η1::T1, ηf::T1, Ψ::Array{T1,2}) where 
     Computes the photonic dispersion of binary structures (crystals only) alternating two different dielectric layers.
 
 """
-function photonicDispersion!(κp::Array{T1,2}, κs::Array{T1,2}, ω::Array{T2,1}, beam::T3, n::Array{T1,1}, d::Array{T2,1}) where {T1<:ComplexF64, T2<:Float64, T3<:PlaneWave}
+function photonicDispersion!(κp::Array{T1,2}, κs::Array{T1,2}, ω::Array{T2,1}, Λ::T2, beam::T3, n::Array{T1,1}, d::Array{T2,1}) where {T1<:ComplexF64, T2<:Float64, T3<:PlaneWave}
     @. ω = 2*π/beam.λ # Angular frequency
-    Λ::Float64 = sum(d) # Unit cell
     # Angle of incidence of the second layer with Snell's law of cosine
     cosθ1::Vector{ComplexF64} = cos.(beam.θ)
     cosθ2::Vector{ComplexF64} = cosϑ.(n[1], n[2], cosθ1)

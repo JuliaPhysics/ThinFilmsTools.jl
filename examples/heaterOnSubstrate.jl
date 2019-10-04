@@ -6,7 +6,7 @@
 # Load modules
 using ThinFilmsTools
 using Plots
-pyplot(reuse=false, grid=false, size=(640,480))
+pyplot()
 closeall()
 
 ### Input data
@@ -33,5 +33,5 @@ source = Source(p, f)
 # call the model
 sol = ThreeOmegaMethod(layers, hgeometry, source, thresistances; int_limit=5.0e6)
 
-plot(TOMplot(), sol)
+plot(TOMPlot(), sol)
 gui()
