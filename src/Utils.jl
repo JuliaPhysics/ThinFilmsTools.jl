@@ -3,6 +3,7 @@ module Utils
 using Interpolations
 using HDF5
 using SpecialFunctions
+using DSP
 
 export build_interpolation,
 	   readh5_file,
