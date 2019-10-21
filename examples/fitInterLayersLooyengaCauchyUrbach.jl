@@ -6,7 +6,6 @@ using Optim
 
 ##
 function glass_transmittance(beam, incident, emergent)
-    # Create a measured spectrum of reflection
     layers = [
         LayerTMMO(incident),
         LayerTMMO(RI.looyenga([0.5 0.5],[RIdb.air(beam.λ) RIdb.silicon(beam.λ)]); d=100.),
