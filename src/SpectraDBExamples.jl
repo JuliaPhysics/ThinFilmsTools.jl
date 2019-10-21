@@ -35,7 +35,8 @@ end
 
 """
 
-	Raw experimental reflectance spectrum of a porous silicon thin film on a crystalline silicon substrate. Interpolates for a valid input wavelength range.
+	Raw experimental reflectance spectrum of a porous silicon thin film on a crystalline
+	silicon substrate. Interpolates for a valid input wavelength range.
 
 		R = SL1ExpSpectrum(λ)
 
@@ -51,7 +52,8 @@ end
 
 """
 
-	Reference experimental reflectance spectrum of a crystalline silicon substrate. Interpolates for a valid input wavelength range.
+	Reference experimental reflectance spectrum of a crystalline silicon substrate.
+	Interpolates for a valid input wavelength range.
 
 		R = SL1RefSpectrum(λ)
 
@@ -67,7 +69,8 @@ end
 
 """
 
-	Raw experimental reflectance spectrum of a porous silicon thin film on a crystalline silicon substrate. Interpolates for a valid input wavelength range.
+	Raw experimental reflectance spectrum of a porous silicon thin film on a crystalline
+	silicon substrate. Interpolates for a valid input wavelength range.
 
 		R = SL2ExpSpectrum(λ)
 
@@ -83,7 +86,8 @@ end
 
 """
 
-	Reference experimental reflectance spectrum of a crystalline silicon substrate. Interpolates for a valid input wavelength range.
+	Reference experimental reflectance spectrum of a crystalline silicon substrate.
+	Interpolates for a valid input wavelength range.
 
 		R = SL2RefSpectrum(λ)
 
@@ -99,7 +103,9 @@ end
 
 """
 
-	Absolute experimental reflectance spectrum of a porous silicon thin film photonic crystal (DBR or Bragg stack) on a crystalline silicon substrate. Interpolates for a valid input wavelength range.
+	Absolute experimental reflectance spectrum of a porous silicon thin film photonic
+	crystal (DBR or Bragg stack) on a crystalline silicon substrate. Interpolates for
+	a valid input wavelength range.
 
 		R = BraggSpectrum(λ)
 
@@ -115,7 +121,8 @@ end
 
 """
 
-	Absolute experimental reflectance spectrum of a porous silicon thin film Fabry-Perot (MicroCavity stack) on a glass substrate. Interpolates for a valid input wavelength range.
+	Absolute experimental reflectance spectrum of a porous silicon thin film Fabry-Perot
+	(MicroCavity stack) on a glass substrate. Interpolates for a valid input wavelength range.
 
 		R = FPSpectrum(λ)
 
@@ -131,7 +138,8 @@ end
 
 """
 
-	Absolute experimental transmitance spectrum of a hafnium oxide thin film on a fused silica UV substrate. Interpolates for a valid input wavelength range.
+	Absolute experimental transmitance spectrum of a hafnium oxide thin film on a fused
+	silica UV substrate. Interpolates for a valid input wavelength range.
 
 		T = HafniaSpectrum(λ)
 
@@ -147,7 +155,8 @@ end
 
 """
 
-	Absolute experimental transmitance spectrum of a scandium oxide thin film on a fused silica UV substrate. Interpolates for a valid input wavelength range.
+	Absolute experimental transmitance spectrum of a scandium oxide thin film on a fused
+	silica UV substrate. Interpolates for a valid input wavelength range.
 
 		T = ScandiaSpectrum(λ)
 
@@ -163,7 +172,8 @@ end
 
 """
 
-	Absolute experimental transmitance spectrum of a scandium oxide thin film on a fused silica UV substrate. Interpolates for a valid input wavelength range.
+	Absolute experimental transmitance spectrum of a scandium oxide thin film on a fused
+	silica UV substrate. Interpolates for a valid input wavelength range.
 
 		T = ScandiaSpectrum_2(λ)
 
