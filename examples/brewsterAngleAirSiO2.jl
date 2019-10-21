@@ -28,5 +28,4 @@ plot(TMMOPlotSpectraAngle1D(),
 gui()
 
 # plot the refractive index profile
-plot(TMMOPlotNprofile(), sol)
-gui()
+TMMOPlotNprofile(sol)

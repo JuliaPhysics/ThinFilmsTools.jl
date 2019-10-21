@@ -27,9 +27,7 @@ sol = main()
 
 # plot the R, T and A spectra
 plot(TMMOPlotSpectra1D(),
-     sol.Beam.λ, [sol.Spectra.Rp, sol.Spectra.Tp, 1.0.-(sol.Spectra.Rp.+sol.Spectra.Tp)],
-     label=["Reflectance" "Transmittance" "Absorbance"], line=([:solid :dash :dashdot]),
-     xlims=(sol.Beam.λ[1], sol.Beam.λ[end]), yaxis=("Transmittance", (0.,1.0)))
+     sol.Beam.λ, [sol.Spectra.Rp, sol.Spectra.Tp, 1.0.-(sol.Spectra.Rp.+sol.Spectra.Tp)], label=["Reflectance" "Transmittance" "Absorbance"], line=([:solid :dash :dashdot]), xlims=(sol.Beam.λ[1], sol.Beam.λ[end]), yaxis=("Transmittance", (0.,1.0)));
 gui()
 
 plot(TMMOPlotEMF2D(),
@@ -37,5 +35,4 @@ plot(TMMOPlotEMF2D(),
 gui()
 
 # plot the refractive index profile
-plot(TMMOPlotNprofile(), sol)
-gui()
+TMMOPlotNprofile(sol)
