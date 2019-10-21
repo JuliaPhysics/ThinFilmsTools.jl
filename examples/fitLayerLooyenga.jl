@@ -1,8 +1,8 @@
-using Optim
-using Plots
-pyplot(reuse=false, size=(640, 480), grid=false)
-closeall()
+# Load modules
+using Plots, LaTeXStrings
+pyplot()
 using ThinFilmsTools
+using Optim
 
 # Type of fitting
 ftype = Reflectance()
@@ -19,9 +19,11 @@ beam = PlaneWave(λ, θ; p=pol)
 incident = RIdb.air(beam.λ)
 emergent = RIdb.silicon(beam.λ)
 # Define the RI model to use
-layers = [ LayerTMMO1DIso(incident),
-           ModelFit(:looyengaspheresbin; N=(incident, emergent)),
-           LayerTMMO1DIso(emergent) ]
+layers = [
+    LayerTMMO1DIso(incident),
+    ModelFit(:looyengaspheresbin; N=(incident, emergent)),
+    LayerTMMO1DIso(emergent),
+]
 
 # Raw measured spectrum stored in Utils
 Rexp = SpectraDB.SL1ExpSpectrum(beam.λ)
@@ -29,7 +31,7 @@ Rexp = SpectraDB.SL1ExpSpectrum(beam.λ)
 Rref = SpectraDB.SL1RefSpectrum(beam.λ)
 # Theoretical reflectance spectrum for the reference
 Rthe = TheoreticalSpectrum(ftype, beam, incident, emergent)
-# Calculate the absolute normalised measured spectra to fit 
+# Calculate the absolute normalised measured spectra to fit
 Rexp_norm = NormalizeReflectance(beam.λ, [beam.λ Rexp], [beam.λ Rthe], [beam.λ Rref])
 
 seed = [3300, 0.85]
@@ -37,7 +39,6 @@ seed = [3300, 0.85]
 options = Optim.Options(g_abstol=1e-8, g_reltol=1e-8, iterations=10^5, store_trace=true, show_trace=true)
 
 solOptim = FitTMMO1DIsotropic(ftype, [seed], beam, Rexp_norm, layers; alg=SAMIN(), options=options, lb=[0.5.*seed], ub=[1.5.*seed])
+
 plot(PlotFitSpectrum(), solOptim.beam.λ, solOptim.spectrumExp, solOptim.spectrumFit, tickfont=font(12), legendfont=font(10))
 gui()
-
-
