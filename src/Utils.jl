@@ -3,7 +3,7 @@ module Utils
 using Interpolations
 using HDF5
 using SpecialFunctions
-using DSP
+using DSP # for the conv function
 
 export build_interpolation,
 	   readh5_file,
@@ -13,12 +13,13 @@ export build_interpolation,
 	   wavelength2RGB,
 	   movingAverage,
 	   savitzkyGolay,
+	   savitzkyGolay2,
 	   flattenArrays,
 	   arrayArrays,
 	   averagePolarisation,
-	   Gaussian,
-	   Lorentzian,
-	   Voigtian,
+	   gaussian,
+	   lorentzian,
+	   voigtian,
 	   Info
 
 function Info()
@@ -32,46 +33,50 @@ function Info()
 	"\n     bbRadiation(λ, T)" *
 	"\n     wavelength2RGB(λ)" *
 	"\n     movingAverage(x, w)" *
-	"\n     savitzkyGolay(x, k, p)" *
+	"\n     savitzkyGolay(m, n)" *
+	"\n     savitzkyGolay(m, n, x)" *
+	"\n     savitzkyGolay2(m, n, x)" *
 	"\n     flattenArrays(x)" *
 	"\n     arrayArrays(x, y)" *
 	"\n     averagePolarisation(pol, Xp, Xs)" *
-	"\n     Gaussian(x, p)" *
-	"\n     Lorentzian(x, p)" *
-	"\n     Voigtian(x, p)" *
+	"\n     gaussian(x, p)" *
+	"\n     lorentzian(x, p)" *
+	"\n     voigtian(x, p)" *
 	"\n "
-	"\n     To use any of these functions type: Utils.function(args)." *
+	"\n     To use any of these functions type: ?Utils.function" *
 	"\n "
 	return println(tmp1)
 end
 
 """
 
-	Find the index of the closest element in an array x to a given number x0.
+	Find the index of the closest element in an array of reals x to a given real x0.
 
 		idx = findClosest(x, x0)
 
 			x: Data array
 			x0: Element to search in x
+
 			idx: Index
 
 """
-function findClosest(x::Array, x0::Number)
-  return findmin(abs.(x .- x0))[2]
+function findClosest(x::AbstractArray{T1,N1}, x0::T1) where {T1<:Real, N1}
+	idmin = findmin(abs.(x .- x0))[2][1]
+	return idmin
 end
 
 """Read the HDF5 file with the database."""
 function readh5_file(x::String, y::Symbol)
     datapath = joinpath(@__DIR__, "..", "data/")
-	if isequal(y, :RI)
+	if isequal(y,:RI)
 		fid = "RefractiveIndicesDB.h5"
-	elseif isequal(y, :SP)
+	elseif isequal(y,:SP)
 		fid = "ExampleSpectraDB.h5"
 	end
-    readf = h5open(joinpath(datapath, fid), "r") do file
-        read(file, x)
+    readf = h5open(joinpath(datapath,fid),"r") do file
+        read(file,x)
     end
-    readf
+    return readf
 end
 
 """
@@ -80,63 +85,71 @@ end
 
 		itp = build_interpolation(X)
 
-			X: Matrix array with first column as independent variable and second column as dependent one
+			X: Matrix array with first column as independent variable and
+               second column as dependent one
+
 			itp: interpolation object
 
 """
 function build_interpolation(X::Array{T1,2}) where {T1<:Float64}
 	# Sort by ascending wavelength
-	X = X[sortperm(X[:,1]), :]
+	X = X[sortperm(X[:,1]),:]
     knots = (sort(vec(X[:,1])),)
-    return interpolate(knots, vec(X[:,2]), Gridded(Linear()))
+	itp = interpolate(knots, vec(X[:,2]), Gridded(Linear()))
+    return itp
 end
 
 """
 
-	Computes the reflection of a sequence of indices of refraction without interference and absorption effects.
+	Computes the reflection of a sequence of indices of refraction without
+    interference and absorption effects.
 
 		y = multipleReflections(n)
 
 			n: Vector with the indices of refraction of the involved layers
 
-	authors: cuchu & lnacquaroli
+			y: Reflection
+
+	author: Cuchu
 
 """
 function multipleReflections(n::AbstractArray{T1}) where {T1<:Real}
-  R1::Float64 = 0.0
-  R::Float64 = 0.0
-  for i = 1:length(n)-1
-    R2 = ( (n[i] - n[i+1])/(n[i] + n[i+1]))^2
-    R = (R1 + R2 - 2.0*R1*R2)/(1.0 - R1*R2)
-    R1 = R
-  end
-  return R
+	r1::Float64 = 0.0
+	r::Float64 = 0.0
+	for i = 1:length(n)-1
+		r2 = ((n[i] - n[i+1])/(n[i] + n[i+1]))^2
+		r = (r1 + r2 - 2.0*r1*r2)/(1.0 - r1*r2)
+		r1 = r
+	end
+	return r
 end
 
 """
 
-	Returns the spectral radiance (W·sr^-1·m^-3), given the wavelength (m) and the absolute temperature (K).
+	Returns the spectral radiance (W·sr^-1·m^-3), given the wavelength (m)
+    and the absolute temperature (K).
 
 		B = bbRadiation(λ, T)
 
 			λ: range of wavelengths [m]
 			T: range of temperatures [K]
+
 			B: spectral radiance [W·sr^-1·m^-3]
 
 	Source: https://en.wikipedia.org/wiki/Planck%27s_law
 
 """
 function bbRadiation(λ::AbstractArray{T1}, T::AbstractArray{T1}) where {T1<:Real}
-    h::Float64 = 6.626070040e-34 # Planck's constant, J·s
-    c::Float64 =  299792458.0 # speed of light, m·s
-    kB::Float64 = 1.38064852e-23 # Boltzmann constant, J·K^-1
-    R = Array{Float64, 2}(undef, length(λ), length(T))
+	h::Float64 = 6.626070040e-34 # Planck's constant, J·s
+	c::Float64 =  299792458.0 # speed of light, m·s
+	kB::Float64 = 1.38064852e-23 # Boltzmann constant, J·K^-1
+	R = Array{Float64,2}(undef,length(λ),length(T))
 	num::Array = 2.0*h*c*c./λ.^5
-    den::Array = h*c./(kB.*λ)
-    for i in eachindex(T)
-        R[:,i] .= num./expm1.(den./T[i])
-    end
-    return R
+	den::Array = h*c./(kB.*λ)
+	for i in eachindex(T)
+		R[:,i] .= num./expm1.(den./T[i])
+	end
+	return R
 end
 
 """
@@ -206,6 +219,7 @@ end
 
 			x: Vector to be smoothed out
 			w: Integer with the window size
+
 			y: Smoothed output
 
 """
@@ -213,58 +227,129 @@ function movingAverage(x::AbstractVector{T1}, w::T2) where {T1<:Real, T2<:Int64}
 	xLen::Int64 = length(x)
     y = Vector{Float64}(undef, xLen)
     for i in eachindex(x)
-        lo = max(1, i - w)
-        hi = min(xLen, i + w)
+        lo = max(1,i - w)
+        hi = min(xLen,i + w)
         y[i] = sum(x[lo:hi])./xLen
     end
     return y
 end
 
+"""
+
+	Implementation of the Savitzky-Golay filter of window half-width M and degree N.
+
+		y = savitzkyGolay(m, n, x)
+			m: is the number of points before and after to interpolate, the full width
+			   of the window is 2m+1.
+			n: is the polynomial order (must be lower than window size).
+			x: unfiltered data vector.
+			y: filtered data vector.
+
+		sgf = savitzkyGolay(m, n)
+				m: is the number of points before and after to interpolate, the full width
+				   of the window is 2m+1.
+				n: is the polynomial order (must be lower than window size).
+				sgf: Savitzky-Golay filter object.
+					 Then you can use it as: sgf(x)
+
+	Adapted from https://gist.github.com/jiahao/b8b5ac328c18b7ae8a17
+
+"""
+function savitzkyGolay(m::T0, n::T0, x::Array{T1,1}) where {T0<:Int64, T1<:Float64}
+	n < m || throw("The window size m must be larger than polynomial order n.")
+    return SavitzkyGolayFilter{m,n}()(x)
+end
+
+function savitzkyGolay(m::T0, n::T0) where {T0<:Int64}
+	n < m || throw("The window size m must be larger than polynomial order n.")
+    return SavitzkyGolayFilter{m,n}()
+end
+
+struct SavitzkyGolayFilter{M,N} end
+@generated function (::SavitzkyGolayFilter{M,N})(data::AbstractVector{T}) where {M,N,T}
+    # Create Jacobian matrix
+    J = zeros(2M+1, N+1)
+    for i=1:2M+1, j=1:N+1
+        J[i, j] = (i-M-1)^(j-1)
+    end
+    e₁ = zeros(N+1)
+    e₁[1] = 1.0
+    # Compute filter coefficients
+    C = J' \ e₁
+    # Evaluate filter on data matrix
+    To = typeof(C[1] * one(T)) # Calculate type of output
+    expr = quote
+        n = size(data, 1)
+        smoothed = zeros($To, n)
+        @inbounds for i in eachindex(smoothed)
+            smoothed[i] += $(C[M+1])*data[i]
+        end
+        smoothed
+    end
+    for j=1:M
+        insert!(expr.args[6].args[3].args[2].args, 1,
+            :(if i - $j ≥ 1
+                smoothed[i] += $(C[M+1-j])*data[i-$j]
+            end)
+        )
+        push!(expr.args[6].args[3].args[2].args,
+            :(if i + $j ≤ n
+                smoothed[i] += $(C[M+1+j])*data[i+$j]
+            end)
+        )
+    end
+    return expr
+end
 
 """
 
-	Polynomial smoothing with the Savitzky Golay filters. I adapted it for julia >= 1.0.
+	Polynomial smoothing with the Savitzky Golay filters.
 
-		ysmooth = savitzkyGolay(x, windowSize, polyOrder; deriv=0)
+		ysmooth = savitzkyGolay2(m,n,x; deriv=0)
 
 			x: array of noisy data to smooth
-			windowSize: Window size must be an odd integer
-			polyOrder: Polynomial order must me lower than window size
-			deriv: Derivative order to slice out
+			m: Window size must be an odd integer
+			n: Polynomial order must me lower than window size
+			    deriv: Derivative order to slice out
+
 			ysmooth: smoothed data
 
 	Sources: https://github.com/BBN-Q/Qlab.jl/blob/master/src/SavitskyGolay.jl
 
 """
-function savitzkyGolay(x::Vector, windowSize::Int, polyOrder::Int; deriv::Int=0)
-  isodd(windowSize) || throw("Window size must be an odd integer.")
-  polyOrder < windowSize || throw("Polynomial order must me less than window size.")
-  halfWindow = Int( ceil((windowSize-1)/2) )
-  # Setup the S matrix of basis vectors
-  S = zeros.(windowSize, polyOrder+1)
-  for ct = 0:polyOrder
-    S[:,ct+1] = (-halfWindow:halfWindow).^(ct)
-  end
-  ## Compute the filter coefficients for all orders
-  # From the scipy code it seems pinv(S) and taking rows should be enough
-  G = S * pinv(S' * S)
-  # Slice out the derivative order we want
-  filterCoeffs = G[:, deriv+1] * factorial(deriv)
-  # Pad the signal with the endpoints and convolve with filter
-  paddedX = [x[1]*ones(halfWindow); x; x[end]*ones(halfWindow)]
-  y = conv(filterCoeffs[end:-1:1], paddedX)
-  # Return the valid midsection
-  return y[2*halfWindow+1:end-2*halfWindow]
+function savitzkyGolay2(
+	x::Vector, windowSize::T1, polyOrder::T1;
+	deriv::T1=0,
+) where {T1<:Int64}
+	isodd(windowSize) || throw("Window size must be an odd integer.")
+	polyOrder < windowSize || throw("Polynomial order must me less than window size.")
+	halfWindow = Int( ceil((windowSize-1)/2) )
+	# Setup the S matrix of basis vectors
+	S = zeros.(windowSize, polyOrder+1)
+	for ct = 0:polyOrder
+		S[:,ct+1] = (-halfWindow:halfWindow).^(ct)
+	end
+	## Compute the filter coefficients for all orders
+	# From the scipy code it seems pinv(S) and taking rows should be enough
+	G = S * pinv(S' * S)
+	# Slice out the derivative order we want
+	filterCoeffs = G[:,deriv+1]*factorial(deriv)
+	# Pad the signal with the endpoints and convolve with filter
+	paddedX = [x[1]*ones(halfWindow); x; x[end]*ones(halfWindow)]
+	y = conv(filterCoeffs[end:-1:1], paddedX)
+	# Return the valid midsection
+	y = y[2*halfWindow+1:end-2*halfWindow]
+	return y
 end
 
 """
 
-    Convert Array{Array{Real,1},1} to an Array{Real,1}.
+    Convert Array{Array{Real,1},1} to an Array{Float64,1}.
 
 """
 function flattenArrays(xin::Array{Array{T1,1},1}) where {T1<:Real}
     xout = []
-    # Determine the total number of elements of xinit
+    # Determine the total number of elements of xin
     for i in eachindex(1:length(xin)), j in eachindex(1:length(xin[i]))
         push!(xout, xin[i][j])
     end
@@ -273,10 +358,10 @@ end
 
 """
 
-    Convert Array{Real,1} to Array{Array{Real,1},1}.
+    Convert Array{Real,1} to Array{Array{Float64,1},1}.
 
 """
-function arrayArrays(x::Array{T1,1}, _x::Array{Array{T2,1},1}) where{T1<:Float64, T2<:Real}
+function arrayArrays(x::Array{T1,1}, _x::Array{Array{T1,1},1}) where{T1<:Real, T2<:Real}
     xfinal = deepcopy(_x)
     ki::Int64 = 1
     kf::Int64 = 0
@@ -286,7 +371,7 @@ function arrayArrays(x::Array{T1,1}, _x::Array{Array{T2,1},1}) where{T1<:Float64
         xfinal[i][2:end] = x[ki+1:kf]
         ki += length(xfinal[i])
     end
-    return xfinal
+    return float.(xfinal)
 end
 
 """
@@ -295,24 +380,32 @@ end
 
         X = averagePolarisation(pol, Xp, Xs)
 
-            pol: indicates the polarisation (1.0 = p, 0.0 = s, between 0.0 and 1.0 = average)
+            pol: indicates the polarisation
+                 (pol=1.0 => p, pol=0.0 => s, 0.0<=pol<=1.0 => average)
             Xp: p/TM polarisation quantity (e.g. Rp)
             Xs: s/TE polarisation quantity (e.g. Rs)
-            Xavg: unpolarized quantity = pol*Rp + (1.0 - pol)*Rs
+
+            Xavg: unpolarized quantity = pol*Xp + (1.0 - pol)*Xs
 
 """
 function averagePolarisation(pol::T1, Xp::Array{T1}, Xs::Array{T1}) where {T1<:Float64}
-    return pol.*Xp .+ (1.0 - pol).*Xs
+	X = @. pol*Xp + (1.0 - pol)*Xs
+    return X
 end
 
 """
 
 	Multipeak Gaussian PDF curve.
 
-		modelg = Gaussian(x, p)
+		modelg = gaussian(x, p)
 
 			x = vector with data of the x-axis
-			p = [[p0], [A1, μ1, σ1], [A2, μ2, σ2],...]
+			p = [
+				  [p0], # offset
+				  [A1, μ1, σ1], # first peak
+				  [A2, μ2, σ2], # second peak
+				  ..., # so on
+				]
 				p0: offset of the total curve
 				Ai: amplitude of peak i
 				μi: position of peak i (mean or expectation of the distribution)
@@ -322,7 +415,7 @@ end
 	Source: https://en.wikipedia.org/wiki/Normal_distribution
 
 """
-function Gaussian(x, p)
+function gaussian(x::AbstractArray{T1}, p::Array{Array{T1,1},1}) where {T1<:Real}
     isequal(length(flattenArrays(p)[2:end]), 3*(length(p)-1)) || throw("The inputs are not correct. For the Gaussian curve, each peak has three parameters plus the offset.")
     y = ones(length(x)).*p[1][1] # offset
     for i = 2:length(p)
@@ -335,10 +428,15 @@ end
 
 	Multipeak Cauchy-Lorentz PDF curve.
 
-		modell = Lorentzian(x, p)
+		modell = lorentzian(x, p)
 
 			x = vector with data of the x-axis
-			p = [[p0], [A1, μ1, Γ1], [A2, μ2, Γ2],...]
+			p = [
+				  [p0], # offset
+				  [A1, μ1, Γ1], # first peak
+				  [A2, μ2, Γ2], # second peak
+				  ..., # so on
+				]
 				p0: offset of the total curve
 				Ai: amplitude of peak i
 				μi: position of peak i (location parameter)
@@ -348,7 +446,7 @@ end
 	Source: https://en.wikipedia.org/wiki/Cauchy_distribution
 
 """
-function Lorentzian(x, p)
+function lorentzian(x::AbstractArray{T1}, p::Array{Array{T1,1},1}) where {T1<:Real}
     isequal(length(flattenArrays(p)[2:end]), 3*(length(p)-1)) || throw("The inputs are not correct. For the Lorentzian curve, each peak has three parameters plus the offset.")
     y = ones(length(x)).*p[1][1] # offset
     for i = 2:length(p)
@@ -359,12 +457,18 @@ end
 
 """
 
-	Single peak Voigt PDF curve. The function is computed using the Faddeeva's function through the scaled complementary error function of x erfcx.
+	Single peak Voigt PDF curve. The function is computed using the Faddeeva's
+    function through the scaled complementary error function of x.
 
-		modelv = Voigtian(x, p)
+		modelv = voigtian(x, p)
 
 			x = vector with data of the x-axis
-			p = [[p0], [A1, μ1, σ1, Γ1], [A2, μ2, σ2, Γ2],...]
+			p = [
+				  [p0], # offset
+				  [A1, μ1, σ1, Γ1], # first peak
+				  [A2, μ2, σ2, Γ2], # second peak
+				  ..., # so on
+				]
 				p0: offset of the total curve
 				Ai: amplitude of the curve
 				μi: position of peak i (location parameter)
@@ -372,12 +476,13 @@ end
 				Γi: Lorentzian half-width at half-maximum (HWHM) of peak i
 				i = 1,...,n
 
-		The μ parameter has been included in a custom fashion to allow the distribution to be uncentered.
+		The μ parameter has been included in a custom fashion to allow the
+        distribution to be uncentered.
 
 	Source: https://en.wikipedia.org/wiki/Voigt_profile
 
 """
-function Voigtian(x, p)
+function voigtian(x::AbstractArray{T1}, p::Array{Array{T1,1},1}) where {T1<:Real}
     isequal(length(flattenArrays(p)[2:end]), 4*(length(p)-1)) || throw("The inputs are not correct. For the Voigtian curve, each peak has four parameters plus the offset.")
     y = ones(length(x)).*p[1][1] # offset
     for i = 2:length(p)
@@ -387,3 +492,4 @@ function Voigtian(x, p)
 end
 
 end # Utils
+

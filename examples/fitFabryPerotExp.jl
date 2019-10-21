@@ -1,9 +1,8 @@
-using Optim
-using Plots
-pyplot(reuse=false, size=(640, 480), grid=false)
-closeall()
+# Load modules
+using Plots, LaTeXStrings
+pyplot()
 using ThinFilmsTools
-
+using Optim
 
 # Wavelength range [nm]
 λ = 400:1000
@@ -19,27 +18,55 @@ n2 = RIdb.silicon(beam.λ)
 n3 = RIdb.glass(beam.λ)
 
 # Define the RI model to use
-layers = [ LayerTMMO1DIso(n1),
-           ModelFit(:looyengaspheresbin; N=(n1, n2)),
-           ModelFit(:looyengaspheresbin; N=(n1, n2)),
-           LayerTMMO1DIso(n3) ]
+layers = [
+    LayerTMMO(n1), # 1
+    ModelFit(:looyenga; N=(n1, n2)), # 2
+    ModelFit(:looyenga; N=(n1, n2)), # 3
+    LayerTMMO(n3), # 4
+]
+
+# Set the order of the layers (build the system) with the layers
+order = [1, # incident medium
+         2, 3, 2, 3, 2, 3, 2, 3, # top DBR of the MC
+         2, 2, # defect of the MC
+         3, 2, 3, 2, 3, 2, 3, 2, # bottom DBR of the MC
+         4, # substrate
+]
 
 # Absolute reflectance spectrum to fit stored in Utils
 Rexp = SpectraDB.FPSpectrum(beam.λ)
-plot(TMMOPlotSpectra1D(), beam.λ, Rexp)
+plot(Spectrum1D(), beam.λ, Rexp)
 gui()
 
-options = Optim.Options(g_abstol=1e-8, g_reltol=1e-8, iterations=10^6, show_trace=true, store_trace=true);
+options = Optim.Options(
+    g_abstol=1e-8, g_reltol=1e-8, iterations=10^5, show_trace=true, store_trace=true,
+);
 
-seed = [[119.0, 0.8], [76.0, 0.5]]
-solOptim = FitTMMO1DIsotropic(Reflectance(), seed, beam, Rexp, layers; arrange=MC1d(), L=[4, 4], Ld=[2], options=options, alg=SAMIN(), lb=0.5.*seed, ub=1.5.*seed)
+# Seeds for each ModelFit layer defined above (No alpha)
+seed = [
+    [119.0, 0.8], # layers[2]
+    [76.0, 0.5], # layers[3]
+]
 
-plot(PlotFitSpectrum(), solOptim.beam.λ, solOptim.spectrumExp, solOptim.spectrumFit)
+solOptim = FitTMMOptics(
+    Reflectance(), seed, beam, Rexp, layers;
+    order=order, options=options, alg=SAMIN(), lb=0.5.*seed, ub=1.5.*seed,
+)
+
+plot(FitSpectrum(), solOptim.Beam.λ, solOptim.spectrumExp, solOptim.spectrumFit)
 gui()
 
-seed2 = [[120, 0.8], [83.0, 0.5], [0.995]]
-solOptim2 = FitTMMO1DIsotropic(Reflectance(), seed2, beam, Rexp, layers; arrange=MC1dAlpha(), L=[4, 4], Ld=[2], options=options, alg=SAMIN(), lb=0.5.*seed2, ub=1.5.*seed2)
-plot(PlotFitSpectrum(), solOptim2.beam.λ, solOptim2.spectrumExp, solOptim2.spectrumFit)
+# Seeds for each ModelFit layer defined above plus the alpha (with alpha)
+seed2 = [
+    [120, 0.8],
+    [83.0, 0.5],
+    [0.995], # alpha
+]
+
+solOptim2 = FitTMMOptics(
+    Reflectance(), seed2, beam, Rexp, layers;
+    order=order, options=options, alg=SAMIN(), lb=0.5.*seed2, ub=1.5.*seed2, alpha=true,
+)
+
+plot(FitSpectrum(), solOptim2.Beam.λ, solOptim2.spectrumExp, solOptim2.spectrumFit)
 gui()
-
-

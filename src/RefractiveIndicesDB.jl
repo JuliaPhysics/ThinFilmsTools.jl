@@ -45,59 +45,69 @@ end
 
 """
 
-    Returns the index of refraction of air in complex format, for a given range of wavelengths in nm.
+    Returns the index of refraction of air in complex format,
+    for a given range of wavelengths in nm.
 
-        N = RIdb.air(λ)
+        n = RIdb.air(λ)
 
             λ: wavelength range (nm)
-            N: complex index of refraction
+
+            n: complex index of refraction
 
 """
 function air(λ::AbstractVector{T}) where {T<:Real}
-    return 1.00029.*ones(length(λ)) .+ im.*zeros(length(λ))
+    n = 1.00029.*ones(length(λ)) .+ im.*zeros(length(λ))
+    return n
 end
 
 """
 
-    Returns the index of refraction for constants values in complex format, for a given range of wavelengths in nm.
+    Returns the index of refraction for constants values in complex format,
+    for a given range of wavelengths in nm.
 
-        N = RIdb.dummy(λ, a, b)
+        n = RIdb.dummy(λ, a, b)
 
             λ: wavelength range (nm)
             a: real part constant value
             b: imaginary part constant value
-            N: complex index of refraction
+
+            n: complex index of refraction
 
 """
 function dummy(λ::AbstractVector{T}, x::S, y::S) where {T<:Real, S<:Real}
-    return ones(length(λ)).*(x .+ im.*y)
+    n = ones(length(λ)).*(x .+ im.*y)
+    return n
 end
 
 """
 
-    Returns the index of refraction of glass in complex format, for a given range of wavelengths in μm, using the Sellmeier equation.
+    Returns the index of refraction of glass in complex format,
+    for a given range of wavelengths in μm, using the Sellmeier equation.
 
-        N = RIdb.glass(λ)
+        n = RIdb.glass(λ)
 
             λ: wavelength range (μm), ∈ [0.25, 2.5] (μm)
-            N: complex index of refraction
+
+            n: complex index of refraction
 
     Source: http://refractiveindex.info, https://en.wikipedia.org/wiki/Sellmeier_equation
 
 """
 function glass(λ::AbstractVector{T}) where {T<:Real}
     λ = λ.^2
-    return sqrt.(Complex.(1.0 .+ (1.03961212.*λ./(λ .- 0.00600069867)) .+ (0.231792344.*λ./(λ .- 0.0200179144)) .+ (1.01046945.*λ./(λ .- 103.560653))))
+    n = sqrt.(Complex.(1.0 .+ (1.03961212.*λ./(λ .- 0.00600069867)) .+ (0.231792344.*λ./(λ .- 0.0200179144)) .+ (1.01046945.*λ./(λ .- 103.560653))))
+    return n
 end
 
 """
 
     Returns the index of refraction of fused silica UV in complex format, for a given range of wavelengths in μm, using the Sellmeier equation.
 
-        N = RIdb.fusedsilicauv(λ)
+        n = RIdb.fusedsilicauv(λ)
 
             λ: wavelength range (μm), ∈ [0.21, 6.7] (μm)
-            N: complex index of refraction
+
+            n: complex index of refraction
 
     Sources: http://refractiveindex.info, https://en.wikipedia.org/wiki/Sellmeier_equation
 
@@ -105,34 +115,40 @@ end
 """
 function fusedsilicauv(λ::AbstractVector{T}) where {T<:Real}
     λ = λ.^2
-    return sqrt.(Complex.(1.0 .+ (0.6961663.*λ./(λ .- 0.0684043)) .+ (0.4079426.*λ./(λ .- 0.1162414)) .+ (0.8974794.*λ./(λ .- 9.896161))))
+    n = sqrt.(Complex.(1.0 .+ (0.6961663.*λ./(λ .- 0.0684043)) .+ (0.4079426.*λ./(λ .- 0.1162414)) .+ (0.8974794.*λ./(λ .- 9.896161))))
+    return n
 end
 
 """
 
-    Returns the index of refraction of liquid ethanol in complex format, for a given range of wavelengths in nm.
+    Returns the index of refraction of liquid ethanol in complex format,
+    for a given range of wavelengths in nm.
 
-        N = RIdb.etoh(λ)
+        n = RIdb.etoh(λ)
 
             λ: wavelength range (nm), ∈ [476.5, 830] (nm)
-            N: complex index of refraction
+
+            n: complex index of refraction
 
     Source: http://refractiveindex.info/
 
 """
 function etoh(λ::AbstractVector{T}) where {T<:Real}
     λ .*= 1e6
-    return 1.35265 .+ 0.00306./(λ.^2) .+ 0.00002./(λ.^4) .+ im.*zeros(λ)
+    n = 1.35265 .+ 0.00306./(λ.^2) .+ 0.00002./(λ.^4) .+ im.*zeros(λ)
+    return n
 end
 
 """
 
-    Returns the index of refraction of aluminum in complex format, for a given range of wavelengths in nm.
+    Returns the index of refraction of aluminum in complex format,
+    for a given range of wavelengths in nm.
 
-        N = RIdb.aluminum(λ)
+        n = RIdb.aluminum(λ)
 
             λ: wavelength range (nm), ∈ [4.15, 31000]
-            N: complex index of refraction
+
+            n: complex index of refraction
 
     Source: http://www-swiss.ai.mit.edu/~jaffer/FreeSnell/nk.html
 
@@ -141,17 +157,20 @@ function aluminum(λ::AbstractVector{T}) where {T<:Real}
     readf = readh5_file("aluminum", :RI)
     spl_n = build_interpolation(hcat(vec(readf["lambda"]).*1e9, vec(readf["n"])))
     spl_k = build_interpolation(hcat(vec(readf["lambda"]).*1e9, vec(readf["k"])))
-    return spl_n.(λ) .+ im.*spl_k.(λ)
+    n = spl_n.(λ) .+ im.*spl_k.(λ)
+    return n
 end
 
 """
 
-    Returns the index of refraction of BK7 in complex format, for a given range of wavelengths in nm.
+    Returns the index of refraction of BK7 in complex format,
+    for a given range of wavelengths in nm.
 
-        N = RIdb.bk7(λ)
+        n = RIdb.bk7(λ)
 
             λ: wavelength range (nm), ∈ [191, 1239] (nm)
-            N: complex index of refraction
+
+            n: complex index of refraction
 
     Source: http://www-swiss.ai.mit.edu/~jaffer/FreeSnell/nk.html
 
@@ -160,17 +179,20 @@ function bk7(λ::AbstractVector{T}) where {T<:Real}
     readf = readh5_file("bk7", :RI)
     spl_n = build_interpolation(hcat(vec(readf["lambda"]).*1e9, vec(readf["n"])))
     spl_k = build_interpolation(hcat(vec(readf["lambda"]).*1e9, vec(readf["k"])))
-    return spl_n.(λ) .+ im.*spl_k.(λ)
+    n = spl_n.(λ) .+ im.*spl_k.(λ)
+    return n
 end
 
 """
 
-    Returns the index of refraction of chrome in complex format, for a given range of wavelengths in nm.
+    Returns the index of refraction of chrome in complex format,
+    for a given range of wavelengths in nm.
 
-        N = RIdb.chrome(λ)
+        n = RIdb.chrome(λ)
 
             λ: wavelength range (nm), ∈ [207, 1240] (nm)
-            N: complex index of refraction
+
+            n: complex index of refraction
 
     Source: http://www-swiss.ai.mit.edu/~jaffer/FreeSnell/nk.html
 
@@ -179,17 +201,20 @@ function chrome(λ::AbstractVector{T}) where {T<:Real}
     readf = readh5_file("chrome", :RI)
     spl_n = build_interpolation(hcat(vec(readf["lambda"]), vec(readf["n"])))
     spl_k = build_interpolation(hcat(vec(readf["lambda"]), vec(readf["k"])))
-    return spl_n.(λ) .+ im.*spl_k.(λ)
+    n = spl_n.(λ) .+ im.*spl_k.(λ)
+    return n
 end
 
 """
 
-    Returns the index of refraction of gold in complex format, for a given range of wavelengths in nm.
+    Returns the index of refraction of gold in complex format,
+    for a given range of wavelengths in nm.
 
-        N = RIdb.gold(λ)
+        n = RIdb.gold(λ)
 
             λ: wavelength range (nm), ∈ [34.15, 10240] (nm)
-            N: complex index of refraction
+
+            n: complex index of refraction
 
     Source: http://www-swiss.ai.mit.edu/~jaffer/FreeSnell/nk.html
 
@@ -198,17 +223,20 @@ function gold(λ::AbstractVector{T}) where {T<:Real}
     readf = readh5_file("gold", :RI)
     spl_n = build_interpolation(hcat(vec(readf["lambda"]), vec(readf["n"])))
     spl_k = build_interpolation(hcat(vec(readf["lambda"]), vec(readf["k"])))
-    return spl_n.(λ) .+ im.*spl_k.(λ)
+    n = spl_n.(λ) .+ im.*spl_k.(λ)
+    return n
 end
 
 """
 
-    Returns the index of refraction of crystalline silicon in complex format, for a given range of wavelengths in nm.
+    Returns the index of refraction of crystalline silicon in complex format,
+    for a given range of wavelengths in nm.
 
-        N = RIdb.silicon(λ)
+        n = RIdb.silicon(λ)
 
             λ: wavelength range (nm), ∈ [163.15, 25000] (nm)
-            N: complex index of refraction
+
+            n: complex index of refraction
 
     Source: http://www-swiss.ai.mit.edu/~jaffer/FreeSnell/nk.html
 
@@ -217,18 +245,21 @@ function silicon(λ::AbstractVector{T}) where {T<:Real}
     readf = readh5_file("silicon", :RI)
     spl_n = build_interpolation(hcat(vec(readf["lambda"]).*1e9, vec(readf["n"])))
     spl_k = build_interpolation(hcat(vec(readf["lambda"]).*1e9, vec(readf["k"])))
-    return spl_n.(λ) .+ im.*spl_k.(λ)
+    n = spl_n.(λ) .+ im.*spl_k.(λ)
+    return n
 end
 
 """
 
-    Returns the index of refraction of crystalline silicon in complex format, for a given range of wavelengths in nm and a one temperature value.
+    Returns the index of refraction of crystalline silicon in complex format,
+    for a given range of wavelengths in nm and a one temperature value.
 
-        N = RIdb.silicontemperature(λ, T)
+        n = RIdb.silicontemperature(λ,T)
 
             λ: wavelength range (nm), ∈ [264, 826.5]
             T: value of temperature (C), ∈ [20, 450] (scalar)
-            N: complex index of refraction
+
+            n: complex index of refraction
 
     Source: http://refractiveindex.info/
 
@@ -261,17 +292,19 @@ function silicontemperature(λ::AbstractVector{T}, t::S) where {T<:Real, S<:Real
         spl_k = interpolate(knots, vec(readf["k450"]), Gridded(Linear()))
         aux2 = spl_k.(λ).*(1.0 .+ dkdt.*(t - 20.0))
     end
-    return aux .+ im.*aux2
+    n = aux .+ im.*aux2
+    return n
 end
 
 """
 
     Returns the index of refraction of silver in complex format, for a given range of wavelengths in nm.
 
-        N = RIdb.silver(λ)
+        n = RIdb.silver(λ)
 
             λ: wavelength range (nm), ∈ [0.124, 9919] (nm)
-            N: complex index of refraction
+
+            n: complex index of refraction
 
     Source: http://www-swiss.ai.mit.edu/~jaffer/FreeSnell/nk.html
 
@@ -280,17 +313,20 @@ function silver(λ::AbstractVector{T}) where {T<:Real}
     readf = readh5_file("silver", :RI)
     spl_n = build_interpolation(hcat(vec(readf["lambda"]), vec(readf["n"])))
     spl_k = build_interpolation(hcat(vec(readf["lambda"]), vec(readf["k"])))
-    return spl_n.(λ) .+ im.*spl_k.(λ)
+    n = spl_n.(λ) .+ im.*spl_k.(λ)
+    return n
 end
 
 """
 
-    Returns the index of refraction of SnO2:F in complex format, for a given range of wavelengths in nm.
+    Returns the index of refraction of SnO2:F in complex format,
+    for a given range of wavelengths in nm.
 
-        N = RIdb.sno2f(λ)
+        n = RIdb.sno2f(λ)
 
             λ: wavelength range (nm), ∈ [308.25, 2490.9] (nm)
-            N: complex index of refraction
+
+            n: complex index of refraction
 
     Source: Mater. Res. Soc. Symp. Proc., 426, (1996) 449
 
@@ -299,14 +335,16 @@ function sno2f(λ::AbstractVector{T}) where {T<:Real}
     readf = readh5_file("sno2f", :RI)
     spl_n = build_interpolation(hcat(vec(readf["lambda"]).*1e9, vec(readf["n"])))
     spl_k = build_interpolation(hcat(vec(readf["lambda"]).*1e9, vec(readf["k"])))
-    return spl_n.(λ) .+ im.*spl_k.(λ)
+    n = spl_n.(λ) .+ im.*spl_k.(λ)
+    return n
 end
 
 """
 
-    Returns the index of refraction of liquid water in complex format, for a given range of wavelengths in nm.
+    Returns the index of refraction of liquid water in complex format,
+    for a given range of wavelengths in nm.
 
-        N = RIdb.h2o(λ)
+        n = RIdb.h2o(λ)
 
             λ: wavelength range (nm), ∈ [10.0, 1e10] (nm)
             N: complex index of refraction
@@ -318,17 +356,21 @@ function h2o(λ::AbstractVector{T}) where {T<:Real}
     readf = readh5_file("h2o", :RI)
     spl_n = build_interpolation(hcat(vec(readf["lambda"]).*1e3, vec(readf["n"])))
     spl_k = build_interpolation(hcat(vec(readf["lambda"]).*1e3, vec(readf["k"])))
-    return spl_n.(λ) .+ im.*spl_k.(λ)
+    n = spl_n.(λ) .+ im.*spl_k.(λ)
+    return n
 end
 
 """
 
-    Returns the index of refraction of fused silica UV graded in complex format, for a given range of wavelengths in nm. This function accounts for lower wavelengths than fusedsilicauv.
+    Returns the index of refraction of fused silica UV graded in complex format,
+    for a given range of wavelengths in nm. This function accounts for lower
+    wavelengths than fusedsilicauv.
 
-        N = RIdb.fusedsilicauv2(λ)
+        n = RIdb.fusedsilicauv2(λ)
 
             λ: wavelength range (nm), ∈ [170.0, 3240] (nm)
-            N: complex index of refraction
+
+            n: complex index of refraction
 
     Source: http://www.janis.com/Libraries/Window_Transmissions/FusedSilicaUVGrade_SiO2_TransmissionCurveDataSheet.sflb.ashx
 
@@ -337,8 +379,8 @@ function fusedsilicauv2(λ::AbstractVector{T}) where {T<:Real}
     readf = readh5_file("fusedsilicauv", :RI)
     spl_n = build_interpolation(hcat(vec(readf["lambda"]), vec(readf["n"])))
     spl_k = build_interpolation(hcat(vec(readf["lambda"]), vec(readf["k"])))
-    return spl_n.(λ) .+ im.*spl_k.(λ)
+    n = spl_n.(λ) .+ im.*spl_k.(λ)
+    return n
 end
-
 
 end # module RIdb

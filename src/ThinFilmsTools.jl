@@ -3,43 +3,38 @@ module ThinFilmsTools
 include("Utils.jl")
 export Utils
 
+include("CommonStructures.jl")
+using .CommonStructures
+export PlaneWave,
+       LayerTMMO,
+       ModelFit,
+       BoundariesFit
+
 include("RefractiveIndicesDB.jl")
 export RIdb
 
 include("RefractiveIndicesModels.jl")
 export RI
 
-include("CommonStructures.jl")
-using .CommonStructures
-export PlaneWave,
-       LayerTMMO1DIso,
-       ModelFit,
-       BoundariesFit
-
 include("SpectraDBExamples.jl")
 export SpectraDB
 
-include("MatrixMethod1DIsotropic.jl")
-using .MatrixMethod1DIsotropic
-export TMMO1DIsotropic
+include("TransferMatrixMethod.jl")
+using .TransferMatrixMethod
+export TMMOptics
 
-include("FitThinFilmSpectrum1DIsotropic.jl")
-using .FitThinFilmPattern
+include("FTFSpectrum.jl")
+using .FTFSpectrum
 export SpaceSolutionEMA,
        TheoreticalSpectrum,
        NormalizeReflectance,
-       FitTMMO1DIsotropic,
+       FitTMMOptics,
        Reflectance,
-       Transmittance,
-       Generic,
-       DBR,
-       DBRAlpha,
-       MC1d,
-       MC1dAlpha
+       Transmittance
 
 include("ThreeOmegaMethod.jl")
-using .ThreeΩMethod
-export ThreeOmegaMethod,
+using .ThreeOmegaMethod
+export ThreeOmega,
        LayerTOM,
        HeaterGeometry,
        Source
@@ -47,22 +42,22 @@ export ThreeOmegaMethod,
 include("PlottingTools.jl")
 using .PlottingTools
 export TOMPlot,
-       TMMOPlotSpectra1D,
-       TMMOPlotSpectraAngle1D,
-       TMMOPlotSpectra2D,
-       TMMOPlotEMF2D,
-       TMMOPlotEMFAngle2D,
-       PlotFitSpectrum,
-       SpaceSolutionOFplot,
-       TMMOPlotNprofile,
-       TMMOPlotDispersion1D,
-       TMMOPlotDispersion1Dalt,
-       TMMOPlotDispersion1Dimre,
-       TMMOPlotDispersion2D,
-       TMMOPlotDispersion2Dalt
+       Spectrum1D,
+       SpectrumAngle1D,
+       Spectrum2D,
+       EMF2D,
+       EMFAngle2D,
+       FitSpectrum,
+       SpaceSolution,
+       RIprofile,
+       PBGDispersion1D,
+       PBGDispersion1Dalt,
+       PBGDispersion1Dimre,
+       PBGDispersion2D,
+       PBGDispersion2Dalt
 
-include("FitBellShapeCurves.jl")
-using .FitBellShapeCurves
+include("FitBellCurves.jl")
+using .FitBellCurves
 export FitCurveModel
 
-end # ThinFilmsTools
+end # module

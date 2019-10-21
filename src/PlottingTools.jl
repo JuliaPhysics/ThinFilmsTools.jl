@@ -6,19 +6,19 @@ using LaTeXStrings
 using Printf: @sprintf
 
 export TOMPlot,
-       TMMOPlotSpectra1D,
-       TMMOPlotSpectraAngle1D,
-       TMMOPlotSpectra2D,
-       TMMOPlotEMF2D,
-       TMMOPlotEMFAngle2D,
-       PlotFitSpectrum,
-       SpaceSolutionOFplot,
-       TMMOPlotNprofile,
-       TMMOPlotDispersion1D,
-       TMMOPlotDispersion1Dalt,
-       TMMOPlotDispersion1Dimre,
-       TMMOPlotDispersion2D,
-       TMMOPlotDispersion2Dalt
+       Spectrum1D,
+       SpectrumAngle1D,
+       Spectrum2D,
+       EMF2D,
+       EMFAngle2D,
+       FitSpectrum,
+       SpaceSolution,
+       RIprofile,
+       PBGDispersion1D,
+       PBGDispersion1Dalt,
+       PBGDispersion1Dimre,
+       PBGDispersion2D,
+       PBGDispersion2Dalt
 
 """
 
@@ -48,14 +48,14 @@ struct TOMPlot end
     # tickfont --> font(12)
     # legendfont --> font(10)
     size --> s
-    solution.f, [solution.DThreal, solution.DThimag]
+    solution.f, [solution.ΔThreal, solution.ΔThimag]
 end
 
 """
 
     Plot the spectrum of Reflectance, Transmittance and Absorbance as input.
 
-        plot(TMMOPlotSpectra1D(), λ, S; s=(640,480))
+        plot(Spectrum1D(), λ, S; s=(640,480))
         gui()
 
             λ: wavelength range
@@ -63,8 +63,8 @@ end
                 s: size of the figure
 
 """
-struct TMMOPlotSpectra1D end
-@recipe function f(::TMMOPlotSpectra1D, λ, S; s=(640,480))
+struct Spectrum1D end
+@recipe function f(::Spectrum1D, λ, S; s=(640,480))
     seriestype  :=  :path
     linestyle --> :solid
     xlabel --> "Wavelength [nm]"
@@ -79,9 +79,10 @@ end
 
 """
 
-    Plot the spectrum of Reflectance, Transmittance and Absorbance as input for angle of incidence.
+    Plot the spectrum of Reflectance, Transmittance and Absorbance as input for
+    angle of incidence.
 
-        plot(TMMOPlotSpectraAngle1D(), θ, S, s=(640,480))
+        plot(SpectrumAngle1D(), θ, S, s=(640,480))
         gui()
 
             θ: angle of incidence
@@ -89,8 +90,8 @@ end
                 s: size of the figure
 
 """
-struct TMMOPlotSpectraAngle1D end
-@recipe function f(::TMMOPlotSpectraAngle1D, θ, S; s=(640,480))
+struct SpectrumAngle1D end
+@recipe function f(::SpectrumAngle1D, θ, S; s=(640,480))
     seriestype  :=  :path
     linestyle --> :solid # :dash :dashdot]
     xlabel --> L"Angle of incidence [$\degree$]"
@@ -107,7 +108,7 @@ end
 
     Plot the spectra input (Reflectance, Transmittance and Absorbance) for λ and θ.
 
-        plot(TMMOPlotSpectra2D(), λ, θ, S; num_levels=80, s=(640,480))
+        plot(Spectrum2D(), λ, θ, S; num_levels=80, s=(640,480))
         gui()
 
             λ: wavelength range
@@ -115,10 +116,10 @@ end
             S: spectrum
                 num_levels: number of levels for the contour plot
                 s: size of the figure
-:black
+
 """
-struct TMMOPlotSpectra2D end
-@recipe function f(::TMMOPlotSpectra2D, λ, θ, S; num_levels=80, s=(640,480))
+struct Spectrum2D end
+@recipe function f(::Spectrum2D, λ, θ, S; num_levels=80, s=(640,480))
     seriestype  :=  :contour
     fill --> true
     levels --> num_levels
@@ -137,7 +138,7 @@ end
 
     Plot the EMF for depth and λ, at a given angle of incidence θ.
 
-        plot(TMMOPlotEMF2D(), λ, ℓ, emf; num_levels=80, s=(640,480))
+        plot(EMF2D(), λ, ℓ, emf; num_levels=80, s=(640,480))
         gui()
 
             λ: wavelength range
@@ -147,8 +148,8 @@ end
                 s: size of the figure
 
 """
-struct TMMOPlotEMF2D end
-@recipe function f(::TMMOPlotEMF2D, λ, ℓ, emf; num_levels=80, s=(640,480))
+struct EMF2D end
+@recipe function f(::EMF2D, λ, ℓ, emf; num_levels=80, s=(640,480))
     seriestype  :=  :contour
     fill --> true
     levels --> num_levels
@@ -165,7 +166,7 @@ end
 
     Plot the EMF for depth and θ, at a given λ.
 
-        plot(TMMOPlotEMFAngle2D(), θ, ℓ, emf; num_levels=80, s=(640,480))
+        plot(EMFAngle2D(), θ, ℓ, emf; num_levels=80, s=(640,480))
         gui()
 
             θ: angle of incidence
@@ -175,8 +176,8 @@ end
                 s: size of the figure
 
 """
-struct TMMOPlotEMFAngle2D end
-@recipe function f(::TMMOPlotEMFAngle2D, θ, ℓ, emf; num_levels=80, s=(640,480))
+struct EMFAngle2D end
+@recipe function f(::EMFAngle2D, θ, ℓ, emf; num_levels=80, s=(640,480))
     seriestype  :=  :contour
     fill --> true
     levels --> num_levels
@@ -193,7 +194,7 @@ end
 
     Recipe for plotting a comparison of the model and experimental spectra.
 
-        plot(PlotFitSpectrum(), x, Xexp, Xmodel; s=(640,480))
+        plot(FitSpectrum(), x, Xexp, Xmodel; s=(640,480))
         gui()
 
             x: range of variable (λ or θ)
@@ -202,8 +203,8 @@ end
                 s: size of the figure
 
 """
-struct PlotFitSpectrum end
-@recipe function f(::PlotFitSpectrum, x, Xexp, Xmodel; s=(640,480))
+struct FitSpectrum end
+@recipe function f(::FitSpectrum, x, Xexp, Xmodel; s=(640,480))
     # linecolor --> customcolors[1]
     seriestype := :path
     linestyle --> :solid
@@ -226,9 +227,13 @@ end
 
 """
 
-    Plot the objective function error obtained from SpaceSolutionRef2D and SpaceSolutionTra2D for the space solution given.
+    Plot the objective function error obtained from SpaceSolutionRef2D and
+    SpaceSolutionTra2D for the space solution given.
 
-        plot(SpaceSolutionOFplot(), x1, x2, S; lims=[x1[1], x1[end], x2[1], x2[end]], num_levels=80, s=(640,480))
+        plot(SpaceSolution(),
+                x1, x2, S;
+                lims=[x1[1], x1[end], x2[1], x2[end]], num_levels=80, s=(640,480)
+        )
         gui()
 
             x1: range of first dimension
@@ -240,8 +245,11 @@ end
                 s: size of the figure
 
 """
-struct SpaceSolutionOFplot end
-@recipe function f(::SpaceSolutionOFplot, x1, x2, S; lims=[vec(x1)[1], vec(x1)[end], vec(x2)[1], vec(x2)[end]], num_levels=80, s=(640,480))
+struct SpaceSolution end
+@recipe function f(
+    ::SpaceSolution, x1, x2, S;
+    lims=[vec(x1)[1], vec(x1)[end], vec(x2)[1], vec(x2)[end]], num_levels=80, s=(640,480),
+)
     seriestype := :contour
     fill --> true
     levels --> num_levels
@@ -255,23 +263,27 @@ end
 
 """
 
-    Plots the index of refraction ath certain wavelength (usually λ0) of the
-    multilayer structure.
+    Plots the index of refraction ath certain wavelength (usually λ0) of the multilayer
+    structure.
 
-        plot(TMMOPlotNprofile(), solution;
-             plotemf=false, wave=:b, λ=[solution.Misc.λ0],
-             θ=[solution.Beam.θ[1]], s=(640,480))
+        plot(RIprofile(),
+             solution;
+             wave=:b, λ=solution.Misc.λ0, θ=solution.Beam.θ[1], s=(640,480),
+        )
         gui()
 
-            solution: structure solution from TMMO1DIsotropic
+            solution: structure solution from TMMOptics
                 wave = :b (both, default), :p (p-wave), :s (s-wave) of the EMF to overlap
                 θ: angle for which to overlap the EMF, by default is taken the first one
                 λ: wavelength for which to overlap the EMF, by default is taken the reference one
                 s: size of the figure
 
 """
-struct TMMOPlotNprofile end
-@recipe function f(::TMMOPlotNprofile, solution; plotemf=false, wave=:b, λ=[solution.Misc.λ0], θ=[solution.Beam.θ[1]], s=(640,480))
+struct RIprofile end
+@recipe function f(
+    ::RIprofile, solution;
+    plotemf=false, wave=:b, λ=[solution.Misc.λ0], θ=[solution.Beam.θ[1]], s=(640,480),
+)
     d = solution.Misc.d[2:end-1] # remove incident and emergent media
     doffset = 0.05*sum(d)
     new_d = [-doffset; cumsum([0; d; doffset], dims=1)]
@@ -357,23 +369,22 @@ end
 
 """
 
-    Plots the photonic dispersion (Bloch wavevector) of a photonic crystal
-    structure, computed for a range of frequencies (wavelengths) and one angle
-    of incidence.
+    Plots the photonic dispersion (Bloch wavevector) of a photonic crystal structure,
+    computed for a range of frequencies (wavelengths) and one angle of incidence.
 
-    Takes both polarisation types and renders them into one piece. You need to
-    pass either the real or imaginary parts of them.
+    Takes both polarisation types and renders them into one piece. You need to pass either
+    the real or imaginary parts of them.
 
-        plot(TMMOPlotDispersion1Dalt(), Bloch; kpart=:real, s=(640,480))
+        plot(PBGDispersion1Dalt(), Bloch; kpart=:real, s=(640,480))
         gui()
 
-            Bloch: solution.Bloch structure of the solution
-                kpart: either real (:real, default) or imginary (:imag)
+            solution.Bloch: Bloch structure of the solution
+            kpart: either real (:real, default) or imginary (:imag)
                 s: size of the figure
 
 """
-struct TMMOPlotDispersion1Dalt end
-@recipe function f(::TMMOPlotDispersion1Dalt, Bloch; kpart=:real, s=(640,480))
+struct PBGDispersion1Dalt end
+@recipe function f(::PBGDispersion1Dalt, Bloch; kpart=:real, s=(640,480))
     ω = Bloch.ω .* Bloch.Λ ./ 2.0 ./ π # frequency range normalized
     xlabel --> L"K_{Bloch}\Lambda/\pi"
     ylabel --> L"\omega\Lambda/(2\pi)"
@@ -400,23 +411,22 @@ end
 
 """
 
-    Plots the photonic dispersion (Bloch wavevector) of a photonic crystal
-    structure, computed for a range of frequencies (wavelengths) and one angle
-    of incidence.
+    Plots the photonic dispersion (Bloch wavevector) of a photonic crystal structure,
+    computed for a range of frequencies (wavelengths) and one angle of incidence.
 
-    Takes one polarisation type in complex format, and plots on the left the
-    imaginary part and on the right the real part.
+    Takes one polarisation type in complex format, and plots on the left the imaginary
+    part and on the right the real part.
 
-        plot(TMMOPlotDispersion1Dimre(), Bloch; wave=:p, s=(640,480))
+        plot(PBGDispersion1Dimre(), Bloch; s=(640,480))
         gui()
 
-            Bloch: solution.Bloch structure of the solution
-                wave: either p-wave (:p, default) or s-wave (:s)
+            solution.Bloch: Bloch structure of the solution
+            wave: either p-wave (:p, default) or s-wave (:s)
                 s: size of the figure
 
 """
-struct TMMOPlotDispersion1Dimre end
-@recipe function f(::TMMOPlotDispersion1Dimre, Bloch; wave=:p, s=(640,480))
+struct PBGDispersion1Dimre end
+@recipe function f(::PBGDispersion1Dimre, Bloch; wave=:p, s=(640,480))
     ω = Bloch.ω .* Bloch.Λ ./ 2.0 ./ π # frequency range normalized
     xlabel --> L"K_{Bloch}\Lambda/\pi"
     ylabel --> L"\omega\Lambda/(2\pi)"
@@ -446,25 +456,24 @@ end
 
 """
 
-    Plots the photonic dispersion (Bloch wavevector) of a photonic crystal
-    structure, computed for a range of frequencies (wavelengths) and one
-    angle of incidence.
+    Plots the photonic dispersion (Bloch wavevector) of a photonic crystal structure,
+    computed for a range of frequencies (wavelengths) and one angle of incidence.
 
-    Takes only one polarisation. If you want you can pass optionally the
-    part of the wavevector to plot. By default, plots the real one (as the
-    imaginary does not reresent much).
+    Takes only one polarisation. If you want you can pass optionally the part of the
+    wavevector to plot. By default, plots the real one (as the imaginary does not represent
+    much).
 
-        plot(TMMOPlotDispersion1D(), Bloch; kpart=:real, wave=:p, s=(640,480))
+        plot(PBGDispersion1D(), solution.Bloch; wave=:p, kpart=:real, s=(640,480))
         gui()
 
-            Bloch: solution.Bloch structure of the solution
+            solution.Bloch: Bloch structure of the solution
                 wave: either p-wave (:p, default) or s-wave (:s)
                 kpart: either real (:real, default) or imginary (:imag)
                 s: size of the figure
 
 """
-struct TMMOPlotDispersion1D end
-@recipe function f(::TMMOPlotDispersion1D, Bloch; kpart=:real, wave=:p, s=(640,480))
+struct PBGDispersion1D end
+@recipe function f(::PBGDispersion1D, Bloch; kpart=:real, wave=:p, s=(640,480))
     ω = Bloch.ω .* Bloch.Λ ./ 2.0 ./ π # frequency range normalized
     if isequal(wave, :p)
         κ = Bloch.κp .* Bloch.Λ ./ π
@@ -484,19 +493,18 @@ end
 
 """
 
-    Plots the photonic dispersion (Bloch wavevector) of a photonic crystal
-    structure, computed for a range of frequencies (wavelengths) and a range
-    of angle of incidences.
+    Plots the photonic dispersion (Bloch wavevector) of a photonic crystal structure,
+    computed for a range of frequencies (wavelengths) and a range of angle of incidences.
 
-        plot(TMMOPlotDispersion2Dalt(), Bloch; s=(640,480), num_levels=90)
+        plot(PBGDispersion2Dalt(), solution.Bloch; s=(640,480), num_levels=90)
         gui()
 
-            Bloch: solution.Bloch structure from TMMO1DIsotropic
+            solution: solution structure from TMMOptics
                 s: size of the figure
 
 """
-struct TMMOPlotDispersion2Dalt end
-@recipe function f(::TMMOPlotDispersion2Dalt, Bloch; s=(640,480), num_levels=90)
+struct PBGDispersion2Dalt end
+@recipe function f(::PBGDispersion2Dalt, Bloch; s=(640,480), num_levels=90)
     qz = Bloch.qz; ωh = Bloch.ωh; ωl = Bloch.ωl
     ω = Bloch.ω .* Bloch.Λ ./ 2.0 ./ π # frequency range normalized
     # k normalized for angle-frequency dependence
@@ -575,22 +583,21 @@ end
 
 """
 
-    Plots the photonic dispersion (Bloch wavevector) of a photonic crystal
-    structure, computed for a range of frequencies (wavelengths) and a range
-    of angle of incidences.
+    Plots the photonic dispersion (Bloch wavevector) of a photonic crystal structure,
+    computed for a range of frequencies (wavelengths) and a range of angle of incidences.
 
     This function plots the Bloch wavevector for only one of the polarisation types.
 
-        plot(TMMOPlotDispersion2D(), Bloch; wave=:p, s=(640,480), num_levels=90)
+        plot(PBGDispersion2D(), solution.Bloch; wave=:p, s=(640,480), num_levels=90)
         gui()
 
-            Bloch: solution.Bloch structure from TMMO1DIsotropic
+            solution.Bloch: solution.Bloch structure from TMMOptics
                 wave: either :p (p-wave, default) or :s (s-wave)
                 s: size of the figure
 
 """
-struct TMMOPlotDispersion2D end
-@recipe function f(::TMMOPlotDispersion2D, Bloch; wave=:p, s=(640,480), num_levels=90)
+struct PBGDispersion2D end
+@recipe function f(::PBGDispersion2D, Bloch; wave=:p, s=(640,480), num_levels=90)
     qz = Bloch.qz; ωh = Bloch.ωh; ωl = Bloch.ωl
     Λ = Bloch.Λ # periodicity
     ω = Bloch.ω .* Λ ./ 2.0 ./ π # frequency range normalized
