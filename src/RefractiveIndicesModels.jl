@@ -1,7 +1,6 @@
 module RI
 
-include("_expint.jl")
-using ExponentialIntegration
+include(joinpath(@__DIR__, "_expint.jl"))
 
 export lorentzlorenz,
 	   bruggeman,
@@ -171,9 +170,6 @@ end
 				   direction along which layers alternate (stratification direction)
    			  The df entered as single values represent the same factors for all components, i.e.,
               there is only one geometrical type of inclusions for all of them.
-              df: depolarization factors for every component (Array{Array{Real,1},1})
-                  df = [[1/3, 1/3, 1/3]
-                        [1/2, 1/2]]
 
            neff: effective index of refraction
 
@@ -475,7 +471,7 @@ end
 
             x: Array of array containing the values used in the model.
                (x = [
-			   		  [ϵinf], # dielectric function at infinite frequency (offset)
+			   		  [ninf], # index of refraction at infinite frequency (offset)
                       [A1, E01, C1, Eg1], # first oscillator
                       [A2, E02, C2, Eg2], # second oscillator
                       [...],  # kth oscillator
@@ -495,7 +491,7 @@ function tauclorentz(
 ) where {T0<:Real, T1<:Real}
 	ħω = 1240.0./λ
 	ϵ = zeros(ComplexF64, length(vec(λ)))
-	ϵinf = x[1][1]
+	ninf = x[1][1]
 	for i = 2:length(x)
 		A, E₀, C, Eg = x[i]
 		Eg += 1e-3*rand() # add a small number to avoid collapsing the last term of ϵf1
@@ -516,8 +512,8 @@ function tauclorentz(
 		ϵf2 = @. (A*E₀*C*(ħω - Eg)^2)/((ħω2 - E02)^2 + C2*ħω2)/ħω*(ħω > Eg)
 		@. ϵ += ϵf1 + im*ϵf2
 	end
-	@. ϵ += ϵinf
-	return sqrt.(ϵ)
+	@. ϵ = ninf + sqrt.(ϵ)
+	return ϵ
 end
 
 """
@@ -610,7 +606,7 @@ end
 
 			x: Array of array containing the values used in the model.
 		   		(x = [
-						[ϵinf], # high-frequency dielectric constant
+						[ninf], # high-frequency index of refraction
 				  		[ħωL1, ħωT1, γ1, ħωp1, Γ1], # first oscillator
 						[ħωL2, ħωT2, γ2, ħωp2, Γ2], # second oscillator
 						[...],  # kth oscillator
@@ -629,13 +625,13 @@ function lorentzplasmon(
 ) where {T0<:Real, T1<:Real}
 	ħω = 1240.0./λ
 	ϵ = zeros(ComplexF64, length(vec(λ)))
-	ϵinf = x[1][1]
+	ninf = x[1][1]
 	for i in eachindex(x)
 		ħωL, ħωT, γ, ħωp, Γ = x[i]
 		@. ϵ += (ħω^2 - ħωL^2 + im*γ*ħω)/(ħω^2 - ħωT^2 + im*γ*ħω) - ħωp^2/(ħω^2 + im*Γ*ħω)
 	end
-	@. ϵ *= ϵinf
-	return sqrt.(ϵ)
+	@. ϵ = ninf*sqrt.(ϵ)
+	return ϵ
 end
 
 """
@@ -697,7 +693,7 @@ _Ld(E0::T1, Γ::T1, ħω::T1) where {T1<:Float64} = (ħω^2 - E0^2)^2 + (Γ*ħω
 # Determination of ItL assuming constant momentum matrix element
 function _codylorentz_momentum(x::Array{Array{T1,1},1}, λ::Array{T1,1}) where {T1<:Float64}
 	ħω = 1240.0./λ
-	ϵinf = x[1][1]
+	ninf = x[1][1]
 	ϵ = zeros(ComplexF64, length(vec(λ)))
 	Iu = similar(ϵ)
 	for i = 2:length(x)
@@ -719,8 +715,8 @@ function _codylorentz_momentum(x::Array{Array{T1,1},1}, λ::Array{T1,1}) where {
 		ϵf2 = @. G*L*(ħω>Et) + E1*exp((ħω - Et)/Eu)/ħω*(ħω<=Et)
 		@. ϵ += ϵf1 + im*ϵf2
 	end
-	@. ϵ += ϵinf
-	return sqrt.(ϵ)
+	@. ϵ = ninf + sqrt.(ϵ)
+	return ϵ
 end
 
 function _matrix_element_momentum(
@@ -746,7 +742,7 @@ end
 # Determination of IcL assuming constant dipole matrix element
 function _codylorentz_dipole(x::Array{Array{T1,1},1}, λ::Array{T1,1}) where {T1<:Float64}
 	ħω = 1240.0./λ
-	ϵinf = x[1][1]
+	ninf = x[1][1]
 	ϵ = zeros(ComplexF64, length(vec(λ)))
 	Iu = similar(ϵ)
 	for i = 2:length(x)
@@ -768,10 +764,9 @@ function _codylorentz_dipole(x::Array{Array{T1,1},1}, λ::Array{T1,1}) where {T1
 		ϵf1 = @. Iu + Icl
 		ϵf2 = @. G*L*(ħω>Et) + E1*exp((ħω - Et)/Eu)/ħω*(ħω<=Et)
 		@. ϵ += ϵf1 + im*ϵf2
-		println(i)
 	end
-	@. ϵ += ϵinf
-	return sqrt.(ϵ)
+	@. ϵ = ninf + sqrt.(ϵ)
+	return ϵ
 end
 
 function _matrix_element_dipole(
