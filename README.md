@@ -7,6 +7,8 @@
 
 [ThinFilmsTools.jl](https://github.com/lnacquaroli/ThinFilmsTools.jl/wiki/Home) provides tools for the design and characterisation of thin films written in Julia. Documentation, examples and details can be found in the [Wiki](https://github.com/lnacquaroli/ThinFilmsTools.jl/wiki/Home) page.
 
+Check [julia-lang](https://julialang.org/) for how to install and setup the environment.
+
 ## Installation
 
 This package is not yet registered. It can be installed in Julia with the following ([see further](https://docs.julialang.org/en/v1/stdlib/Pkg/index.html#Adding-unregistered-packages-1)):
