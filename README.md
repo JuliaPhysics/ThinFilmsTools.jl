@@ -7,7 +7,7 @@
 
 [ThinFilmsTools.jl](https://github.com/lnacquaroli/ThinFilmsTools.jl/wiki/Home) provides tools for the design and characterisation of thin films written in Julia. Documentation, examples and details can be found in the [Wiki](https://github.com/lnacquaroli/ThinFilmsTools.jl/wiki/Home) page.
 
-Check [julia-lang](https://julialang.org/) for how to install and setup the environment.
+Check [julia language](https://julialang.org/) for how to install and setup the environment.
 
 ## Installation
 
