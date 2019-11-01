@@ -19,8 +19,8 @@ emergent = RIdb.silicon(beam.λ)
 # Define the RI model to use
 layers = [
     LayerTMMO(incident),
-    ModelFit(:looyenga; N=(incident, emergent)),
-    ModelFit(:looyenga; N=(incident, emergent)),
+    ModelFit(:looyenga; N=(ninc=incident, nhost=emergent)),
+    ModelFit(:looyenga; N=(ninc=incident, nhost=emergent)),
     LayerTMMO(emergent),
 ]
 
@@ -33,8 +33,8 @@ order = [
 
 # Absolute reflectance spectrum to fit stored in Utils
 Rexp = SpectraDB.BraggSpectrum(beam.λ)
-plot(Spectrum1D(), beam.λ, Rexp)
-gui()
+# plot(beam.λ, Rexp)
+# gui()
 
 options = Optim.Options(
     g_abstol=1e-8, g_reltol=1e-8, iterations=10^5, show_trace=true, store_trace=true,
@@ -46,9 +46,13 @@ seed = [
     [119.0, 0.77], # layers[3]
 ]
 
+# solOptim = FitTMMOptics(
+#     Reflectance(Rexp), seed, beam, layers;
+#     order=order, options=options, alg=SAMIN(), lb=0.5.*seed, ub=1.5.*seed,
+# )
 solOptim = FitTMMOptics(
-    Reflectance(), seed, beam, Rexp, layers;
-    order=order, options=options, alg=SAMIN(), lb=0.5.*seed, ub=1.5.*seed,
+    Reflectance(Rexp), seed, beam, layers;
+    order=order, options=options, alg=LBFGS(),
 )
 
 plot(FitSpectrum(), solOptim.Beam.λ, solOptim.spectrumExp, solOptim.spectrumFit)
@@ -61,9 +65,13 @@ seed2 = [
     [0.995], # alpha
 ]
 
+# solOptim2 = FitTMMOptics(
+#     Reflectance(Rexp), seed2, beam, layers;
+#     order=order, options=options, alg=SAMIN(), lb=0.5.*seed2, ub=1.5.*seed2, alpha=true,
+# )
 solOptim2 = FitTMMOptics(
-    Reflectance(), seed2, beam, Rexp, layers;
-    order=order, options=options, alg=SAMIN(), lb=0.5.*seed2, ub=1.5.*seed2, alpha=true,
+    Reflectance(Rexp), seed2, beam, layers;
+    order=order, options=options, alg=LBFGS(), alpha=true,
 )
 
 plot(FitSpectrum(), solOptim2.Beam.λ, solOptim2.spectrumExp, solOptim2.spectrumFit)

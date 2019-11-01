@@ -11,7 +11,7 @@ function glass_transmittance(beam, incident, emergent)
                 LayerTMMO(RIdb.glass(beam.λ./1e3); d=400.),
                 LayerTMMO(emergent) ]
     sol = TMMOptics(beam, layers2)
-    return beam.p.*sol.Spectra.Tp .+ (1.0 - beam.p).*sol.Spectra.Ts
+    return vec(beam.p.*sol.Spectra.Tp .+ (1.0 - beam.p).*sol.Spectra.Ts)
 end
 ##
 
@@ -29,35 +29,29 @@ emergent = RIdb.silicon(beam.λ)
 
 # Define the RI model to use
 layers = [
-    ModelFit(:cauchyurbach), # 1
-    LayerTMMO(incident), # 2
+    LayerTMMO(incident), # 1
+    ModelFit(:cauchyurbach), # 2
     LayerTMMO(emergent), # 3
-]
-
-# Set the order of the layers (build the system) with the layers defined above
-order = [
-    2, # First, layers[2]
-    1, # Second, layers[1]
-    3, # Third, layers[3]
 ]
 
 # Create transmittance spectrum to fit
 Texp = glass_transmittance(beam, incident, emergent)
-plot(Spectrum1D(), beam.λ, Texp)
-gui()
+# plot(beam.λ, Texp)
+# gui()
 
 options = Optim.Options(
     g_abstol=1e-8, g_reltol=1e-8, iterations=10^5, show_trace=true, store_trace=true,
 );
+
 seed = [vcat(420.0, [1.4, 0.23, 1.0, 0.0, 1.0, 1.0])]
 
 solOptim = FitTMMOptics(
-    Transmittance(), seed, beam, Texp, layers, order;
+    Transmittance(Texp), seed, beam, layers, order;
     options=options, alg=SAMIN(), lb=0.5.*seed, ub=1.5.*seed,
 )
 
 plot(FitSpectrum(),
-    solOptim.beam.λ, solOptim.spectrumExp, solOptim.spectrumFit,
+    solOptim.Beam.λ, solOptim.spectrumExp, solOptim.spectrumFit,
     xaxis=("Wavelength [nm]"),
     yaxis=("Transmittance"),
 )

@@ -4,9 +4,17 @@
 # Top layer down to substrate information arrays
 
 # Load modules
+#using Plots, LaTeXStrings
+#pyplot()
+#using ThinFilmsTools
+
+# Load modules
 using Plots, LaTeXStrings
 pyplot()
-using ThinFilmsTools
+using PyCall; pygui(true)
+closeall()
+include("/home/leniac/JuliaLangDev/ThinFilmsTools/src13/ThinFilmsTools.jl")
+using Main.ThinFilmsTools
 
 function main()
     # Half-width of heater line [m]

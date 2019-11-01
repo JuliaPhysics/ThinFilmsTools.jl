@@ -25,7 +25,8 @@ sol = main()
 
 # plot the R, T and A spectra
 plot(Spectrum1D(),
-     sol.Beam.λ, [sol.Spectra.Rp, sol.Spectra.Tp, 1.0.-(sol.Spectra.Rp.+sol.Spectra.Tp)], label=["Reflectance" "Transmittance" "Absorbance"],
+     sol.Beam.λ, [sol.Spectra.Rp, sol.Spectra.Tp, 1.0.-(sol.Spectra.Rp.+sol.Spectra.Tp)], 
+     label=["Reflectance" "Transmittance" "Absorbance"],
      line=([:solid :dash :dashdot]),
      ylims=(0.0,1.0),
      xlims=(sol.Beam.λ[1], sol.Beam.λ[end]),
