@@ -3,8 +3,8 @@ module FTFSpectrum
 using Optim
 using Statistics
 using ..CommonStructures: ModelFit, BoundariesFit, PlaneWave, LayerTMMO, FitProcedure
-using ..CommonStructures: meanSquaredError, getBeamParameters
-using ..Utils: build_interpolation, averagePolarisation, flattenArrays, arrayArrays
+using ..CommonStructures: getBeamParameters
+using ..Utils: build_interpolation, averagePolarisation, flattenArrays, arrayArrays, oscillatorsInput
 using ..TransferMatrixMethod: TransferMatrix
 using ..RI
 
@@ -14,18 +14,55 @@ export SpaceSolutionEMA,
        FitTMMOptics,
        Reflectance,
        Transmittance,
+       Ellipsometry,
        NoAlpha,
-       UseAlpha
+       UseAlpha,
+       MeanAbs,
+       SumAbs,
+       SumMeanAbs
 
-## Definition of subtypes for multiple dispatch.
-struct FitReflectance <: FitProcedure end
-Reflectance() = FitReflectance()
-struct FitTransmittance <: FitProcedure end
-Transmittance() = FitTransmittance()
+## Definition of subtypes
+mutable struct Ellipsometry{T1,T2} <: FitProcedure where {T1<:Real, T2<:Real}
+    X::Array{T1,2}
+    Xexp::Array{T2,2}
+    function Ellipsometry(
+        X::Array{T1,2};
+        Xexp::Array{T2,2}=zeros(size(X)),
+    ) where {T1<:Real, T2<:Real}
+      return new{T1,T2}(X, Xexp)
+    end
+end
+Ellipsometry() = Ellipsometry([]; Xexp=zeros(1,2))
+
+struct Reflectance{T1} <: FitProcedure where {T1<:Real}
+    Xexp::Array{T1,1}
+    function Reflectance(Xexp::Array{T1,1}) where {T1<:Real}
+      return new{T1}(Xexp)
+    end
+end
+Reflectance() = Reflectance([0.0])
+
+struct Transmittance{T1} <: FitProcedure where {T1<:Real}
+    Xexp::Array{T1,1}
+    function Transmittance(Xexp::Array{T1,1}) where {T1<:Real}
+      return new{T1}(Xexp)
+    end
+end
+Transmittance() = Transmittance([0.0])
+
+struct MeanAbsObjFun <: FitProcedure end
+MeanAbs() = MeanAbsObjFun()
+struct SumAbsObjFun <: FitProcedure end
+SumAbs() = SumAbsObjFun()
+struct SumMeanAbsObjFun <: FitProcedure end
+SumMeanAbs() = SumMeanAbsObjFun()
+
+# Non-exported
 struct DoNotAlpha <: FitProcedure end
 NoAlpha() = DoNotAlpha()
 struct DoAlpha <: FitProcedure end
 UseAlpha() = DoAlpha()
+
 
 """
 
@@ -37,11 +74,11 @@ UseAlpha() = DoAlpha()
 
             λ: wavelength of interest [nm]
             Rexp: 2-columns array with wavelength in first one and experimental
-                  reflectance in the second
+                reflectance in the second
             Rthe: 2-columns array with wavelength in first one and theoretical
-                  reflectance in the second
+                reflectance in the second
             Rref: 2-columns array with wavelength in first one and reference reflectance
-                  in the second
+                in the second
 
     The output has the same scale as the theoretical reflectance with the same length as λ.
 
@@ -69,9 +106,9 @@ end
             specType: type of spectrum to compute, Reflectance() or Transmittance().
             beam: a PlaneWave structure.
             incidentRI: Array containing the index of refraction of the incident material
-                        for several wavelengths. For instance, RIdb.air(beam.λ).
+                for several wavelengths. For instance, RIdb.air(beam.λ).
             emergentRI: Array containing the index of refraction of the emergent material
-                        for several wavelengths. For instance, RIdb.silicon(beam.λ).
+                for several wavelengths. For instance, RIdb.silicon(beam.λ).
             X: averaged spectrum = beam.p*Xp + (1.0 - beam.p)*Xs
 
 """
@@ -86,25 +123,26 @@ end
 """
 
     Computes the solution space for a window range of two parameters, the optical thickness
-    and porosity. Only works with these two parameters and for a single layer between incident
-    and emergent media.
+    and porosity. Only works with these two parameters and for a single layer between
+    incident and emergent media.
 
-    It uses the mean(abs(Xexp - X)) objective function, where Xexp and X are the experimental
-    and modelled spectra.
+        sol = SpaceSolutionEMA(specType, b, beam, Xexp, layers; oftype=MeanAbs())
 
-        sol = SpaceSolutionEMA(specType, b, beam, Xexp, layers)
-
-            specType: type of spectrum to compute, Reflectance() or Transmittance().
+            specType: Type of spectrum to fit, with accepted values:
+                Reflectance(Xexp), Transmittance(Xexp) or Ellipsometry(Xexp).
+                For the Reflectance() and Transmittance() you must pass the spectrum array
+                Xexp (between 0 and 1) to be fitted. For the Ellipsometry() you have to
+                pass the Ψ (first column) and Δ (second column) spectra in degrees.
             b: lower and upper boundaries for the optical thickness and porosity.
                (e.g. [odl, odu, pl pu; Nod, Np]), where Nod and Np indicates the number of
                points to search in the solution space as optional parameters.
             beam: structure from PlaneWave
-            Xexp: absolute experimental spectrum
             layers: columnwise array of three LayerTMMO and ModelFit with information
-                    about the layers.
-                    For SpaceSolutionEMA: length(vec(layers)) = 3
-                        The typeof first and third layers = LayerTMMO
-                        The typeof second layers = ModelFit
+                about the layers. For SpaceSolutionEMA: length(vec(layers)) = 3. Notice that
+                the type of the first and third layers is LayerTMMO while the type of the
+                second layers is ModelFit.
+                oftype: Metric for the objective function to optimise.
+                    Can take values: MeanAbs() (default), SumAbs() and SumMeanAbs().
             sol: structure with the solution
                 solSpace: matrix with objective function values for the whole space
                 objfunMin: minimum value of the objective function found
@@ -119,20 +157,26 @@ end
 
 """
 function SpaceSolutionEMA(
-    specType::T0, b::T1, beam::T2, Xexp::Array{T3}, layers::Array,
-) where{T0<:FitProcedure, T1<:BoundariesFit, T2<:PlaneWave, T3<:Float64}
+    specType::T0, b::T1, beam::T2, layers::Array;
+    oftype::T4=MeanAbs(),
+) where{T0<:FitProcedure, T1<:BoundariesFit, T2<:PlaneWave, T3<:Float64, T4<:FitProcedure}
     # Generate grids
     _d = LinRange(b.odlo, b.odup, b.Nod)
     _p = LinRange(b.plo, b.pup, b.Np)
     d = similar(_d)
     sol = zeros(Float64, b.Nod, b.Np)
     beam_, _ = getBeamParameters(beam)
-    Xexp = vec(Xexp)
+    # If it is ellipsometry, then fit the norm of ρ
+    if isa(specType, Ellipsometry)
+        ρexp = @. tan(deg2rad(specType.X[:,1]))*exp(im*deg2rad(specType.X[:,2]))
+        specType.Xexp = hcat(real.(ρexp), imag.(ρexp))
+        # specType.Xexp = @. real(ρexp*conj(ρexp))
+    end
     @inbounds for j in eachindex(_p), i in eachindex(_d)
         neff = refractiveIndexMR(layers[2], [_p[j]], beam_.λ)
         d[i] = _d[i] / mean(real.(neff))
         X = computeTransferMatrix(specType, vec([0. d[i] 0.]), [layers[1].n neff layers[3].n], beam_)
-        sol[i, j] = meanSquaredError(vec(X), Xexp)
+        sol[i, j] = objectiveFunction(oftype, X, specType.Xexp)
     end
     smin = findmin(sol)
     X = computeTransferMatrix(
@@ -145,10 +189,10 @@ function SpaceSolutionEMA(
         solSpace = sol,
         objfunMin = smin[1],
         optOD = _d[smin[2][1]],
-        optParams = _p[smin[2][2]],
+        optPorosity = _p[smin[2][2]],
         optThickness = d[smin[2][1]],
         spectrumFit = X,
-        spectrumExp = Xexp,
+        spectrumExp = specType.Xexp,
         od = _d,
         p = _p,
         Beam = (λ=beam_.λ, θ=beam_.θ, pol=beam_.p),
@@ -162,40 +206,53 @@ end
 
         sol = FitTMMOptics(
             specType, xinit, beam, Rexp, layers;
-            order=1:length(layers), options=Optim.Options(), alg=SAMIN(), lb=0.5.*xinit, ub=1.5.*xinit, σ=ones.(length(beam.λ)), alpha=false,
+            order=1:length(layers), options=Optim.Options(), alg=SAMIN(),
+            lb=0.5.*xinit, ub=1.5.*xinit, σ=ones(size(Xexp)), alpha=false,
+            oftype=MeanAbs(),
         )
 
-            specType: Type of spectrum to fit, Reflectance() or Transmittance().
+            specType: Type of spectrum to fit, with accepted values:
+                Reflectance(Xexp), Transmittance(Xexp) or Ellipsometry(Xexp).
+                For the Reflectance() and Transmittance() you must pass the spectrum array
+                Xexp (0<=Xexp<=1) to be fitted. For the Ellipsometry() you have to
+                pass the Ψ (first column) and Δ (second column) spectra in degrees, i.e.,
+                Xexp = [Ψ Δ].
             xinit: Array with the initial parameters for optimization. For instance, to
-                   optimise two layers in the system you need to wrap the seeds for the
-                   algorithm as follow: xinit = [seed1, seed2], even if it is only one
-                   single layer to fit, xinit = [seed1]. The first parameter of each seed
-                   must be always the thickness, the rest are the parameters for the selected
-                   model. The number of seeds must match that of the number of ModelFit layers.
+                optimise two layers in the system you need to wrap the seeds for the
+                algorithm as follow: xinit = [seed1, seed2], even if it is only one
+                single layer to fit, xinit = [seed1]. The first parameter of each seed
+                must be always the thickness, the rest are the parameters for the selected
+                model. The number of seeds must match that of the number of ModelFit layers.
             beam: Structure from PlaneWave.
-            Xexp: Absolute experimental spectrum.
-            layers: Columnwise array of LayerTMMO and ModelFit with information about the layers.
-                order: Set the order of the layers (build the system) with the layers. This
-                       parameter is directly bound to the (previously defined) layers parameter.
-                       Order basically contains the indices of each layer inside the parameter
-                       layers. Notice that the first and last indices in order cannot be associated
-                       to ModelFit layers, as they are the outter media.
+            layers: Columnwise array of LayerTMMO and ModelFit with information about the
+                layers.
+                order: Set the order of the layers (build the system) with the layers.
+                    This parameter is directly bound to the (previously defined) layers
+                    parameter. Order basically contains the indices of each layer inside
+                    the parameter layers. Notice that the first and last indices in
+                    order cannot be associated to ModelFit layers, as they are the
+                    outter media.
                 options: Optional Optim.Options structure.
-                alg: Optional algorithm method selected, by default takes SAMIN(). You can pass
-                     the options inside as well, for instance, SAMIN(rt=0.1). Right now,
-                     NelderMead() and SAMIN() are supported from Optim.jl. If you select SAMIN()
-                     you need to input lb and ub, otherwise will be set as 0.5 and 1.5 times the
-                     xinit argument, respectively.
+                alg: Optional algorithm method selected, by default takes SAMIN().
+                    You can pass the options inside as well, for instance, SAMIN(rt=0.1).
+                    Right now, LBFGS(), NelderMead() and SAMIN() are supported from
+                    Optim.jl. If you select SAMIN() you need to input lb and ub, otherwise
+                    will be set as 0.5 and 1.5 times the xinit argument, respectively.
+                    The LBFGS algorithm requires the jacobian for the optimisation but it
+                    can be omitted and the algorithm will calculate the differentials
+                    numerically.
                 lb: Lower bounds for the optimisation variables, by default lb=0.5.*xinit
                 ub: Upper bounds for the optimisation variables, by default ub=1.5.*xinit
-                σ: Array with the standard deviation of the spectrum for each wavelength, by
-                   default is ones.(length(beam.λ), 1).
-                alpha: Tells the procedure to either use (alpha=true) a linear decrease in the
-                       thicknesses of the modelling layers or not (alpha=false). The default is
-                       false, do not use alpha.
+                σ: Array with the standard deviation of the spectrum for each wavelength,
+                   by default is ones(size(Xexp)).
+                alpha: Tells the procedure to either use (alpha=true) a linear decrease in
+                    the thicknesses of the modelling layers or not (alpha=false). The
+                    default is false, do not use alpha.
+                oftype: Metric for the objective function to optimise.
+                    Can take values: MeanAbs() (default), SumAbs() and SumMeanAbs().
 
             sol: FitTMMOptics structure with results, with fields
-                OptimSolverInfo: Status info from the Optim solver
+                OptimSolverInfo: Status info from the solver
                 spectrumFit: Spectrum obtained with the model and the optimal parameters
                 spectrumExp: Input experimental spectrum
                 optParams: Array of arrays with optimal parameters
@@ -208,16 +265,17 @@ function FitTMMOptics(
     specType::T0,
     xinit,
     beam::T1,
-    Xexp::Array{T2,N2},
     layers::Array;
     order::AbstractArray{T3,N3}=1:length(layers),
     options=Optim.Options(),
     alg=SAMIN(),
     lb=0.5.*xinit,
     ub=1.5.*xinit,
-    σ::Array{T4}=ones.(length(beam.λ)),
+    σ::Array{T4}=ones(size(specType.Xexp)),
     alpha::T5=false,
-) where{T0<:FitProcedure, T1<:PlaneWave, T2<:Float64, N2, T3<:Int64, N3, T4<:Real, T5<:Bool}
+    oftype::T7=MeanAbs(),
+),
+) where{T0<:FitProcedure, T1<:PlaneWave, T3<:Int64, N3, T4<:Real, T5<:Bool, T6<:Symbol, T7<:FitProcedure}
     isa(layers[order[1]], LayerTMMO) || throw("The first layer of the system cannot be ModelFit type. Check the order parameter.")
     isa(layers[order[end]], LayerTMMO) || throw("The last layer of the system cannot be ModelFit type. Check the order parameter.")
     if sum(isa.(layers, ModelFit)) < 1
@@ -232,41 +290,66 @@ function FitTMMOptics(
     α = alpha ? UseAlpha() : NoAlpha()
     # Build the indices vector for the seeds
     idxSeed = _indicesSeed(layers, vec(order))
+    # If it is ellipsometry, then fit norm of ρ
+    if isa(specType, Ellipsometry)
+        ρexp = @. tan(deg2rad(specType.X[:,1]))*exp(im*deg2rad(specType.X[:,2]))
+        specType.Xexp = hcat(real.(ρexp), imag.(ρexp))
+        # specType.Xexp = @. real(ρexp*conj(ρexp))
+    end
     # Run the solver depending on the algorithm
-    solution = runFittingProcedure(
-        alg,
-        specType,
-        float.(xinit),
-        beam_,
-        vec(Xexp),
-        σ,
-        layers,
-        vec(collect(order)),
-        options,
-        float.(lb),
-        float.(ub),
-        d,
-        N,
-        idxSeed,
-        α,
-    )
+    if isa(alg, Symbol)
+        solution = runFittingProcedureBBO(
+            alg,
+            specType,
+            float.(xinit),
+            beam_,
+            float.(σ),
+            layers,
+            vec(collect(order)),
+            optionsbbo,
+            float.(lb),
+            float.(ub),
+            d,
+            N,
+            idxSeed,
+            α,
+            oftype,
+        )
+    else
+        solution = runFittingProcedure(
+            alg,
+            specType,
+            float.(xinit),
+            beam_,
+            float.(σ),
+            layers,
+            vec(collect(order)),
+            options,
+            float.(lb),
+            float.(ub),
+            d,
+            N,
+            idxSeed,
+            α,
+            oftype,
+        )
+    end
     solution_ = (
         spectrumFit = solution.X,
-        spectrumExp = Xexp,
+        spectrumExp = specType.Xexp,
         optParams = solution.xfinal,
         objfunMin = solution.solmin,
         Beam = (λ=beam_.λ, θ=beam_.θ, pol=beam_.p),
         layers = layers,
         fitOptions = (
             fitType = specType,
-            optimAlgorithm = Symbol(summary(solution.sol)),
             optimSolverInfo = solution.sol,
         ),
     )
     return solution_
 end
 
-## Run the fitting procedure depending on input.
+## Run the fitting procedure for Optim's solvers depending on input.
 function runFittingProcedure end
 
 # SAMIN
@@ -275,8 +358,7 @@ function runFittingProcedure(
     specType::T2,
     xinit::Array{Array{T3,1},1},
     beam::T4,
-    Xexp::Array{T3,1},
-    σ::Array{T3,1},
+    σ::Array{T3},
     layers::Array,
     order::Array{T5,1},
     options,
@@ -286,10 +368,11 @@ function runFittingProcedure(
     N::Array{T6,2},
     idxSeed::Array{T5,1},
     alpha::T7,
-) where {T1<:SAMIN, T2<:FitProcedure, T3<:Float64, T4<:PlaneWave, T5<:Int64, T6<:ComplexF64, T7<:DoNotAlpha}
+    oftype::T8,
+) where {T1<:SAMIN, T2<:FitProcedure, T3<:Float64, T4<:PlaneWave, T5<:Int64, T6<:ComplexF64, T7<:DoNotAlpha, T8<:FitProcedure}
     _checkInput(xinit, layers)
     sol = optimize(
-            x->fitMSE(x, specType, beam, Xexp, σ, layers, order, xinit, d, N, idxSeed, alpha),
+            x->fitOF(x, specType, beam, σ, layers, order, xinit, d, N, idxSeed, alpha, oftype),
             flattenArrays(lb),
             flattenArrays(ub),
             flattenArrays(xinit),
@@ -309,8 +392,7 @@ function runFittingProcedure(
     specType::T2,
     xinit::Array{Array{T3,1},1},
     beam::T4,
-    Xexp::Array{T3,1},
-    σ::Array{T3,1},
+    σ::Array{T3},
     layers::Array,
     order::Array{T5,1},
     options,
@@ -320,10 +402,11 @@ function runFittingProcedure(
     N::Array{T6,2},
     idxSeed::Array{T5,1},
     alpha::T7,
-) where {T1<:SAMIN, T2<:FitProcedure, T3<:Float64, T4<:PlaneWave, T5<:Int64, T6<:ComplexF64, T7<:DoAlpha}
+    oftype::T8,
+) where {T1<:SAMIN, T2<:FitProcedure, T3<:Float64, T4<:PlaneWave, T5<:Int64, T6<:ComplexF64, T7<:DoAlpha, T8<:FitProcedure}
     _checkInputAlpha(xinit, layers)
     sol = optimize(
-            x->fitMSE(x, specType, beam, Xexp, σ, layers, order, xinit, d, N, idxSeed, alpha),
+            x->fitOF(x, specType, beam, σ, layers, order, xinit, d, N, idxSeed, alpha, oftype),
             flattenArrays(lb),
             flattenArrays(ub),
             flattenArrays(xinit),
@@ -345,8 +428,7 @@ function runFittingProcedure(
     specType::T2,
     xinit::Array{Array{T3,1},1},
     beam::T4,
-    Xexp::Array{T3,1},
-    σ::Array{T3,1},
+    σ::Array{T3},
     layers::Array,
     order::Array{T5,1},
     options,
@@ -356,10 +438,11 @@ function runFittingProcedure(
     N::Array{T6,2},
     idxSeed::Array{T5,1},
     alpha::T7,
-) where {T1<:NelderMead, T2<:FitProcedure, T3<:Float64, T4<:PlaneWave, T5<:Int64, T6<:ComplexF64, T7<:DoNotAlpha}
+    oftype::T8,
+) where {T1<:NelderMead, T2<:FitProcedure, T3<:Float64, T4<:PlaneWave, T5<:Int64, T6<:ComplexF64, T7<:DoNotAlpha, T8<:FitProcedure}
     _checkInput(xinit, layers)
     sol = optimize(
-            x->fitMSE(x, specType, beam, Xexp, σ, layers, order, xinit, d, N, idxSeed, alpha),
+            x->fitOF(x, specType, beam, σ, layers, order, xinit, d, N, idxSeed, alpha, oftype),
             flattenArrays(xinit),
             alg,
             options,
@@ -377,8 +460,7 @@ function runFittingProcedure(
     specType::T2,
     xinit::Array{Array{T3,1},1},
     beam::T4,
-    Xexp::Array{T3,1},
-    σ::Array{T3,1},
+    σ::Array{T3},
     layers::Array,
     order::Array{T5,1},
     options,
@@ -388,10 +470,143 @@ function runFittingProcedure(
     N::Array{T6,2},
     idxSeed::Array{T5,1},
     alpha::T7,
-) where {T1<:NelderMead, T2<:FitProcedure, T3<:Float64, T4<:PlaneWave, T5<:Int64, T6<:ComplexF64, T7<:DoAlpha}
+    oftype::T8,
+) where {T1<:NelderMead, T2<:FitProcedure, T3<:Float64, T4<:PlaneWave, T5<:Int64, T6<:ComplexF64, T7<:DoAlpha, T8<:FitProcedure}
     _checkInputAlpha(xinit, layers)
     sol = optimize(
-            x->fitMSE(x, specType, beam, Xexp, σ, layers, order, xinit, d, N, idxSeed, alpha),
+            x->fitOF(x, specType, beam, σ, layers, order, xinit, d, N, idxSeed, alpha, oftype),
+            flattenArrays(xinit),
+            alg,
+            options,
+    )
+    xfinal = arrayArrays(sol.minimizer[1:end-1], xinit[1:end-1])
+    push!(xfinal, [sol.minimizer[end]])
+    multilayerParameters!(N, d, arrayArrays(sol.minimizer[1:end-1], xfinal[1:end-1]), beam, layers, order, idxSeed)
+    monotonicLin!(d, sol.minimizer[end])
+    X = computeTransferMatrix(specType, d, N, beam)
+    sol_ = (sol=sol, X=X, xfinal=xfinal, solmin=sol.minimum)
+    return sol_
+end
+
+# LBFGS
+function runFittingProcedure(
+    alg::T1,
+    specType::T2,
+    xinit::Array{Array{T3,1},1},
+    beam::T4,
+    σ::Array{T3},
+    layers::Array,
+    order::Array{T5,1},
+    options,
+    lb::Array{Array{T3,1},1},
+    ub::Array{Array{T3,1},1},
+    d::Array{T3,1},
+    N::Array{T6,2},
+    idxSeed::Array{T5,1},
+    alpha::T7,
+    oftype::T8,
+) where {T1<:LBFGS, T2<:FitProcedure, T3<:Float64, T4<:PlaneWave, T5<:Int64, T6<:ComplexF64, T7<:DoNotAlpha, T8<:FitProcedure}
+    _checkInput(xinit, layers)
+    sol = optimize(
+            x->fitOF(x, specType, beam, σ, layers, order, xinit, d, N, idxSeed, alpha, oftype),
+            flattenArrays(xinit),
+            alg,
+            options,
+    )
+    xfinal = arrayArrays(sol.minimizer, xinit)
+    multilayerParameters!(N, d, xfinal, beam, layers, order, idxSeed)
+    X = computeTransferMatrix(specType, d, N, beam)
+    sol_ = (sol=sol, X=X, xfinal=xfinal, solmin=sol.minimum)
+    return sol_
+end
+
+# LBFGS, alpha
+function runFittingProcedure(
+    alg::T1,
+    specType::T2,
+    xinit::Array{Array{T3,1},1},
+    beam::T4,
+    σ::Array{T3},
+    layers::Array,
+    order::Array{T5,1},
+    options,
+    lb::Array{Array{T3,1},1},
+    ub::Array{Array{T3,1},1},
+    d::Array{T3,1},
+    N::Array{T6,2},
+    idxSeed::Array{T5,1},
+    alpha::T7,
+    oftype::T8,
+) where {T1<:LBFGS, T2<:FitProcedure, T3<:Float64, T4<:PlaneWave, T5<:Int64, T6<:ComplexF64, T7<:DoAlpha, T8<:FitProcedure}
+    _checkInputAlpha(xinit, layers)
+    sol = optimize(
+            x->fitOF(x, specType, beam, σ, layers, order, xinit, d, N, idxSeed, alpha, oftype),
+            flattenArrays(xinit),
+            alg,
+            options,
+    )
+    xfinal = arrayArrays(sol.minimizer[1:end-1], xinit[1:end-1])
+    push!(xfinal, [sol.minimizer[end]])
+    multilayerParameters!(N, d, arrayArrays(sol.minimizer[1:end-1], xfinal[1:end-1]), beam, layers, order, idxSeed)
+    monotonicLin!(d, sol.minimizer[end])
+    X = computeTransferMatrix(specType, d, N, beam)
+    sol_ = (sol=sol, X=X, xfinal=xfinal, solmin=sol.minimum)
+    return sol_
+end
+
+# NewtonTrustRegion
+function runFittingProcedure(
+    alg::T1,
+    specType::T2,
+    xinit::Array{Array{T3,1},1},
+    beam::T4,
+    σ::Array{T3},
+    layers::Array,
+    order::Array{T5,1},
+    options,
+    lb::Array{Array{T3,1},1},
+    ub::Array{Array{T3,1},1},
+    d::Array{T3,1},
+    N::Array{T6,2},
+    idxSeed::Array{T5,1},
+    alpha::T7,
+    oftype::T8,
+) where {T1<:NewtonTrustRegion, T2<:FitProcedure, T3<:Float64, T4<:PlaneWave, T5<:Int64, T6<:ComplexF64, T7<:DoNotAlpha, T8<:FitProcedure}
+    _checkInput(xinit, layers)
+    sol = optimize(
+            x->fitOF(x, specType, beam, σ, layers, order, xinit, d, N, idxSeed, alpha, oftype),
+            flattenArrays(xinit),
+            alg,
+            options,
+    )
+    xfinal = arrayArrays(sol.minimizer, xinit)
+    multilayerParameters!(N, d, xfinal, beam, layers, order, idxSeed)
+    X = computeTransferMatrix(specType, d, N, beam)
+    sol_ = (sol=sol, X=X, xfinal=xfinal, solmin=sol.minimum)
+    return sol_
+end
+
+# NewtonTrustRegion, alpha
+function runFittingProcedure(
+    alg::T1,
+    specType::T2,
+    xinit::Array{Array{T3,1},1},
+    beam::T4,
+    σ::Array{T3},
+    layers::Array,
+    order::Array{T5,1},
+    options,
+    lb::Array{Array{T3,1},1},
+    ub::Array{Array{T3,1},1},
+    d::Array{T3,1},
+    N::Array{T6,2},
+    idxSeed::Array{T5,1},
+    alpha::T7,
+    oftype::T8,
+) where {T1<:NewtonTrustRegion, T2<:FitProcedure, T3<:Float64, T4<:PlaneWave, T5<:Int64, T6<:ComplexF64, T7<:DoAlpha, T8<:FitProcedure}
+    _checkInputAlpha(xinit, layers)
+    sol = optimize(
+            x->fitOF(x, specType, beam, σ, layers, order, xinit, d, N, idxSeed, alpha, oftype),
             flattenArrays(xinit),
             alg,
             options,
@@ -416,16 +631,15 @@ function _checkInputAlpha(xinit, layers)
     return nothing
 end
 
-## Mean squared error (MSE) objective function used for the optimization process.
-function fitMSE end
+## Fit objective function used for the optimization process.
+function fitOF end
 
 # No alpha
-function fitMSE(
+function fitOF(
     x::Array{T1,1},
     specType::T2,
     beam::T3,
-    Xexp::Array{T1,1},
-    σ::Array{T1,1},
+    σ::Array{T1},
     layers::Array,
     order::Array{T4,1},
     xinit::Array{Array{T1,1},1},
@@ -433,20 +647,20 @@ function fitMSE(
     N::Array{T5,2},
     idxSeed::Array{T4,1},
     alpha::T6,
-) where {T1<:Float64, T2<:FitProcedure, T3<:PlaneWave, T4<:Int64, T5<:ComplexF64, T6<:DoNotAlpha}
+    oftype::T7,
+) where {T1<:Float64, T2<:FitProcedure, T3<:PlaneWave, T4<:Int64, T5<:ComplexF64, T6<:DoNotAlpha, T7<:FitProcedure}
     multilayerParameters!(N, d, arrayArrays(x, xinit), beam, layers, order, idxSeed)
     X = computeTransferMatrix(specType, d, N, beam)
-    mse = meanSquaredError(vec(X), Xexp; σ=σ)
+    mse = objectiveFunction(oftype, X, specType.Xexp; σ=σ)
     return mse
 end
 
 # Alpha
-function fitMSE(
+function fitOF(
     x::Array{T1,1},
     specType::T2,
     beam::T3,
-    Xexp::Array{T1,1},
-    σ::Array{T1,1},
+    σ::Array{T1},
     layers::Array,
     order::Array{T4,1},
     xinit::Array{Array{T1,1},1},
@@ -454,11 +668,12 @@ function fitMSE(
     N::Array{T5,2},
     idxSeed::Array{T4,1},
     alpha::T6,
-) where {T1<:Float64, T2<:FitProcedure, T3<:PlaneWave, T4<:Int64, T5<:ComplexF64, T6<:DoAlpha}
+    oftype::T7,
+) where {T1<:Float64, T2<:FitProcedure, T3<:PlaneWave, T4<:Int64, T5<:ComplexF64, T6<:DoAlpha, T7<:FitProcedure}
     multilayerParameters!(N, d, arrayArrays(x[1:end-1], xinit[1:end-1]), beam, layers, order, idxSeed)
     monotonicLin!(d, x[end])
     X = computeTransferMatrix(specType, d, N, beam)
-    mse = meanSquaredError(vec(X), Xexp; σ=σ)
+    mse = objectiveFunction(oftype, X, specType.Xexp; σ=σ)
     return mse
 end
 
@@ -468,7 +683,7 @@ function computeTransferMatrix end
 # Transmittance
 function computeTransferMatrix(
     specType::T0, d::Array{T1,1}, N::Array{T2,2}, beam::T3,
-) where {T0<:FitTransmittance, T1<:Float64, T2<:ComplexF64, T3<:PlaneWave}
+) where {T0<:Transmittance, T1<:Float64, T2<:ComplexF64, T3<:PlaneWave}
     spectra = TransferMatrix(N, d, beam)[1]
     avg = averagePolarisation(beam.p, spectra.Tp, spectra.Ts)
     return avg
@@ -477,10 +692,58 @@ end
 # Reflectance
 function computeTransferMatrix(
     specType::T0, d::Array{T1,1}, N::Array{T2,2}, beam::T3,
-) where {T0<:FitReflectance, T1<:Float64, T2<:ComplexF64, T3<:PlaneWave}
+) where {T0<:Reflectance, T1<:Float64, T2<:ComplexF64, T3<:PlaneWave}
     spectra = TransferMatrix(N, d, beam)[1]
     avg = averagePolarisation(beam.p, spectra.Rp, spectra.Rs)
     return avg
+end
+
+# Ellipsometry
+function computeTransferMatrix(
+    specType::T0, d::Array{T1,1}, N::Array{T2,2}, beam::T3,
+) where {T0<:Ellipsometry, T1<:Float64, T2<:ComplexF64, T3<:PlaneWave}
+    spectra = TransferMatrix(N, d, beam)[1]
+    ρ::Array{ComplexF64,1} = vec(spectra.ρp./spectra.ρs)
+    return hcat(-real.(ρ), imag.(ρ))
+    # ρnorm = @. real(ρ*conj(ρ))
+    # return ρnorm
+end
+
+## Metrics (objective function) for the optimisation process.
+
+# MeanAbs() = MeanAbsObjFun
+function objectiveFunction(
+    oftype::T0, X::Array{T1}, Xexp::Array{T1};
+    σ::Array{T1}=ones(size(Xexp)),
+) where {T0<:MeanAbsObjFun, T1<:Float64}
+    _absq = abs2.(X .- Xexp)./σ
+    _mse = mean(_absq, dims=1)
+    objfun = sum(_mse)
+    return objfun
+end
+
+# SumAbs() = SumAbsObjFun
+function objectiveFunction(
+    oftype::T0, X::Array{T1}, Xexp::Array{T1};
+    σ::Array{T1}=ones(size(Xexp)),
+) where {T0<:SumAbsObjFun, T1<:Float64}
+    _absq = abs2.(X .- Xexp)./σ
+    _mse = sum(_absq, dims=1)
+    objfun = sum(_mse)
+    return objfun
+end
+
+# SumMeanAbs() = SumMeanAbsObjFun
+function objectiveFunction(
+    oftype::T0, X::Array{T1}, Xexp::Array{T1};
+    σ::Array{T1}=ones(size(Xexp)),
+) where {T0<:SumMeanAbsObjFun, T1<:Float64}
+    _absq = abs2.(X .- Xexp)./σ
+    _mse = mean(_absq, dims=1)
+    _sse = sum(_absq, dims=1)
+    # objfun = sqrt(sum(_mse + _sse)/size(Xexp, 1))
+    objfun = sum(_mse + _sse)/size(Xexp, 1)
+    return objfun
 end
 
 ## Returns the index of refraction for the selected model. RI is imported from RefractiveIndicesModels.jl.
@@ -489,61 +752,50 @@ function refractiveIndexMR(
 ) where {T1<:ModelFit, T2<:Float64}
     if layer.model == :bruggeman
         _errorParametersEMA(layer)
-        return RI.bruggeman(argin[1], [layer.N[1] layer.N[2]]; df=layer.df)
+        return RI.bruggeman(argin[1], [layer.N.ninc layer.N.nhost]; df=layer.df)
     elseif layer.model == :looyenga
         _errorParametersEMA(layer)
-        return RI.looyenga([argin[1] 1-argin[1]], [layer.N[1] layer.N[2]]; df=layer.df)
+        return RI.looyenga([argin[1] 1.0-argin[1]], [layer.N.ninc layer.N.nhost]; df=layer.df)
     elseif layer.model == :monecke
         _errorParametersEMA(layer)
-        return RI.monecke(argin[1], [layer.N[1] layer.N[2]]; dfm=layer.dfm, c=layer.c)
+        return RI.monecke(argin[1], [layer.N.ninc layer.N.nhost]; dfm=layer.dfm, c=layer.c)
     elseif layer.model == :maxwell
         _errorParametersEMA(layer)
-        return RI.maxwell([argin[1] 1-argin[1]], [layer.N[1], layer.N[2]]; df=layer.df)
+        return RI.maxwell([argin[1] 1.0-argin[1]], [layer.N.ninc layer.N.nhost]; df=layer.df)
     elseif layer.model == :gedf
         _errorParametersEMA(layer)
-        return RI.gedf(argin, [layer.N[1] layer.N[2]])
+        return RI.gedf(argin, [layer.N.ninc layer.N.nhost])
     elseif layer.model == :gem
         _errorParametersEMA(layer)
-        return RI.gem(argin, [layer.N[1] layer.N[2]])
+        return RI.gem(argin, [layer.N.ninc layer.N.nhost])
     elseif layer.model == :lorentzlorenz
         _errorParametersEMA(layer)
-        return RI.lorentzlorenz(argin[1], [layer.N[1] layer.N[2]])
+        return RI.lorentzlorenz(argin[1], [layer.N.ninc layer.N.nhost])
     elseif layer.model == :sellmeier
         return RI.sellmeier(argin, λ./1e3) # Sellmeier eq takes λ in μm
     elseif layer.model == :cauchyurbach
     	return RI.cauchyurbach(argin, λ)
     elseif layer.model == :drudelorentz
+        argin_ = [argin[1], argin[2:end]]
         x = oscillatorsInput(argin, 3)
-        return RI.drudelorentz(x, λ)
+        return RI.drudelorentz(x, 1240.0./λ)
     elseif layer.model == :tauclorentz
-        x = oscillatorsInput(argin, 4)
-    	return RI.tauclorentz(x, λ)
+        argin_ = [argin[1:2], argin[3:end]]
+        x = oscillatorsInput(argin_, 3)
+    	return RI.tauclorentz(x, 1240.0./λ)
     elseif layer.model == :forouhibloomer
-        x = oscillatorsInput(argin, 4)
-    	return RI.forouhibloomer(x, λ)
-    elseif layer.model == :forouhibloomermodified
-        x = oscillatorsInput(argin, 4)
-    	return RI.forouhibloomermodified(x, λ)
+        argin_ = [argin[1:2], argin[3:end]]
+        x = oscillatorsInput(argin_, 3)
+        return RI.forouhibloomer(x, 1240.0./λ)
     elseif layer.model == :lorentzplasmon
-        x = oscillatorsInput(argin, 5)
-        return RI.lorentzplasmon(x, λ)
+        argin_ = [argin[1:3], argin[4:end]]
+        x = oscillatorsInput(argin_, 3)
+        return RI.lorentzplasmon(x, 1240.0./λ)
     elseif layer.model == :codylorentz
-        x = oscillatorsInput(argin, 5)
-        return RI.codylorentz(x, λ; cme=layer.cme)
+        argin_ = [argin[1:5], argin[6:end]]
+        x = oscillatorsInput(argin_, 3)
+        return RI.codylorentz(x, 1240.0./λ; cme=layer.cme)
     end
-end
-
-## Build the input for oscillators models.
-# Each element of x has the parameters for the corresponding oscillator.
-function oscillatorsInput(argin::AbstractArray{T0,1}, n::T1) where {T0<:Float64, T1<:Int64}
-    x = [[argin[1]]]
-    numel::Int64 = Int(length(argin[2:end])/n + 1)
-    k::Int64 = 0
-    for i = 2:numel
-        push!(x, argin[i+k:n+i-1+k])
-        k += n-1
-    end
-    return x
 end
 
 ## Error if EMA models do not have the two columns indices of refraction.

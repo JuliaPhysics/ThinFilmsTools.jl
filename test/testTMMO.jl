@@ -9,7 +9,7 @@ function main()
     l2 = LayerTMMO(RIdb.dummy(beam.λ,3.45,0.0); type=:OT, d=1/4.)
     layers = [l0, l1, l2, l1, l2, l1, l2, l1, l2, l0]
     # Reference wavelenth
-    λ0 = 700.
+    λ0 = 700.0
     # call main script
     sol = TMMOptics(beam, layers; λ0=λ0, emfflag=true, h=10, pbgflag=true)
     return sol

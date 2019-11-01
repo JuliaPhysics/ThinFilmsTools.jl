@@ -6,27 +6,30 @@ export ModelFit,
        BoundariesFit,
        PlaneWave,
        LayerTMMO,
-       meanSquaredError,
        getBeamParameters,
-       FitProcedure
+       FitProcedure,
+       oscillatorsInput
 
 ## Defines the abstract type for all the fitting.
 abstract type FitProcedure end
 
 ## General structure to build the indices of refraction models for otimization.
-struct ModelFit{T1,T2,T3} <: FitProcedure where{T1<:Symbol, T2<:Real, T3<:Real}
+struct ModelFit{T1,T2,T3,T4,T5} <: FitProcedure where{T1<:Symbol, T2<:Real, T3<:Real, T4<:Any, T5<:Any}
     model::T1
-    N # effective medium equations, EMA
     df::T2
     dfm::T1
     c::T3
+    N::NamedTuple{(:ninc, :nhost),Tuple{Array{T4,1},Array{T5,1}}} # effective medium equations, EMA
     function ModelFit(
         model::T1;
-        N=([],[]), df::T2=1.0/3.0, dfm::T1=:spheres, c::T3=0.0,
-    ) where {T1<:Symbol, T2<:Real, T3<:Real}
+        df::T2=1.0/3.0,
+        dfm::T1=:spheres,
+        c::T3=0.0,
+        N::NamedTuple{(:ninc, :nhost),Tuple{Array{T4,1},Array{T5,1}}}=(ninc=[],nhost=[]),
+    ) where {T1<:Symbol, T2<:Real, T3<:Real, T4<:Any, T5<:Any}
         length(N) == 2 || throw("length(N) == 2, one vector for each index of refraction:
         N=(n1, n2), where n1 and n2 are vectors.")
-        return new{T1,T2,T3}(model, N, df, dfm, c)
+        return new{T1,T2,T3,T4,T5}(model, df, dfm, c, N)
     end
 end
 
@@ -78,26 +81,19 @@ struct LayerTMMO{T1,T2,T3,T4} <: Material where {T1<:ComplexF64, T2<:Symbol, T3<
     end
 end
 
-"""
-
-    Returns the mean squared error.
-
-        mse = meanSquaredError(X, Xexp, σ)
-
-            X: model spectrum
-            Xexp: experimental spectrum to fit
-            σ: std of Xexp
-
-            mse: mean squared error
-
-"""
-function meanSquaredError(
-    X::Array{T1}, Xexp::Array{T1};
-    σ::Array{T1}=ones.(length(Xexp),1),
-) where {T1<:Float64}
-    mse = mean(abs2.((X .- Xexp)./σ))
-    return mse
-end
+# function meanSquaredError(
+#     X::Array{T1}, Xexp::Array{T1};
+#     σ::Array{T1}=ones(size(Xexp)),
+# ) where {T1<:Float64}
+#     # mse = sum(mean(abs2.(X .- Xexp)./σ, dims=1))
+#     _absq = abs2.(X .- Xexp)./σ
+#     _mse = mean(_absq, dims=1)
+#     _sse = sum(_absq, dims=1)
+#     mse = sqrt(sum(_mse + _sse)/size(Xexp, 1))
+#     # mse = mean(abs2.((X .- Xexp)./σ))
+#     # mse = sum(abs2.((X .- Xexp)./σ))
+#     return mse
+# end
 
 ## Returns the parameters with the correct format for the beam suitable for the calculations.
 function getBeamParameters(beam::PlaneWave)

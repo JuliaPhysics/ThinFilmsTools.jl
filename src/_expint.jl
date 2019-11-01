@@ -1,3 +1,5 @@
+# module ExponentialIntegration
+
 ########################################################################
 # Inlined, optimized code for the exponential integral E₁ in double precison
 # by Steven G. Johnson (@stevengj), Code under MIT license.
@@ -7,6 +9,8 @@
 using Base.MathConstants: eulergamma
 
 import Polynomials
+
+# export expint
 
 # n coefficients of the Taylor series of E₁(z) + log(z), in type T:
 function E₁_taylor_coefficients(::Type{T}, n::Integer) where T<:Number
@@ -114,3 +118,5 @@ function expint(n::Integer, z)
 end
 
 #expint1(x) = x >= 0 ? expint(x) : real(expint(complex(x)))
+
+# end

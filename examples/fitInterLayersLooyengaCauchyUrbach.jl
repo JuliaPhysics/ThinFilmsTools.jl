@@ -6,6 +6,7 @@ using Optim
 
 ##
 function glass_transmittance(beam, incident, emergent)
+    # Create a measured spectrum of reflection
     layers = [
         LayerTMMO(incident),
         LayerTMMO(RI.looyenga([0.5 0.5],[RIdb.air(beam.λ) RIdb.silicon(beam.λ)]); d=100.),
@@ -14,7 +15,7 @@ function glass_transmittance(beam, incident, emergent)
         LayerTMMO(emergent),
     ]
     sol = TMMOptics(beam, layers)[1]
-    return beam.p.*sol.Tp .+ (1.0 - beam.p).*sol.Ts
+    return vec(beam.p.*sol.Tp .+ (1.0 - beam.p).*sol.Ts)
 end
 ##
 
@@ -33,7 +34,7 @@ emergent = RIdb.silicon(beam.λ)
 # Define the RI model to use
 layers = [
     LayerTMMO(incident), # 1
-    ModelFit(:looyenga; N=(incident, emergent)), # 2
+    ModelFit(:looyenga; N=(ninc=incident, nhost=emergent)), # 2
     LayerTMMO(RIdb.glass(beam.λ./1e3); d=300.), # 3
     ModelFit(:cauchyurbach), # 4
     LayerTMMO(emergent), # 5
@@ -48,15 +49,21 @@ options = Optim.Options(
     g_abstol=1e-8, g_reltol=1e-8, iterations=10^5, show_trace=true, store_trace=true,
 );
 
-# Seeds of the ModelFit that appears in layers. The order here matters and the elements in each seed must match the number of elements accepted in the ModelFit layer used
+# Seeds of the ModelFit that appears in layers. The order here matters and
+# the elements in each seed must match the number of elements accepted in the
+# ModelFit layer used
 seed = [
     [100.0, 0.5], # intial guess for :looyenga model, layers[2]
-    [100.0, 1.5, 0.23, 1.0, 0.0, 1.0, 1.0], # intial guess for :cauchyurbach model, layers[4]
+    [100.0, 1.5, 0.12, 0.5, 0.0, 0.6, 1.2], # intial guess for :cauchyurbach model, layers[4]
 ]
 
+# solOptim = FitTMMOptics(
+#     Transmittance(Texp), seed, beam, layers;
+#     options=options, alg=SAMIN(), lb=0.5.*seed, ub=1.5.*seed,
+# )
 solOptim = FitTMMOptics(
-    Transmittance(), seed, beam, Texp, layers;
-    options=options, alg=SAMIN(), lb=0.5.*seed, ub=1.5.*seed,
+    Transmittance(Texp), seed, beam, layers;
+    options=options, alg=LBFGS(),
 )
 
 plot(FitSpectrum(),

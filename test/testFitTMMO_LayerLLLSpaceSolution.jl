@@ -14,9 +14,6 @@ function get_reflectance(ftype, λ, incident, emergent)
 end
 ##
 
-# Type of fitting
-ftype = Reflectance()
-
 # Wavelength range [nm]
 λ = 250:900
 # Angle of incidence [degrees]
@@ -32,12 +29,12 @@ emergent = RIdb.silicon(beam.λ)
 # Define the RI model to use
 layers = [
     LayerTMMO(incident), # 1
-    ModelFit(:looyenga; N=(incident, emergent)), # 2
+    ModelFit(:looyenga; N=(ninc=incident, nhost=emergent)), # 2
     LayerTMMO(emergent), # 3
 ]
 
 # Get the spectrum to fit
-Rexp = get_reflectance(ftype, beam.λ, incident, emergent)
+Rexp = get_reflectance(Reflectance(), beam.λ, incident, emergent)
 
 ## Seed for the optimization algorithm
 
@@ -45,7 +42,7 @@ Rexp = get_reflectance(ftype, beam.λ, incident, emergent)
 b = BoundariesFit(7000.0, 7300.0, 0.5, 0.65)
 
 # Brute force search
-sol = SpaceSolutionEMA(ftype, b, beam, Rexp, layers)
+sol = SpaceSolutionEMA(Reflectance(Rexp), b, beam, layers)
 
 ## Optimization using Optim
 
@@ -57,11 +54,11 @@ options = Optim.Options(
 )
 
 solOptim = FitTMMOptics(
-    ftype, [seed], beam, Rexp, layers;
+    Reflectance(Rexp), [seed], beam, layers;
     alg=SAMIN(), options=options, lb=[0.5.*seed], ub=[1.5.*seed],
 )
 
 solOptim2 = FitTMMOptics(
-    ftype, [seed], beam, Rexp, layers;
+    Reflectance(Rexp), [seed], beam, layers;
     alg=NelderMead(), options=options,
 )

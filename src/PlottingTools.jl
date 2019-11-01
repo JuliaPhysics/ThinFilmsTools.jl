@@ -12,6 +12,7 @@ export TOMPlot,
        EMF2D,
        EMFAngle2D,
        FitSpectrum,
+       FitSpectrumEllip,
        SpaceSolution,
        RIprofile,
        PBGDispersion1D,
@@ -259,6 +260,40 @@ struct SpaceSolution end
     xlims --> (lims[1], lims[2])
     ylims --> (lims[3], lims[4])
     vec(x1), vec(x2), Matrix(S')
+end
+
+"""
+
+    Recipe for plotting a comparison of the model and experimental spectra of ellipsometry data.
+
+        plot(FitSpectrumEllip(), x, Xexp, Xmodel; s=(640,480))
+        gui()
+
+            x: range of variable (λ or θ)
+            Xexp: experimental spectrum
+            Xmodel: model spectrum
+                s: size of the figure
+
+"""
+struct FitSpectrumEllip end
+@recipe function f(::FitSpectrumEllip, x, Xexp, Xmodel; s=(640,480))
+    linecolor --> [RGBA(0.0,0.0,0.0,0.6) RGBA(0.0,0.0,0.0,0.6)]
+    seriestype := :path
+    linestyle --> :solid
+    @series begin
+        seriestype := :scatter
+        markershape --> [:circle :square]
+        markersize --> 5
+        markeralpha --> 0.5
+        markercolor --> [RGBA(0.9019607843137255, 0.6235294117647059, 0.0, 0.7) RGBA(0.33725490196078434, 0.7058823529411765, 0.9137254901960784, 0.7)]
+        markerstrokewidth --> 0.5
+        markerstrokecolor --> [RGB(0.9019607843137255, 0.6235294117647059, 0.0) RGB(0.33725490196078434, 0.7058823529411765, 0.9137254901960784)]
+        label --> ["ℜ{ρ}" "ℑ{ρ}"]
+        x, Xexp
+    end
+    label --> ["Model" ""]
+    size --> s
+    x, Xmodel
 end
 
 """

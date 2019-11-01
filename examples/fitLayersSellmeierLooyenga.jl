@@ -12,7 +12,7 @@ function bilayerReflectance(beam, incident, emergent)
                 LayerTMMO(RIdb.glass(beam.λ./1e3); d=250.),
                 LayerTMMO(emergent) ]
     sol = TMMOptics(beam, layers2)
-    return beam.p.*sol.Spectra.Rp .+ (1.0 - beam.p).*sol.Spectra.Rs
+    return vec(beam.p.*sol.Spectra.Rp .+ (1.0 - beam.p).*sol.Spectra.Rs)
 end
 ##
 
@@ -29,14 +29,16 @@ incident = RIdb.air(beam.λ)
 emergent = RIdb.silicon(beam.λ)
 
 # Define the RI model to use
-layers = [ LayerTMMO(incident),
-           ModelFit(:looyenga; N=(incident, emergent)),
-           ModelFit(:sellmeier),
-           LayerTMMO(emergent) ]
+layers = [
+    LayerTMMO(incident),
+    ModelFit(:looyenga; N=(ninc=incident, nhost=emergent)),
+    ModelFit(:sellmeier),
+    LayerTMMO(emergent)
+]
 
 # Create absolute reflectance spectrum to fit
-Rexp_norm = bilayerReflectance(beam, incident, emergent)
-plot(Spectrum1D(), beam.λ, Rexp_norm)
+Rexp = bilayerReflectance(beam, incident, emergent)
+plot(beam.λ, Rexp_norm)
 gui()
 
 options = Optim.Options(
@@ -49,9 +51,17 @@ seed = [
 ]
 
 solOptim = FitTMMOptics(
-    Reflectance(), seed, beam, Rexp_norm, layers;
+    Reflectance(Rexp), seed, beam, layers;
     options=options, alg=SAMIN(), lb=0.5.*seed, ub=1.5.*seed,
 )
 
 plot(FitSpectrum(), solOptim.Beam.λ, solOptim.spectrumExp, solOptim.spectrumFit)
 gui()
+
+# julia> solOptim.objfunMin
+# 8.487618158368491e-9
+#
+# julia> solOptim.optParams
+# 2-element Array{Array{Float64,1},1}:
+#  [300.06736895487506, 0.700027712313205]
+#  [249.97204958549517, 0.5080567934627047, 0.11979359414683158, 0.6358886116061814, 0.008572122867045586, 0.010000126624594001, 0.010114195402292319]

@@ -2,7 +2,7 @@ module FitBellCurves
 
 using Optim
 using ..Utils: gaussian, lorentzian, voigtian, flattenArrays, arrayArrays
-using ..CommonStructures: meanSquaredError
+using ..FTFSpectrum: objectiveFunction, MeanAbs
 
 export FitCurveModel
 
@@ -24,7 +24,8 @@ function FitCurveModel(
     ),
 ) where {T0<:Symbol, T1<:Real}
     isequal(length(xdata), length(ydata)) || throw("Input xdata and ydata must have the same length.")
-    sol = optimize(p->fitMSE(p, model, seed, xdata, ydata, σ),
+    oftype = MeanAbs()
+    sol = optimize(p->fitMSE(p, model, seed, xdata, ydata, σ, oftype),
                    flattenArrays(lb), flattenArrays(ub), flattenArrays(seed), alg, options)
     xopt = arrayArrays(sol.minimizer, seed)
     sol_ = (
@@ -42,9 +43,9 @@ function FitCurveModel(
     return sol_
 end
 
-function fitMSE(p, model, seed, xdata, ydata, σ)
+function fitMSE(p, model, seed, xdata, ydata, σ, oftype)
     ŷ = eval(model)(xdata, arrayArrays(p, seed))
-    mse = meanSquaredError(vec(ŷ), ydata; σ=σ)
+    mse = objectiveFunction(oftype, vec(ŷ), ydata; σ=σ)
     return mse
 end
 

@@ -11,7 +11,7 @@ function glassReflectance(beam, incident, emergent)
                 LayerTMMO(RIdb.glass(beam.λ./1e3); d=250.),
                 LayerTMMO(emergent) ]
     sol = TMMOptics(beam, layers2)
-    return beam.p.*sol.Spectra.Rp .+ (1.0 - beam.p).*sol.Spectra.Rs
+    return vec(beam.p.*sol.Spectra.Rp .+ (1.0 - beam.p).*sol.Spectra.Rs)
 end
 ##
 
@@ -35,9 +35,9 @@ layers = [
 ]
 
 # Create reflectance spectrum to fit
-Rexp_norm = glassReflectance(beam, incident, emergent)
-plot(Spectrum1D(), beam.λ, Rexp_norm)
-gui()
+Rexp = glassReflectance(beam, incident, emergent)
+# plot(beam.λ, Rexp_norm)
+# gui()
 
 options = Optim.Options(
     g_abstol=1e-8, g_reltol=1e-8, iterations=10^5, show_trace=true, store_trace=true,
@@ -46,7 +46,7 @@ options = Optim.Options(
 seed = vcat(280.0, [1.0, 0.23, 1.0, 6e-3, 2e-2, 1e-2].* (rand(6).*0.2.+1.0))
 
 solOptim = FitTMMOptics(
-    Reflectance(), [seed], beam, Rexp_norm, layers;
+    Reflectance(Rexp), [seed], beam, layers;
     options=options, alg=SAMIN(), lb=0.5.*seed, ub=1.5.*seed,
 )
 

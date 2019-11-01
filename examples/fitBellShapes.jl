@@ -1,22 +1,15 @@
 # Load modules
-#using Plots, LaTeXStrings
-#pyplot()
-#using ThinFilmsTools
-# using Optim
-
-# Load modules
 using Plots, LaTeXStrings
-using PyCall; pygui(true)
 pyplot()
-closeall()
-include("/home/leniac/JuliaLangDev/ThinFilmsTools/src13/ThinFilmsTools.jl")
-using Main.ThinFilmsTools
+using ThinFilmsTools
 using Optim
 
 x = -10:0.01:10
 len_x = length(x)
 
-options = Optim.Options(g_abstol=1e-8, g_reltol=1e-8, iterations=10^5, show_trace=false, store_trace=true);
+options = Optim.Options(
+    g_abstol=1e-8, g_reltol=1e-8, iterations=10^5, show_trace=false, store_trace=true,
+);
 
 let
     # Gaussian 1 peak

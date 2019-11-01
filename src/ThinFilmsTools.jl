@@ -30,7 +30,13 @@ export SpaceSolutionEMA,
        NormalizeReflectance,
        FitTMMOptics,
        Reflectance,
-       Transmittance
+       Transmittance,
+       Ellipsometry,
+       NoAlpha,
+       UseAlpha,
+       MeanAbs,
+       SumAbs,
+       SumMeanAbs
 
 include("ThreeOmegaMethod.jl")
 using .ThreeOmegaMethod
@@ -48,6 +54,7 @@ export TOMPlot,
        EMF2D,
        EMFAngle2D,
        FitSpectrum,
+       FitSpectrumEllip,
        SpaceSolution,
        RIprofile,
        PBGDispersion1D,

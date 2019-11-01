@@ -10,7 +10,7 @@ export SL1ExpSpectrum,
 	   FPSpectrum,
 	   HafniaSpectrum,
 	   ScandiaSpectrum,
-	   ScandiaSpectrum_2,
+	   TantalaSpectrum,
 	   Info
 
 function Info()
@@ -26,7 +26,7 @@ function Info()
 	"\n     FPSpectrum(λ)" *
 	"\n     HafniaSpectrum(λ)" *
 	"\n     ScandiaSpectrum(λ)" *
-	"\n     ScandiaSpectrum_2(λ)" *
+	"\n     TantalaSpectrum(λ)" *
 	"\n "
 	"\n     To use any of these functions type: SpectraDB.function(args)." *
 	"\n "
@@ -172,19 +172,24 @@ end
 
 """
 
-	Absolute experimental transmitance spectrum of a scandium oxide thin film on a fused
-	silica UV substrate. Interpolates for a valid input wavelength range.
+	Absolute experimental ellipsomtry spectra of a tantalum oxide thin film on a fused
+	silica UV substrate. Interpolates for a valid input wavelength range. Measured at 60
+	degrees.
 
-		T = ScandiaSpectrum_2(λ)
+		Ψ, Δ = TantalaSpectrum(λ)
 
-			λ: wavelength range (nm), ∈ [190, 1100]
-			T: transmitance
+			λ: wavelength range (nm), ∈ [200, 2100]
+			Ψ: psi spectrum
+			Δ: delta spectrum
 
 """
-function ScandiaSpectrum_2(λ::AbstractArray{T1,1}) where {T1<:Real}
-	X = readh5_file("Scandia2", :SP)
-	itp = build_interpolation(hcat(vec(X["lambda"]), vec(X["transmitance"])))
-    return itp.(λ)./100.0
+function TantalaSpectrum(λ::AbstractArray{T1,1}) where {T1<:Real}
+	X = readh5_file("Tantala", :SP)
+	itp = build_interpolation(hcat(vec(X["lambda"]), vec(X["psi"])))
+	psi = itp.(λ)
+	itp = build_interpolation(hcat(vec(X["lambda"]), vec(X["delta"])))
+	delta = itp.(λ)
+    return psi, delta
 end
 
 end # module
