@@ -103,7 +103,7 @@ end
 
     Returns the index of refraction of fused silica UV in complex format, for a given range of wavelengths in μm, using the Sellmeier equation.
 
-        n = RIdb.fusedsilicauv(λ)
+        n = RIdb.fusedsilicauv2(λ)
 
             λ: wavelength range (μm), ∈ [0.21, 6.7] (μm)
 
@@ -113,7 +113,7 @@ end
 
 
 """
-function fusedsilicauv(λ::AbstractVector{T}) where {T<:Real}
+function fusedsilicauv2(λ::AbstractVector{T}) where {T<:Real}
     λ = λ.^2
     n = sqrt.(Complex.(1.0 .+ (0.6961663.*λ./(λ .- 0.0684043)) .+ (0.4079426.*λ./(λ .- 0.1162414)) .+ (0.8974794.*λ./(λ .- 9.896161))))
     return n
@@ -366,7 +366,7 @@ end
     for a given range of wavelengths in nm. This function accounts for lower
     wavelengths than fusedsilicauv.
 
-        n = RIdb.fusedsilicauv2(λ)
+        n = RIdb.fusedsilicauv(λ)
 
             λ: wavelength range (nm), ∈ [170.0, 3240] (nm)
 
@@ -375,7 +375,7 @@ end
     Source: http://www.janis.com/Libraries/Window_Transmissions/FusedSilicaUVGrade_SiO2_TransmissionCurveDataSheet.sflb.ashx
 
 """
-function fusedsilicauv2(λ::AbstractVector{T}) where {T<:Real}
+function fusedsilicauv(λ::AbstractVector{T}) where {T<:Real}
     readf = readh5_file("fusedsilicauv", :RI)
     spl_n = build_interpolation(hcat(vec(readf["lambda"]), vec(readf["n"])))
     spl_k = build_interpolation(hcat(vec(readf["lambda"]), vec(readf["k"])))

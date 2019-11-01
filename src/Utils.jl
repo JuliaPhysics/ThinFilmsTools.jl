@@ -3,7 +3,8 @@ module Utils
 using Interpolations
 using HDF5
 using SpecialFunctions
-using DSP # for the conv function
+using DSP # conv
+using LinearAlgebra # pinv
 
 export build_interpolation,
 	   readh5_file,
@@ -20,6 +21,7 @@ export build_interpolation,
 	   gaussian,
 	   lorentzian,
 	   voigtian,
+	   oscillatorsInput,
 	   Info
 
 function Info()
@@ -52,7 +54,7 @@ end
 
 	Find the index of the closest element in an array of reals x to a given real x0.
 
-		idx = findClosest(x, x0)
+		idx = Utils.findClosest(x, x0)
 
 			x: Data array
 			x0: Element to search in x
@@ -83,7 +85,7 @@ end
 
 	Build interpolation objects from Matrix. Uses a Gridded(Linear()) grid.
 
-		itp = build_interpolation(X)
+		itp = Utils.build_interpolation(X)
 
 			X: Matrix array with first column as independent variable and
                second column as dependent one
@@ -104,7 +106,7 @@ end
 	Computes the reflection of a sequence of indices of refraction without
     interference and absorption effects.
 
-		y = multipleReflections(n)
+		y = Utils.multipleReflections(n)
 
 			n: Vector with the indices of refraction of the involved layers
 
@@ -129,7 +131,7 @@ end
 	Returns the spectral radiance (W·sr^-1·m^-3), given the wavelength (m)
     and the absolute temperature (K).
 
-		B = bbRadiation(λ, T)
+		B = Utils.bbRadiation(λ, T)
 
 			λ: range of wavelengths [m]
 			T: range of temperatures [K]
@@ -156,7 +158,7 @@ end
 
 	Returns an RGB matrix-color based on the wavelength input in nm.
 
-		RBG = wavelength2RGB(λ)
+		RBG = Utils.wavelength2RGB(λ)
 
 			λ: range of wavelengths [nm]
 
@@ -215,7 +217,7 @@ end
 
 	Smooth vector with moving average model.
 
-		y = movingAverage(x, w)
+		y = Utils.movingAverage(x, w)
 
 			x: Vector to be smoothed out
 			w: Integer with the window size
@@ -238,7 +240,7 @@ end
 
 	Implementation of the Savitzky-Golay filter of window half-width M and degree N.
 
-		y = savitzkyGolay(m, n, x)
+		y = Utils.savitzkyGolay(m, n, x)
 			m: is the number of points before and after to interpolate, the full width
 			   of the window is 2m+1.
 			n: is the polynomial order (must be lower than window size).
@@ -253,6 +255,8 @@ end
 					 Then you can use it as: sgf(x)
 
 	Adapted from https://gist.github.com/jiahao/b8b5ac328c18b7ae8a17
+
+	Notice: this version does not handle well the boundaries of the input vector.
 
 """
 function savitzkyGolay(m::T0, n::T0, x::Array{T1,1}) where {T0<:Int64, T1<:Float64}
@@ -305,7 +309,7 @@ end
 
 	Polynomial smoothing with the Savitzky Golay filters.
 
-		ysmooth = savitzkyGolay2(m,n,x; deriv=0)
+		ysmooth = Utils.savitzkyGolay2(m,n,x; deriv=0)
 
 			x: array of noisy data to smooth
 			m: Window size must be an odd integer
@@ -378,7 +382,7 @@ end
 
     Return the polarisation averaged spectrum.
 
-        X = averagePolarisation(pol, Xp, Xs)
+        X = Utils.averagePolarisation(pol, Xp, Xs)
 
             pol: indicates the polarisation
                  (pol=1.0 => p, pol=0.0 => s, 0.0<=pol<=1.0 => average)
@@ -397,7 +401,7 @@ end
 
 	Multipeak Gaussian PDF curve.
 
-		modelg = gaussian(x, p)
+		modelg = Utils.gaussian(x, p)
 
 			x = vector with data of the x-axis
 			p = [
@@ -428,7 +432,7 @@ end
 
 	Multipeak Cauchy-Lorentz PDF curve.
 
-		modell = lorentzian(x, p)
+		modell = Utils.lorentzian(x, p)
 
 			x = vector with data of the x-axis
 			p = [
@@ -460,7 +464,7 @@ end
 	Single peak Voigt PDF curve. The function is computed using the Faddeeva's
     function through the scaled complementary error function of x.
 
-		modelv = voigtian(x, p)
+		modelv = Utils.voigtian(x, p)
 
 			x = vector with data of the x-axis
 			p = [
@@ -491,5 +495,69 @@ function voigtian(x::AbstractArray{T1}, p::Array{Array{T1,1},1}) where {T1<:Real
     return y
 end
 
-end # Utils
+"""
 
+	Build the input for oscillators models. Each index of refraction associated with
+	Lorentz can be modelled with arbitrary numbers of oscillators. This function provides a
+	way to construct a valid input for them.
+
+	The input for the following models can be constructed are:
+		RI.drudelorentz, RI.tauclorentz, RI.forouhibloomer,
+		RI.lorentzplasmon, RI.codylorentz
+
+		x = oscillatorsInput(argin, n)
+
+			argin: Array with two elements.
+				   The first element is an array with the parameters not associated to
+				   oscillators, while the second element contains an array with all the
+				   parameters of the oscillators.
+			n: number of parameters in each oscillator
+			x: Array to input in RI modelled with Lorentz.
+
+	For instance, the Tauc-Lorentz model accepts inputs with two parameters
+	(length(argin[1]) == 2) not associated with the oscillator and three (n=3) forming
+	each oscillator. Say you want to pass a three oscillator model input to the
+	Tauc-Lorentz:
+		argin = [
+			[4.0, 3.5],  # ϵinf, Eg
+			[15.0, 6.0, 1.05, # osc 1, A1, E01, Γ1
+			 8.41, 4.5, 0.2, # osc 2, A2, E02, Γ2
+			 1.5, 4.6, 0.1, # osc 3, A3, E03, Γ3
+			],
+		]
+		x = oscillatorsInput(argin, 3)
+		x = [
+			  [4.0, 3.5],  # ϵinf, Eg
+			  [15.0, 6.0, 1.05], # osc 1, A1, E01, Γ1
+			  [8.41, 4.5, 0.2], # osc 2, A2, E02, Γ2
+			  [1.5, 4.6, 0.1], # osc 3, A3, E03, Γ3
+		]
+		RI.tauclorentz(x, λ)
+
+	Notice: Careful with the number of parameteres in each model.
+
+"""
+## Build the input for oscillators models.
+# Each element of x has the parameters for the corresponding oscillator.
+# function oscillatorsInput(argin, n::Int64)
+#     x = argin[1]
+#     numel::Int64 = Int(length(argin[2:end])/n + 1)
+#     k::Int64 = 0
+#     for i = 2:numel
+#         push!(x, argin[i+k:n+i-1+k])
+#         k += n-1
+#     end
+#     return x
+# end
+function oscillatorsInput(argin, n::Int64)
+    x = [argin[1]]
+    numel::Int64 = Int(length(argin[2])/n)
+    k::Int64 = 0
+    for i = 1:numel
+        push!(x, argin[2][i+k:n+i-1+k])
+        k += n-1
+    end
+    return x
+end
+
+end # Utils
