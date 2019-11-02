@@ -24,6 +24,8 @@ end
 ## lorentzlorenz EMA
 # D. Schwarz et al. / Thin Solid Films 519 (2011) 2994-2997
 let
+    lss = [:solid :dash :dashdot :dot :solid]
+    lww = [ones(1,4) 3.0]
     plt = plot();
     f = [0.0,0.25,0.5,0.75,1.0]
     ϵg = complex.(1.0:0.005:1.8)
@@ -31,7 +33,7 @@ let
     n = sqrt.([ϵg ϵₘ])
     for i in eachindex(f)
         neff = RI.lorentzlorenz(f[i], n)
-        plot!(plt, real.(ϵg), real.(neff.^2), label="f = $(f[i])")
+        plot!(plt, real.(ϵg), real.(neff.^2), label="f = $(f[i])", line=(lww[i],lss[i]))
     end
     xaxis!("Guest dielectric constant, ϵg")
     yaxis!("Lorentz-Lorenz effective permittivity")
