@@ -168,6 +168,6 @@ let
     ϵ = n.^2
     plot(ħω, [real.(ϵ) imag.(ϵ)], label=["ϵ₁ = ℜ{ϵ}" "ϵ₂ = ℑ{ϵ}"], line=([:solid :dashdot]))
     xaxis!("Energy [eV]")
-    yaxis!("Cody-Lorentz a-Si(H) index of refraction")
+    yaxis!("Cody-Lorentz a-Si(H) dielectric function")
     gui()
 end
