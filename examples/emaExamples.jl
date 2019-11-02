@@ -1,7 +1,15 @@
 # Load modules
+#using Plots, LaTeXStrings
+#pyplot()
+#using ThinFilmsTools
+
+# Load modules
 using Plots, LaTeXStrings
 pyplot()
-using ThinFilmsTools
+using PyCall; pygui(true)
+closeall()
+include("/home/leniac/JuliaLangDev/ThinFilmsTools/src14/ThinFilmsTools.jl")
+using Main.ThinFilmsTools
 
 let
     λ = [632.8]
@@ -28,9 +36,10 @@ let
     f = [0.0,0.25,0.5,0.75,1.0]
     ϵg = complex.(1.0:0.005:1.8)
     ϵₘ = 2.1*ones(length(ϵg))
+    n = sqrt.([ϵg ϵₘ])
     for i in eachindex(f)
-        neff = RI.lorentzlorenz(f[i], [ϵg ϵₘ])
-        plot!(plt, real.(ϵg), real.(neff), label="f = $(f[i])")
+        neff = RI.lorentzlorenz(f[i], n)
+        plot!(plt, real.(ϵg), real.(neff.^2), label="f = $(f[i])")
     end
     xaxis!("Guest dielectric constant, ϵg")
     yaxis!("Lorentz-Lorenz effective permittivity")
