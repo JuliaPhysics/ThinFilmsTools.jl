@@ -1,15 +1,7 @@
 # Load modules
-#using Plots, LaTeXStrings
-#pyplot()
-#using ThinFilmsTools
-
-# Load modules
 using Plots, LaTeXStrings
 pyplot()
-using PyCall; pygui(true)
-closeall()
-include("/home/leniac/JuliaLangDev/ThinFilmsTools/src14/ThinFilmsTools.jl")
-using Main.ThinFilmsTools
+using ThinFilmsTools
 
 let
     λ = [632.8]
