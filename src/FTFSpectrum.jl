@@ -1,6 +1,7 @@
 module FTFSpectrum
 
 using Optim
+using BlackBoxOptim
 using Statistics
 using ..CommonStructures: ModelFit, BoundariesFit, PlaneWave, LayerTMMO, FitProcedure
 using ..CommonStructures: getBeamParameters
@@ -269,11 +270,35 @@ function FitTMMOptics(
     order::AbstractArray{T3,N3}=1:length(layers),
     options=Optim.Options(),
     alg=SAMIN(),
-    lb=0.5.*xinit,
-    ub=1.5.*xinit,
+    lb=0.01.*xinit,
+    ub=10.0.*xinit,
     σ::Array{T4}=ones(size(specType.Xexp)),
     alpha::T5=false,
     oftype::T7=MeanAbs(),
+    SearchRange=(-1.0, 1.0),
+    NumDimensions=2,
+    FitnessScheme=ScalarFitnessScheme{true}(),
+    PopulationSize=50,
+    MaxTime=0.0,
+    Method=:adaptive_de_rand_1_bin_radiuslimited,
+    MaxNumStepsWithoutFuncEvals=100,
+    RngSeed=1234,
+    MaxFuncEvals=0,
+    SaveTrace=false,
+    SaveFitnessTraceToCsv=false,
+    CallbackInterval=-1.0,
+    TargetFitness=nothing,
+    TraceMode=:compact,
+    MinDeltaFitnessTolerance=1.0e-50,
+    FitnessTolerance=1.0e-8,
+    TraceInterval=0.5,
+    MaxStepsWithoutProgress=10000,
+    # CallbackFunction=##80#81(),
+    MaxSteps=10000,
+    SaveParameters=false,
+    SearchSpace=false,
+    NumRepetitions=1,
+    RandomizeRngSeed=true,
 ) where{T0<:FitProcedure, T1<:PlaneWave, T3<:Int64, N3, T4<:Real, T5<:Bool, T6<:Symbol, T7<:FitProcedure}
     isa(layers[order[1]], LayerTMMO) || throw("The first layer of the system cannot be ModelFit type. Check the order parameter.")
     isa(layers[order[end]], LayerTMMO) || throw("The last layer of the system cannot be ModelFit type. Check the order parameter.")
@@ -296,23 +321,46 @@ function FitTMMOptics(
         # specType.Xexp = @. real(ρexp*conj(ρexp))
     end
     # Run the solver depending on the algorithm
-    if isa(alg, Symbol)
+    if isequal(alg, :BBO)
+        optbbo=(
+            SearchRange=SearchRange,
+            NumDimensions=NumDimensions,
+            FitnessScheme=FitnessScheme,
+            PopulationSize=PopulationSize,
+            MaxTime=MaxTime,
+            Method=Method,
+            MaxNumStepsWithoutFuncEvals=MaxNumStepsWithoutFuncEvals,
+            RngSeed=RngSeed,
+            MaxFuncEvals=MaxFuncEvals,
+            SaveTrace=SaveTrace,
+            SaveFitnessTraceToCsv=SaveFitnessTraceToCsv,
+            CallbackInterval=CallbackInterval,
+            TargetFitness=TargetFitness,
+            TraceMode=TraceMode,
+            MinDeltaFitnessTolerance=MinDeltaFitnessTolerance,
+            FitnessTolerance=FitnessTolerance,
+            TraceInterval=TraceInterval,
+            MaxStepsWithoutProgress=MaxStepsWithoutProgress,
+            # CallbackFunction=##80#81(),
+            MaxSteps=MaxSteps,
+            SaveParameters=SaveParameters,
+            SearchSpace=SearchSpace,
+            NumRepetitions=NumRepetitions,
+            RandomizeRngSeed=RandomizeRngSeed,
+        )
         solution = runFittingProcedureBBO(
-            alg,
             specType,
             float.(xinit),
             beam_,
             float.(σ),
             layers,
             vec(collect(order)),
-            optionsbbo,
-            float.(lb),
-            float.(ub),
             d,
             N,
             idxSeed,
             α,
             oftype,
+            optbbo,
         )
     else
         solution = runFittingProcedure(
@@ -616,6 +664,108 @@ function runFittingProcedure(
     monotonicLin!(d, sol.minimizer[end])
     X = computeTransferMatrix(specType, d, N, beam)
     sol_ = (sol=sol, X=X, xfinal=xfinal, solmin=sol.minimum)
+    return sol_
+end
+
+# BBO
+function runFittingProcedureBBO(
+    specType::T2,
+    xinit::Array{Array{T3,1},1},
+    beam::T4,
+    σ::Array{T3},
+    layers::Array,
+    order::Array{T5,1},
+    d::Array{T3,1},
+    N::Array{T6,2},
+    idxSeed::Array{T5,1},
+    alpha::T7,
+    oftype::T8,
+    optbbo,
+) where {T2<:FitProcedure, T3<:Float64, T4<:PlaneWave, T5<:Int64, T6<:ComplexF64, T7<:DoNotAlpha, T8<:FitProcedure}
+    _checkInput(xinit, layers)
+    sol = bboptimize(
+            x->fitOF(x, specType, beam, σ, layers, order, xinit, d, N, idxSeed, alpha, oftype);
+            SearchRange=optbbo.SearchRange,
+            NumDimensions=optbbo.NumDimensions,
+            FitnessScheme=optbbo.FitnessScheme,
+            PopulationSize=optbbo.PopulationSize,
+            MaxTime=optbbo.MaxTime,
+            Method=optbbo.Method,
+            MaxNumStepsWithoutFuncEvals=optbbo.MaxNumStepsWithoutFuncEvals,
+            RngSeed=optbbo.RngSeed,
+            MaxFuncEvals=optbbo.MaxFuncEvals,
+            SaveTrace=optbbo.SaveTrace,
+            SaveFitnessTraceToCsv=optbbo.SaveFitnessTraceToCsv,
+            CallbackInterval=optbbo.CallbackInterval,
+            TargetFitness=optbbo.TargetFitness,
+            TraceMode=optbbo.TraceMode,
+            MinDeltaFitnessTolerance=optbbo.MinDeltaFitnessTolerance,
+            FitnessTolerance=optbbo.FitnessTolerance,
+            TraceInterval=optbbo.TraceInterval,
+            MaxStepsWithoutProgress=optbbo.MaxStepsWithoutProgress,
+            # CallbackFunction=##80#81(),
+            MaxSteps=optbbo.MaxSteps,
+            SaveParameters=optbbo.SaveParameters,
+            SearchSpace=optbbo.SearchSpace,
+            NumRepetitions=optbbo.NumRepetitions,
+            RandomizeRngSeed=optbbo.RandomizeRngSeed,
+    )
+    xfinal = arrayArrays(sol.archive_output.best_candidate, xinit)
+    multilayerParameters!(N, d, xfinal, beam, layers, order, idxSeed)
+    X = computeTransferMatrix(specType, d, N, beam)
+    sol_ = (sol=sol, X=X, xfinal=xfinal, solmin=sol.archive_output.best_fitness)
+    return sol_
+end
+
+# BBO, alpha
+function runFittingProcedureBBO(
+    specType::T2,
+    xinit::Array{Array{T3,1},1},
+    beam::T4,
+    σ::Array{T3},
+    layers::Array,
+    order::Array{T5,1},
+    d::Array{T3,1},
+    N::Array{T6,2},
+    idxSeed::Array{T5,1},
+    alpha::T7,
+    oftype::T8,
+    optbbo,
+) where {T2<:FitProcedure, T3<:Float64, T4<:PlaneWave, T5<:Int64, T6<:ComplexF64, T7<:DoAlpha, T8<:FitProcedure}
+    _checkInputAlpha(xinit, layers)
+    sol = bboptimize(
+            x->fitOF(x, specType, beam, σ, layers, order, xinit, d, N, idxSeed, alpha, oftype);
+            SearchRange=optbbo.SearchRange,
+            NumDimensions=optbbo.NumDimensions,
+            FitnessScheme=optbbo.FitnessScheme,
+            PopulationSize=optbbo.PopulationSize,
+            MaxTime=optbbo.MaxTime,
+            Method=optbbo.Method,
+            MaxNumStepsWithoutFuncEvals=optbbo.MaxNumStepsWithoutFuncEvals,
+            RngSeed=optbbo.RngSeed,
+            MaxFuncEvals=optbbo.MaxFuncEvals,
+            SaveTrace=optbbo.SaveTrace,
+            SaveFitnessTraceToCsv=optbbo.SaveFitnessTraceToCsv,
+            CallbackInterval=optbbo.CallbackInterval,
+            TargetFitness=optbbo.TargetFitness,
+            TraceMode=optbbo.TraceMode,
+            MinDeltaFitnessTolerance=optbbo.MinDeltaFitnessTolerance,
+            FitnessTolerance=optbbo.FitnessTolerance,
+            TraceInterval=optbbo.TraceInterval,
+            MaxStepsWithoutProgress=optbbo.MaxStepsWithoutProgress,
+            # CallbackFunction=##80#81(),
+            MaxSteps=optbbo.MaxSteps,
+            SaveParameters=optbbo.SaveParameters,
+            SearchSpace=optbbo.SearchSpace,
+            NumRepetitions=optbbo.NumRepetitions,
+            RandomizeRngSeed=optbbo.RandomizeRngSeed,
+    )
+    xfinal = arrayArrays(sol.archive_output.best_candidate[1:end-1], xinit[1:end-1])
+    push!(xfinal, [sol.archive_output.best_candidate[end]])
+    multilayerParameters!(N, d, arrayArrays(sol.archive_output.best_candidate[1:end-1], xfinal[1:end-1]), beam, layers, order, idxSeed)
+    monotonicLin!(d, sol.archive_output.best_candidate[end])
+    X = computeTransferMatrix(specType, d, N, beam)
+    sol_ = (sol=sol, X=X, xfinal=xfinal, solmin=sol.archive_output.best_fitness)
     return sol_
 end
 
