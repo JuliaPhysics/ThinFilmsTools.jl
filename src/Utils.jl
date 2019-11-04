@@ -22,6 +22,7 @@ export build_interpolation,
 	   lorentzian,
 	   voigtian,
 	   oscillatorsInput,
+	   unfoldbnd,
 	   Info
 
 function Info()
@@ -558,6 +559,17 @@ function oscillatorsInput(argin, n::Int64)
         k += n-1
     end
     return x
+end
+
+"""
+
+	unfoldbnd(lb, ub)
+
+Returns two arrays with the lower and upper bounds in accepted format for BBO package.
+
+"""
+function unfoldbnd(lb, ub)
+    return (collect(zip(flattenArrays(lb), flattenArrays(ub))))
 end
 
 end # Utils
