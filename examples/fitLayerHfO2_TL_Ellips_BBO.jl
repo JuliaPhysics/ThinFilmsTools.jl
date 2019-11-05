@@ -2,7 +2,6 @@
 using Plots, LaTeXStrings
 pyplot()
 using ThinFilmsTools
-using Optim
 
 # Wavelength range [nm]
 λ = 200:2100
@@ -30,7 +29,7 @@ plot!(beam.λ, Δexp)
 gui()
 
 # Spectrum type: ellipsometry with the input experimental spectra
-spectype = SpectraDB.HafniaEllips([Ψexp Δexp])
+spectype = Ellipsometry([Ψexp Δexp])
 
 ## Optimization using BBO
 
@@ -55,6 +54,6 @@ solOptim = FitTMMOptics(
 
 plot(FitSpectrumEllip(),
     solOptim.Beam.λ, solOptim.spectrumExp, solOptim.spectrumFit,
-    xaxis=("Wavelength [nm]"), yaxis=(),
+    xaxis=("Wavelength [nm]"),
 )
 gui()
