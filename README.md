@@ -25,4 +25,6 @@ The package also contains a number of indices of refraction for different materi
 
 For the simulation of index of refraction mixtures, there is also available a database [RefractiveIndicesModels.jl](https://github.com/lnacquaroli/ThinFilmsTools.jl/wiki/RefractiveIndicesModels.jl) that contains several mixing rules for this.
 
+The [fit_curve_model](https://github.com/lnacquaroli/ThinFilmsTools.jl/wiki/FitCurveModel) allows fitting the spectral line shapes of different processes using a simple function. It supports three models for an arbitrary number of peaks: Gaussian, Lorentzian, and Voigtian.
+
 A bunch of functions and recipes are included ([PlottingTools.jl](https://github.com/lnacquaroli/ThinFilmsTools.jl/wiki/PlottingTools.jl)) for convenience to plot results from fit_tmm_optics, tmm_optics and three_omega.
