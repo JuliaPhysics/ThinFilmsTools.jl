@@ -4,13 +4,13 @@ using Optim
 ##
 function get_reflectance(ftype, λ, incident, emergent)
     # Raw measured spectrum stored in Utils
-    Rexp = SpectraDB.SL2ExpSpectrum(beam.λ)
+    Rexp = SpectraDB.sl2_exp_spectrum(beam.λ)
     # Reference measured spectrum stored in Utils
-    Rref = SpectraDB.SL2RefSpectrum(beam.λ)
+    Rref = SpectraDB.sl2_ref_spectrum(beam.λ)
     # Theoretical reflectance spectrum for the reference
-    Rthe = TheoreticalSpectrum(ftype, beam, incident, emergent)
+    Rthe = theoretical_spectrum(ftype, beam, incident, emergent)
     # Calculate the absolute normalised measured spectra to fit
-    Rexp_norm = NormalizeReflectance(beam.λ, [beam.λ Rexp], [beam.λ Rthe], [beam.λ Rref])
+    Rexp_norm = normalize_reflectance(beam.λ, [beam.λ Rexp], [beam.λ Rthe], [beam.λ Rref])
 end
 ##
 
@@ -42,7 +42,7 @@ Rexp = get_reflectance(Reflectance(), beam.λ, incident, emergent)
 b = BoundariesFit(7000.0, 7300.0, 0.5, 0.65)
 
 # Brute force search
-sol = SpaceSolutionEMA(Reflectance(Rexp), b, beam, layers)
+sol = space_solution_ema(Reflectance(Rexp), b, beam, layers)
 
 ## Optimization using Optim
 
@@ -53,12 +53,12 @@ options = Optim.Options(
     g_abstol=1e-8, g_reltol=1e-8, iterations=10^5, store_trace=true, show_trace=true,
 )
 
-solOptim = FitTMMOptics(
+solOptim = fit_tmm_optics(
     Reflectance(Rexp), [seed], beam, layers;
     alg=SAMIN(), options=options, lb=[0.5.*seed], ub=[1.5.*seed],
 )
 
-solOptim2 = FitTMMOptics(
+solOptim2 = fit_tmm_optics(
     Reflectance(Rexp), [seed], beam, layers;
     alg=NelderMead(), options=options,
 )

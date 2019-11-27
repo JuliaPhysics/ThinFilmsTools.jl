@@ -21,7 +21,7 @@ function main()
     hgeometry = HeaterGeometry(b, l, ρh)
     source = Source(p, f)
     # Call the model
-    sol = ThreeOmega(layers, hgeometry, source, thresistances)
+    sol = three_omega(layers, hgeometry, source, thresistances)
     return sol
 end
 

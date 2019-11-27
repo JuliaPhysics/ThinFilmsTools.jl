@@ -11,7 +11,7 @@ function main()
     # Reference wavelenth
     λ0 = 700.0
     # call main script
-    sol = TMMOptics(beam, layers; λ0=λ0, emfflag=true, h=10, pbgflag=true)
+    sol = tmm_optics(beam, layers; λ0=λ0, emfflag=true, h=10, pbgflag=true)
     return sol
 end
 
