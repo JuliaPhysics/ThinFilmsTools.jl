@@ -45,24 +45,24 @@ function main()
     # Reference wavelength
     λ0 = 12000.0
     # call main script
-    sol = TMMOptics(beam, layers; λ0=λ0, pbgflag=true)
+    sol = tmm_optics(beam, layers; λ0=λ0, pbgflag=true)
     return sol
 end
 
 sol = main()
 
 # Plot the R, T and A spectra, at 0, 45 and 80 degress
-t45 = Utils.findClosest(sol.Beam.θ,45.0)
-t45 = Utils.findClosest(sol.Beam.θ,80.0)
+t45 = Utils.find_closest(sol.Beam.θ,45.0)
+t45 = Utils.find_closest(sol.Beam.θ,80.0)
 plot(plotSpec(sol, 1), plotSpec(sol, t45), plotSpec(sol, t80), layout=(3,1))
 gui()
 
 # Plot EMF
 p1 = plot(Spectrum2D(),
-     sol.Beam.λ, sol.Beam.θ, sol.Spectra.Rs, title=("s-wave Reflectance"),
+     sol.beam.λ, sol.Beam.θ, sol.Spectra.Rs, title=("s-wave Reflectance"),
 );
 p2 = plot(Spectrum2D(),
-     sol.Beam.λ, sol.Beam.θ, sol.Spectra.Rp, title=("p-wave Reflectance"),
+     sol.beam.λ, sol.Beam.θ, sol.Spectra.Rp, title=("p-wave Reflectance"),
 )
 plot(p1, p2, layout=(2,1))
 gui()

@@ -24,7 +24,7 @@ let
     gui()
 end
 
-## drudelorentz
+## drude_lorentz
 # F. Wooten, Optical properties of solids, Academic Press (1972), page 48
 # https://www.horiba.com/fileadmin/uploads/Scientific/Downloads/OpticalSchool_CN/TN/ellipsometer/Lorentz_Dispersion_Model.pdf
 let
@@ -33,7 +33,7 @@ let
          [1.0], # ϵinf
          [1.0, 13.7, 7.22, 0.127], # f1, ħωₚ1, ħω₀1, Γ1
     ]
-    n = RI.drudelorentz(x, ħω)
+    n = RI.drude_lorentz(x, ħω)
     plot(ħω, [real.(n) imag.(n)], label=["n = ℜ{N}" "k = ℑ{N}"], line=([:solid :dashdot]))
     xaxis!("Energy [eV]")
     yaxis!("Drude-Lorentz AlGaN index of refraction")
@@ -46,7 +46,7 @@ let
          [1.0], # ϵinf
          [1.0, 12.7, 12, 0.1], # f1, ħωₚ1, ħω₀1, Γ1
     ]
-    n = RI.drudelorentz(x, ħω)
+    n = RI.drude_lorentz(x, ħω)
     plot(ħω, [real.(n) imag.(n)], label=["n = ℜ{N}" "k = ℑ{N}"], line=([:solid :dashdot]))
     xaxis!("Energy [eV]")
     yaxis!("Drude-Lorentz SiO2 index of refraction")
@@ -60,14 +60,14 @@ let
          [1.34, 1.686, 1.686, 0.31], # f1, ħωₚ1, ħω₀1, Γ1
          [0.152, 3.541, 3.541, 0.292], # f2, ħωₚ2, ħω₀2, Γ2
     ]
-    n = RI.drudelorentz(x, ħω)
+    n = RI.drude_lorentz(x, ħω)
     plot(ħω, [real.(n) imag.(n)], label=["n = ℜ{N}" "k = ℑ{N}"], line=([:solid :dashdot]))
     xaxis!("Energy [eV]")
     yaxis!("Drude-Lorentz CuPc index of refraction")
     gui()
 end
 
-## tauclorentz
+## tauc_lorentz
 # Appl. Phys. Lett. 69 (3), 15 July 1996
 let
     ħω = 0.8:0.01:5.9
@@ -75,7 +75,7 @@ let
          [1.15, 1.2],
          [122, 3.45, 2.54], # A1, E01, Γ1
     ]
-    n = RI.tauclorentz(x, ħω)
+    n = RI.tauc_lorentz(x, ħω)
     plot(ħω, [real.(n) imag.(n)], label=["n = ℜ{N}" "k = ℑ{N}"], line=([:solid :dashdot]))
     xaxis!("Energy [eV]")
     yaxis!("Tauc-Lorentz a-Si(II) index of refraction")
@@ -88,14 +88,14 @@ let
          [3.10, 4.5],
          [59.2, 6.78, 0.49], # A1, E01, Γ1
     ]
-    n = RI.tauclorentz(x, ħω)
+    n = RI.tauc_lorentz(x, ħω)
     plot(ħω, [real.(n) imag.(n)], label=["n = ℜ{N}" "k = ℑ{N}"], line=([:solid :dashdot]))
     xaxis!("Energy [eV]")
     yaxis!("Tauc-Lorentz Si3N4 index of refraction")
     gui()
 end
 
-## forouhibloomer
+## forouhi_bloomer
 # Physical Review B, 38, 1865 (1988)
 let
     ħω = 0:0.01:15
@@ -103,7 +103,7 @@ let
            [1.680, 2.5],
            [0.25926, 14.359, 53.747], # first oscillator
      ]
-    n = RI.forouhibloomer(x, ħω)
+    n = RI.forouhi_bloomer(x, ħω)
     plot(ħω, [real.(n) imag.(n)], label=["n = ℜ{N}" "k = ℑ{N}"], line=([:solid :dashdot]))
     xaxis!("Energy [eV]")
     yaxis!("Forouhi-Bloomer SiC index of refraction (1 term)")
@@ -117,7 +117,7 @@ let
            [0.18028, 14.222, 52.148], # first oscillator
            [0.10700, 19.397, 99.605], # second oscillator
      ]
-    n = RI.forouhibloomer(x, ħω)
+    n = RI.forouhi_bloomer(x, ħω)
     plot(ħω, [real.(n) imag.(n)], label=["n = ℜ{N}" "k = ℑ{N}"], line=([:solid :dashdot]))
     xaxis!("Energy [eV]")
     yaxis!("Forouhi-Bloomer SiC index of refraction (2 terms)")
@@ -133,7 +133,7 @@ let
            [0.00646, 19.335, 94.105], # third oscillator
            [0.05366, 21.940, 125.443], # fourth oscillator
      ]
-    n = RI.forouhibloomer(x, ħω)
+    n = RI.forouhi_bloomer(x, ħω)
     plot(ħω, [real.(n) imag.(n)], label=["n = ℜ{N}" "k = ℑ{N}"], line=([:solid :dashdot]))
     xaxis!("Energy [eV]")
     yaxis!("Forouhi-Bloomer SiC index of refraction (4 terms)")
@@ -149,14 +149,14 @@ let
            [0.05242, 9.865, 25.172], # third oscillator
            [0.03467, 13.956, 50.062], # fourth oscillator
      ]
-    n = RI.forouhibloomer(x, ħω)
+    n = RI.forouhi_bloomer(x, ħω)
     plot(ħω, [real.(n) imag.(n)], label=["n = ℜ{N}" "k = ℑ{N}"], line=([:solid :dashdot]))
     xaxis!("Energy [eV]")
     yaxis!("Forouhi-Bloomer InAs index of refraction (4 terms)")
     gui()
 end
 
-## codylorentz
+## cody_lorentz
 # Ferlauto et al. J. Appl. Phys., Vol. 92, No. 5, 2002
 let
     ħω = 1.0:0.01:5
@@ -164,7 +164,7 @@ let
     	   [1.0, 1.35, 1.5, 0.7, 0.055], # ϵinf, Eg, Et, Ep, Eu
     	   [60, 3.7, 2.7], # first oscillator, A1, E01, Γ1
     ]
-    n = RI.codylorentz(x, ħω;)# cme=:momentum)
+    n = RI.cody_lorentz(x, ħω;)# cme=:momentum)
     ϵ = n.^2
     plot(ħω, [real.(ϵ) imag.(ϵ)], label=["ϵ₁ = ℜ{ϵ}" "ϵ₂ = ℑ{ϵ}"], line=([:solid :dashdot]))
     xaxis!("Energy [eV]")

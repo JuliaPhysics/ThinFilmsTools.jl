@@ -14,7 +14,7 @@ beam = PlaneWave(λ, θ; p=pol)
 
 # Refractive indices of incident (0) and substrate (2)
 incident = RIdb.air(beam.λ)
-emergent = RIdb.fusedsilicauv(beam.λ)
+emergent = RIdb.fused_silica_uv(beam.λ)
 
 # Define the RI model to use
 layers = [
@@ -24,7 +24,7 @@ layers = [
 ]
 
 # Measured absolute transmittance
-Texp = SpectraDB.ScandiaSpectrum(beam.λ)
+Texp = SpectraDB.scandia_spectrum(beam.λ)
 plot(beam.λ, Texp)
 gui()
 
@@ -39,11 +39,10 @@ seed = [vcat(90.0, # thickness
     ),
 ]
 
-solOptim = FitTMMOptics(
+solOptim = fit_tmm_optics(
     Transmittance(Texp), seed, beam, layers;
     options=options, alg=LBFGS(),
 )
 
-plot(FitSpectrum(), solOptim.Beam.λ, solOptim.spectrumExp, solOptim.spectrumFit)
+plot(FitSpectrum(), solOptim.beam.λ, solOptim.spectrumExp, solOptim.spectrumFit)
 gui()
-

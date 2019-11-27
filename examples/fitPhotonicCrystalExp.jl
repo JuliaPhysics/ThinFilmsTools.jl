@@ -32,7 +32,7 @@ order = [
 ]
 
 # Absolute reflectance spectrum to fit stored in Utils
-Rexp = SpectraDB.BraggSpectrum(beam.λ)
+Rexp = SpectraDB.bragg_spectrum(beam.λ)
 # plot(beam.λ, Rexp)
 # gui()
 
@@ -46,16 +46,12 @@ seed = [
     [119.0, 0.77], # layers[3]
 ]
 
-# solOptim = FitTMMOptics(
-#     Reflectance(Rexp), seed, beam, layers;
-#     order=order, options=options, alg=SAMIN(), lb=0.5.*seed, ub=1.5.*seed,
-# )
-solOptim = FitTMMOptics(
+solOptim = fit_tmm_optics(
     Reflectance(Rexp), seed, beam, layers;
     order=order, options=options, alg=LBFGS(),
 )
 
-plot(FitSpectrum(), solOptim.Beam.λ, solOptim.spectrumExp, solOptim.spectrumFit)
+plot(FitSpectrum(), solOptim.beam.λ, solOptim.spectrumExp, solOptim.spectrumFit)
 gui()
 
 # Seeds for each ModelFit layer defined above plus the alpha (with alpha)
@@ -65,14 +61,10 @@ seed2 = [
     [0.995], # alpha
 ]
 
-# solOptim2 = FitTMMOptics(
-#     Reflectance(Rexp), seed2, beam, layers;
-#     order=order, options=options, alg=SAMIN(), lb=0.5.*seed2, ub=1.5.*seed2, alpha=true,
-# )
-solOptim2 = FitTMMOptics(
+solOptim2 = fit_tmm_optics(
     Reflectance(Rexp), seed2, beam, layers;
     order=order, options=options, alg=LBFGS(), alpha=true,
 )
 
-plot(FitSpectrum(), solOptim2.Beam.λ, solOptim2.spectrumExp, solOptim2.spectrumFit)
+plot(FitSpectrum(), solOptim2.beam.λ, solOptim2.spectrumExp, solOptim2.spectrumFit)
 gui()

@@ -2,6 +2,7 @@
 using Plots, LaTeXStrings
 pyplot()
 using ThinFilmsTools
+using Optim
 
 # Wavelength range [nm]
 λ = 200:2100
@@ -13,7 +14,7 @@ beam = PlaneWave(λ, θ; p=pol)
 
 # Refractive indices of incident (0) and substrate (2)
 incident = RIdb.air(beam.λ)
-emergent = RIdb.fusedsilicauv(beam.λ)
+emergent = RIdb.fused_silica_uv(beam.λ)
 
 # Define the RI model to use
 layers = [
@@ -23,7 +24,7 @@ layers = [
 ]
 
 # Measured absolute transmittance
-Ψexp, Δexp, = SpectraDB.HafniaEllips(beam.λ)
+Ψexp, Δexp, = SpectraDB.hafnia_ellips(beam.λ)
 plot(beam.λ, Ψexp)
 plot!(beam.λ, Δexp)
 gui()
@@ -46,14 +47,14 @@ ub[1][1] = 200
 lb[1][3] = 4.0
 ub[1][3] = 6.0
 
-solOptim = FitTMMOptics(
+solOptim = fit_tmm_optics(
     spectype, seed, beam, layers;
     alg=:BBO,
     SearchRange=Utils.unfoldbnd(lb,ub),
 )
 
 plot(FitSpectrumEllip(),
-    solOptim.Beam.λ, solOptim.spectrumExp, solOptim.spectrumFit,
-    xaxis=("Wavelength [nm]"),
+    solOptim.beam.λ, solOptim.spectrumExp, solOptim.spectrumFit,
+    xaxis=("Wavelength [nm]"), yaxis=(),
 )
 gui()

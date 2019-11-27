@@ -25,7 +25,7 @@ order = [
 ]
 
 # Absolute reflectance spectrum to fit stored in Utils
-Rexp = SpectraDB.BraggSpectrum(beam.λ)
+Rexp = SpectraDB.bragg_spectrum(beam.λ)
 
 options = Optim.Options(
     g_abstol=1e-8, g_reltol=1e-8, iterations=10^5, show_trace=true, store_trace=false,
@@ -37,7 +37,7 @@ seed = [
     [119.0, 0.77], # layers[3]
 ]
 
-solOptim = FitTMMOptics(
+solOptim = fit_tmm_optics(
     Reflectance(Rexp), seed, beam, layers;
     order=order, options=options, alg=SAMIN(), lb=0.5.*seed, ub=1.5.*seed,
 )
@@ -49,7 +49,7 @@ seed2 = [
     [0.995], # alpha
 ]
 
-solOptim2 = FitTMMOptics(
+solOptim2 = fit_tmm_optics(
     Reflectance(Rexp), seed2, beam, layers;
     order=order, options=options, alg=SAMIN(), lb=0.5.*seed2, ub=1.5.*seed2, alpha=true,
 )

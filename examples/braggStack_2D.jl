@@ -14,21 +14,21 @@ function main()
     l2 = LayerTMMO(RIdb.dummy(beam.λ,3.45,0.0); type=:OT, d=1/4.)
     layers = [l0, l1, l2, l1, l2, l1, l2, l1, l2, l0]
     # Reference wavelenth
-    λ0 = 700.
+    λ0 = 700.0
     # call main script
-    sol = TMMOptics(beam, layers; λ0=λ0, emfflag=true, h=10, pbgflag=true)
+    sol = tmm_optics(beam, layers; λ0=λ0, emfflag=true, h=10, pbgflag=true)
     return sol
 end
 
 function plotEMF(sol, ϕ)
     ϕ_ = findmin(abs.(sol.Beam.θ .- ϕ))[2][1]
     plot(EMF2D(),
-              sol.Beam.λ, sol.Misc.ℓ, log10.(sol.Field.emfp[:,ϕ_,:]),
+              sol.beam.λ, sol.Misc.ℓ, log10.(sol.Field.emfp[:,ϕ_,:]),
               title="Log EMF intesnsity, p-TM",
     )
     gui()
     plot(EMF2D(),
-              sol.Beam.λ, sol.Misc.ℓ, log10.(sol.Field.emfs[:,ϕ_,:]),
+              sol.beam.λ, sol.Misc.ℓ, log10.(sol.Field.emfs[:,ϕ_,:]),
               title="Log EMF intesnsity, s-TE",
     )
     gui()
@@ -39,12 +39,12 @@ sol = main()
 
 # plot the R, T and A spectra
 plot(Spectrum2D(),
-        sol.Beam.λ, sol.Beam.θ, sol.Spectra.Rp,
+        sol.beam.λ, sol.beam.θ, sol.Spectra.Rp,
         title="Reflectance, p-TM", clims=(0.0, 1.0),
 )
 gui()
 plot(Spectrum2D(),
-        sol.Beam.λ, sol.Beam.θ, sol.Spectra.Rs,
+        sol.beam.λ, sol.beam.θ, sol.Spectra.Rs,
         title="Reflectance, s-TE", clims=(0.0, 1.0),
 )
 gui()
