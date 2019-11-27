@@ -29,7 +29,7 @@ plot(Spectrum1D(),
      label=["Reflectance" "Transmittance" "Absorbance"],
      line=([:solid :dash :dashdot]),
      ylims=(0.0,1.0),
-     xlims=(sol.beam.λ[1], sol.Beam.λ[end]),
+     xlims=(sol.beam.λ[1], sol.beam.λ[end]),
 )
 gui()
 

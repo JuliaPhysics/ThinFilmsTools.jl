@@ -36,7 +36,7 @@ plot(Spectrum1D(),
      sol1.beam.λ, sol1.Spectra.Rs,
      label=L"Ta$_2$O$_5$", line=(:solid),
      ylims=(0.0, 0.025),
-     xlims=(sol1.Beam.λ[1], sol1.Beam.λ[end]),
+     xlims=(sol1.beam.λ[1], sol1.beam.λ[end]),
      yaxis=("Reflectance"),
 );
 plot!(Spectrum1D(),

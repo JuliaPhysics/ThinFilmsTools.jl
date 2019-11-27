@@ -22,11 +22,11 @@ end
 
 function plotSpec(sol, idx)
     plt = plot(Spectrum1D(),
-            sol.Beam.λ, [sol.Spectra.Rp[:,1,:], sol.Spectra.Rs[:,idx,:]],
+            sol.beam.λ, [sol.Spectra.Rp[:,1,:], sol.Spectra.Rs[:,idx,:]],
             label=["p-wave" "s-wave"],
             yaxis=("Reflectance", (0., 1.)),
-            xlims=(sol.Beam.λ[1], sol.Beam.λ[end]),
-            title=("θ = $(sol.Beam.θ[idx]) [°]"),
+            xlims=(sol.beam.λ[1], sol.beam.λ[end]),
+            title=("θ = $(sol.beam.θ[idx]) [°]"),
             line=([:solid :dashdot]));
     return plt
 end
@@ -52,17 +52,17 @@ end
 sol = main()
 
 # Plot the R, T and A spectra, at 0, 45 and 80 degress
-t45 = Utils.find_closest(sol.Beam.θ,45.0)
-t45 = Utils.find_closest(sol.Beam.θ,80.0)
+t45 = Utils.find_closest(sol.beam.θ,45.0)
+t45 = Utils.find_closest(sol.beam.θ,80.0)
 plot(plotSpec(sol, 1), plotSpec(sol, t45), plotSpec(sol, t80), layout=(3,1))
 gui()
 
 # Plot EMF
 p1 = plot(Spectrum2D(),
-     sol.beam.λ, sol.Beam.θ, sol.Spectra.Rs, title=("s-wave Reflectance"),
+     sol.beam.λ, sol.beam.θ, sol.Spectra.Rs, title=("s-wave Reflectance"),
 );
 p2 = plot(Spectrum2D(),
-     sol.beam.λ, sol.Beam.θ, sol.Spectra.Rp, title=("p-wave Reflectance"),
+     sol.beam.λ, sol.beam.θ, sol.Spectra.Rp, title=("p-wave Reflectance"),
 )
 plot(p1, p2, layout=(2,1))
 gui()

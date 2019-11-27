@@ -21,7 +21,7 @@ function main()
 end
 
 function plotEMF(sol, ϕ)
-    ϕ_ = findmin(abs.(sol.Beam.θ .- ϕ))[2][1]
+    ϕ_ = findmin(abs.(sol.beam.θ .- ϕ))[2][1]
     plot(EMF2D(),
               sol.beam.λ, sol.Misc.ℓ, log10.(sol.Field.emfp[:,ϕ_,:]),
               title="Log EMF intesnsity, p-TM",

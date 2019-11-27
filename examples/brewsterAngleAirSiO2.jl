@@ -29,7 +29,7 @@ plot(SpectrumAngle1D(),
     [sol.Spectra.Rp[1,:], sol.Spectra.Rs[1,:], sol.Spectra.Rs[1,:]./sol.Spectra.Rp[1,:]./1000.],
     label=["p-wave" "s-wave" "(Rs/Rp)/1000"],
     line=([:solid :dash :dashdot]),
-    xlims=(sol.beam.θ[1], sol.Beam.θ[end]),
+    xlims=(sol.beam.θ[1], sol.beam.θ[end]),
     yaxis=("Reflectance", (0.,0.2)),
 )
 gui()
