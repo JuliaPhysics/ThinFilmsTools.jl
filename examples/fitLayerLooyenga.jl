@@ -7,13 +7,13 @@ using Optim
 ##
 function get_reflectance(ftype, λ, incident, emergent)
     # Raw measured spectrum stored in Utils
-    Rexp = SpectraDB.SL1ExpSpectrum(beam.λ)
+    Rexp = SpectraDB.sl1_exp_spectrum(beam.λ)
     # Reference measured spectrum stored in Utils
-    Rref = SpectraDB.SL1RefSpectrum(beam.λ)
+    Rref = SpectraDB.sl1_ref_spectrum(beam.λ)
     # Theoretical reflectance spectrum for the reference
-    Rthe = TheoreticalSpectrum(ftype, beam, incident, emergent)
+    Rthe = theoretical_spectrum(ftype, beam, incident, emergent)
     # Calculate the absolute normalised measured spectra to fit
-    Rexp_norm = NormalizeReflectance(beam.λ, [beam.λ Rexp], [beam.λ Rthe], [beam.λ Rref])
+    Rexp_norm = normalize_reflectance(beam.λ, [beam.λ Rexp], [beam.λ Rthe], [beam.λ Rref])
 end
 ##
 
@@ -45,13 +45,13 @@ options = Optim.Options(
 
 seed = [3300, 0.85]
 
-solOptim = FitTMMOptics(
+solOptim = fit_tmm_optics(
     Reflectance(Rexp), [seed], beam, layers;
     alg=LBFGS(), options=options,
 )
 
 plot(FitSpectrum(),
-    solOptim.Beam.λ, solOptim.spectrumExp, solOptim.spectrumFit,
+    solOptim.beam.λ, solOptim.spectrumExp, solOptim.spectrumFit,
     xaxis="Wavelength [nm]",
     yaxis="Reflectance",
 )

@@ -4,17 +4,9 @@
 # Top layer down to substrate information arrays
 
 # Load modules
-#using Plots, LaTeXStrings
-#pyplot()
-#using ThinFilmsTools
-
-# Load modules
 using Plots, LaTeXStrings
 pyplot()
-using PyCall; pygui(true)
-closeall()
-include("/home/leniac/JuliaLangDev/ThinFilmsTools/src13/ThinFilmsTools.jl")
-using Main.ThinFilmsTools
+using ThinFilmsTools
 
 function main()
     # Half-width of heater line [m]
@@ -39,7 +31,7 @@ function main()
     hgeometry = HeaterGeometry(b, l, ρh)
     source = Source(p, f)
     # Call the model
-    sol = ThreeOmega(layers, hgeometry, source, thresistances)
+    sol = three_omega(layers, hgeometry, source, thresistances)
     return sol
 end
 

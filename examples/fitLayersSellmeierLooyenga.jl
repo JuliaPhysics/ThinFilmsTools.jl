@@ -5,13 +5,13 @@ using ThinFilmsTools
 using Optim
 
 ##
-function bilayerReflectance(beam, incident, emergent)
+function bilayer_reflectance(beam, incident, emergent)
     # Create a measured spectrum of reflection
     layers2 = [ LayerTMMO(incident),
                 LayerTMMO(RI.looyenga([0.70 0.3],[incident emergent]); d=300.),
                 LayerTMMO(RIdb.glass(beam.λ./1e3); d=250.),
                 LayerTMMO(emergent) ]
-    sol = TMMOptics(beam, layers2)
+    sol = tmm_optics(beam, layers2)
     return vec(beam.p.*sol.Spectra.Rp .+ (1.0 - beam.p).*sol.Spectra.Rs)
 end
 ##
@@ -37,7 +37,7 @@ layers = [
 ]
 
 # Create absolute reflectance spectrum to fit
-Rexp = bilayerReflectance(beam, incident, emergent)
+Rexp = bilayer_reflectance(beam, incident, emergent)
 plot(beam.λ, Rexp_norm)
 gui()
 
@@ -50,12 +50,12 @@ seed = [
     vcat(250.0, [1.0, 0.23, 1.0, 6e-3, 2e-2, 1e-2]),
 ]
 
-solOptim = FitTMMOptics(
+solOptim = fit_tmm_optics(
     Reflectance(Rexp), seed, beam, layers;
     options=options, alg=SAMIN(), lb=0.5.*seed, ub=1.5.*seed,
 )
 
-plot(FitSpectrum(), solOptim.Beam.λ, solOptim.spectrumExp, solOptim.spectrumFit)
+plot(FitSpectrum(), solOptim.beam.λ, solOptim.spectrumExp, solOptim.spectrumFit)
 gui()
 
 # julia> solOptim.objfunMin

@@ -9,7 +9,7 @@ beam = PlaneWave(200:2100, [60.])
 
 # Refractive indices of media
 incident = RIdb.air(beam.λ)
-emergent = RIdb.fusedsilicauv(beam.λ)
+emergent = RIdb.fused_silica_uv(beam.λ)
 
 # Define the RI model to use
 layers = [
@@ -19,7 +19,7 @@ layers = [
 ]
 
 # Data
-Ψexp, Δexp = SpectraDB.TantalaSpectrum(beam.λ)
+Ψexp, Δexp = SpectraDB.tantala_spectrum(beam.λ)
 plot(1240.0./beam.λ, Ψexp)
 plot!(1240.0./beam.λ, Δexp)
 gui()
@@ -42,13 +42,13 @@ options = Optim.Options(
     g_abstol=1e-8, g_reltol=1e-8, iterations=10^5, show_trace=true, store_trace=true,
 );
 
-solOptim0 = FitTMMOptics(
+solOptim0 = fit_tmm_optics(
     spectype, seed, beam, layers;
     options=options, alg = LBFGS(), oftype=SumMeanAbs(),
 )
 
 plot(FitSpectrumEllip(),
-    solOptim0.Beam.λ, solOptim0.spectrumExp, solOptim0.spectrumFit,
+    solOptim0.beam.λ, solOptim0.spectrumExp, solOptim0.spectrumFit,
     xaxis=("Wavelength [nm]"),
 )
 gui()
@@ -76,12 +76,12 @@ ub[1][3] = 6.0
     # Ellipsometry(), solOptim0.optParams, beam, hcat(Ψexp, Δexp), layers;
     # options=options, alg=SAMIN(), lb=lb, ub=ub,
 # )
-solOptim = FitTMMOptics(
+solOptim = fit_tmm_optics(
     spectype, solOptim0.optParams, beam, layers;
     options=options, alg=SAMIN(), lb=lb, ub=ub, oftype=SumMeanAbs(),
 )
 plot(FitSpectrumEllip(),
-    solOptim.Beam.λ, solOptim.spectrumExp, solOptim.spectrumFit,
+    solOptim.beam.λ, solOptim.spectrumExp, solOptim.spectrumFit,
     xaxis=("Wavelength [nm]"),
 )
 gui()

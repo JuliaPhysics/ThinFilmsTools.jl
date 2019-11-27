@@ -17,7 +17,7 @@ function main()
         LayerTMMO(RIdb.dummy(beam.λ,1.5,0.0)),
     ]
     # call main script
-    sol = TMMOptics(beam, layers)
+    sol = tmm_optics(beam, layers)
     return sol
 end
 
@@ -25,11 +25,11 @@ sol = main()
 
 # plot the R, T and A spectra
 plot(SpectrumAngle1D(),
-    sol.Beam.θ,
+    sol.beam.θ,
     [sol.Spectra.Rp[1,:], sol.Spectra.Rs[1,:], sol.Spectra.Rs[1,:]./sol.Spectra.Rp[1,:]./1000.],
     label=["p-wave" "s-wave" "(Rs/Rp)/1000"],
     line=([:solid :dash :dashdot]),
-    xlims=(sol.Beam.θ[1], sol.Beam.θ[end]),
+    xlims=(sol.beam.θ[1], sol.Beam.θ[end]),
     yaxis=("Reflectance", (0.,0.2)),
 )
 gui()

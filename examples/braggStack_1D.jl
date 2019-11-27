@@ -16,7 +16,7 @@ function main()
     # Reference wavelenth [nm]
     λ0 = 700.
     # Call main script
-    sol = TMMOptics(beam, layers; λ0=λ0, emfflag=true, h=10, pbgflag=true)
+    sol = tmm_optics(beam, layers; λ0=λ0, emfflag=true, h=10, pbgflag=true)
     return sol
 end
 
@@ -24,17 +24,17 @@ sol = main()
 
 # Plot spectra
 plot(Spectrum1D(),
-    sol.Beam.λ, [sol.Spectra.Rp, sol.Spectra.Tp, 1.0.-(sol.Spectra.Rp.+sol.Spectra.Tp)], 
+    sol.beam.λ, [sol.Spectra.Rp, sol.Spectra.Tp, 1.0.-(sol.Spectra.Rp.+sol.Spectra.Tp)],
     label=["Reflectance" "Transmittance" "Absorbance"],
     line=([:solid :dash :dashdot]),
     ylims=(0.0,1.0),
-    xlims=(sol.Beam.λ[1], sol.Beam.λ[end]),
+    xlims=(sol.beam.λ[1], sol.Beam.λ[end]),
 );
 gui()
 
 # Plot the EMF pattern for normal incidence
 plot(EMF2D(),
-    sol.Beam.λ, sol.Misc.ℓ, log10.(sol.Field.emfp[:,1,:]),
+    sol.beam.λ, sol.Misc.ℓ, log10.(sol.Field.emfp[:,1,:]),
     title=("Log of EMF intensity"),
 );
 gui()

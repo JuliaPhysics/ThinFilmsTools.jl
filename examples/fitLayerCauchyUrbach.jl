@@ -10,7 +10,7 @@ function glass_transmittance(beam, incident, emergent)
     layers2 = [ LayerTMMO(incident),
                 LayerTMMO(RIdb.glass(beam.λ./1e3); d=400.),
                 LayerTMMO(emergent) ]
-    sol = TMMOptics(beam, layers2)
+    sol = tmm_optics(beam, layers2)
     return vec(beam.p.*sol.Spectra.Tp .+ (1.0 - beam.p).*sol.Spectra.Ts)
 end
 ##
@@ -45,13 +45,13 @@ options = Optim.Options(
 
 seed = [vcat(420.0, [1.4, 0.23, 1.0, 0.0, 1.0, 1.0])]
 
-solOptim = FitTMMOptics(
+solOptim = fit_tmm_optics(
     Transmittance(Texp), seed, beam, layers, order;
     options=options, alg=SAMIN(), lb=0.5.*seed, ub=1.5.*seed,
 )
 
 plot(FitSpectrum(),
-    solOptim.Beam.λ, solOptim.spectrumExp, solOptim.spectrumFit,
+    solOptim.beam.λ, solOptim.spectrumExp, solOptim.spectrumFit,
     xaxis=("Wavelength [nm]"),
     yaxis=("Transmittance"),
 )

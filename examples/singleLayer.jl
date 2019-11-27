@@ -17,7 +17,7 @@ function main()
         LayerTMMO(RIdb.silicon(beam.λ)),
     ]
     # call main script
-    sol = TMMOptics(beam, layers)
+    sol = tmm_optics(beam, layers)
     return sol
 end
 
@@ -25,11 +25,11 @@ sol = main()
 
 # plot the R, T and A spectra
 plot(Spectrum1D(),
-     sol.Beam.λ, [sol.Spectra.Rp, sol.Spectra.Tp, 1.0.-(sol.Spectra.Rp.+sol.Spectra.Tp)], 
+     sol.beam.λ, [sol.Spectra.Rp, sol.Spectra.Tp, 1.0.-(sol.Spectra.Rp.+sol.Spectra.Tp)],
      label=["Reflectance" "Transmittance" "Absorbance"],
      line=([:solid :dash :dashdot]),
      ylims=(0.0,1.0),
-     xlims=(sol.Beam.λ[1], sol.Beam.λ[end]),
+     xlims=(sol.beam.λ[1], sol.Beam.λ[end]),
 )
 gui()
 

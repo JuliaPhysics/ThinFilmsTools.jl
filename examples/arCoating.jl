@@ -21,15 +21,15 @@ function main()
         LayerTMMO(n[:,2]),  # emergent (substrate) medium
     ]
     # solve
-    return TMMOptics(beam, layers)
+    return tmm_optics(beam, layers)
 end
 
 sol = main()
 
 # plot the R, T and A spectra
 plot(Spectrum1D(),
-     sol.Beam.λ,
-     [sol.Spectra.Rp, sol.Spectra.Tp, 1.0 .- (sol.Spectra.Rp .+ sol.Spectra.Tp)], 
+     sol.beam.λ,
+     [sol.Spectra.Rp, sol.Spectra.Tp, 1.0 .- (sol.Spectra.Rp .+ sol.Spectra.Tp)],
      label=["Reflectance" "Transmittance" "Absorbance"],
      line=([:solid :dash :dashdot]),
 )
