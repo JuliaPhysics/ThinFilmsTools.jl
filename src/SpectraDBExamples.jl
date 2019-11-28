@@ -1,16 +1,17 @@
 module SpectraDB
 
-using ..Utils: build_interpolation, readh5_file
+using ..Utils: build_interpolation, _readh5_file
 
-export SL1ExpSpectrum,
-	   SL1RefSpectrum,
-	   SL2ExpSpectrum,
-	   SL2RefSpectrum,
-	   BraggSpectrum,
-	   FPSpectrum,
-	   HafniaSpectrum,
-	   ScandiaSpectrum,
-	   TantalaSpectrum,
+export sl1_exp_spectrum,
+	   sl1_ref_spectrum,
+	   sl2_exp_spectrum,
+	   sl2_ref_spectrum,
+	   bragg_spectrum,
+	   fp_spectrum,
+	   hafnia_spectrum,
+	   scandia_spectrum,
+	   tantala_spectrum,
+	   hafnia_ellips,
 	   Info
 
 function Info()
@@ -18,15 +19,15 @@ function Info()
 	"\n " *
 	"\n Available functions from SpectraDB module:" *
 	"\n " *
-	"\n     SL1ExpSpectrum(λ)" *
-	"\n     SL1RefSpectrum(λ)" *
-	"\n     SL2ExpSpectrum(λ)" *
-	"\n     SL2RefSpectrum(λ)" *
-	"\n     BraggSpectrum(λ)" *
-	"\n     FPSpectrum(λ)" *
-	"\n     HafniaSpectrum(λ)" *
-	"\n     ScandiaSpectrum(λ)" *
-	"\n     TantalaSpectrum(λ)" *
+	"\n     sl1_exp_spectrum(λ)" *
+	"\n     sl1_ref_spectrum(λ)" *
+	"\n     sl2_exp_spectrum(λ)" *
+	"\n     sl2_ref_spectrum(λ)" *
+	"\n     bragg_spectrum(λ)" *
+	"\n     fp_spectrum(λ)" *
+	"\n     hafnia_spectrum(λ)" *
+	"\n     scandia_spectrum(λ)" *
+	"\n     tantala_spectrum(λ)" *
 	"\n "
 	"\n     To use any of these functions type: SpectraDB.function(args)." *
 	"\n "
@@ -38,14 +39,14 @@ end
 	Raw experimental reflectance spectrum of a porous silicon thin film on a crystalline
 	silicon substrate. Interpolates for a valid input wavelength range.
 
-		R = SL1ExpSpectrum(λ)
+		R = sl1_exp_spectrum(λ)
 
 			λ: wavelength range (nm), ∈ [200, 1125]
 			R: reflectance
 
 """
-function SL1ExpSpectrum(λ::AbstractArray{T1,1}) where {T1<:Real}
-	X = readh5_file("SL1sample", :SP)
+function sl1_exp_spectrum(λ::AbstractArray{T1,1}) where {T1<:Real}
+	X = _readh5_file("SL1sample", :SP)
     itp = build_interpolation(hcat(vec(X["lambda"]), vec(X["reflectance"])))
     return itp.(λ)
 end
@@ -55,14 +56,14 @@ end
 	Reference experimental reflectance spectrum of a crystalline silicon substrate.
 	Interpolates for a valid input wavelength range.
 
-		R = SL1RefSpectrum(λ)
+		R = sl1_ref_spectrum(λ)
 
 			λ: wavelength range (nm), ∈ [200, 1125]
 			R: reflectance
 
 """
-function SL1RefSpectrum(λ::AbstractArray{T1,1}) where {T1<:Real}
-	X = readh5_file("SL1reference", :SP)
+function sl1_ref_spectrum(λ::AbstractArray{T1,1}) where {T1<:Real}
+	X = _readh5_file("SL1reference", :SP)
 	itp = build_interpolation(hcat(vec(X["lambda"]), vec(X["reflectance"])))
     return itp.(λ)
 end
@@ -72,14 +73,14 @@ end
 	Raw experimental reflectance spectrum of a porous silicon thin film on a crystalline
 	silicon substrate. Interpolates for a valid input wavelength range.
 
-		R = SL2ExpSpectrum(λ)
+		R = sl2_exp_spectrum(λ)
 
 			λ: wavelength range (nm), ∈ [200, 1125]
 			R: reflectance
 
 """
-function SL2ExpSpectrum(λ::AbstractArray{T1,1}) where {T1<:Real}
-	X = readh5_file("SL2sample", :SP)
+function sl2_exp_spectrum(λ::AbstractArray{T1,1}) where {T1<:Real}
+	X = _readh5_file("SL2sample", :SP)
 	itp = build_interpolation(hcat(vec(X["lambda"]), vec(X["reflectance"])))
     return itp.(λ)
 end
@@ -89,14 +90,14 @@ end
 	Reference experimental reflectance spectrum of a crystalline silicon substrate.
 	Interpolates for a valid input wavelength range.
 
-		R = SL2RefSpectrum(λ)
+		R = sl2_ref_spectrum(λ)
 
 			λ: wavelength range (nm), ∈ [200, 1125]
 			R: reflectance
 
 """
-function SL2RefSpectrum(λ)
-	X = readh5_file("SL2reference", :SP)
+function sl2_ref_spectrum(λ)
+	X = _readh5_file("SL2reference", :SP)
 	itp = build_interpolation(hcat(vec(X["lambda"]), vec(X["reflectance"])))
     return itp.(λ)
 end
@@ -107,14 +108,14 @@ end
 	crystal (DBR or Bragg stack) on a crystalline silicon substrate. Interpolates for
 	a valid input wavelength range.
 
-		R = BraggSpectrum(λ)
+		R = bragg_spectrum(λ)
 
 			λ: wavelength range (nm), ∈ [200, 1125]
 			R: reflectance
 
 """
-function BraggSpectrum(λ::AbstractArray{T1,1}) where {T1<:Real}
-	X = readh5_file("Bragg", :SP)
+function bragg_spectrum(λ::AbstractArray{T1,1}) where {T1<:Real}
+	X = _readh5_file("Bragg", :SP)
 	itp = build_interpolation(hcat(vec(X["lambda"]), vec(X["reflectance"])))
     return itp.(λ)
 end
@@ -124,14 +125,14 @@ end
 	Absolute experimental reflectance spectrum of a porous silicon thin film Fabry-Perot
 	(MicroCavity stack) on a glass substrate. Interpolates for a valid input wavelength range.
 
-		R = FPSpectrum(λ)
+		R = fp_spectrum(λ)
 
 			λ: wavelength range (nm), ∈ [200, 1125]
 			R: reflectance
 
 """
-function FPSpectrum(λ::AbstractArray{T1,1}) where {T1<:Real}
-	X = readh5_file("MicroCavity", :SP)
+function fp_spectrum(λ::AbstractArray{T1,1}) where {T1<:Real}
+	X = _readh5_file("MicroCavity", :SP)
 	itp = build_interpolation(hcat(vec(X["lambda"]), vec(X["reflectance"])))
     return itp.(λ)
 end
@@ -141,14 +142,14 @@ end
 	Absolute experimental transmitance spectrum of a hafnium oxide thin film on a fused
 	silica UV substrate. Interpolates for a valid input wavelength range.
 
-		T = HafniaSpectrum(λ)
+		T = hafnia_spectrum(λ)
 
 			λ: wavelength range (nm), ∈ [190, 1100]
 			T: transmitance
 
 """
-function HafniaSpectrum(λ::AbstractArray{T1,1}) where {T1<:Real}
-	X = readh5_file("Hafnia", :SP)
+function hafnia_spectrum(λ::AbstractArray{T1,1}) where {T1<:Real}
+	X = _readh5_file("Hafnia", :SP)
 	itp = build_interpolation(hcat(vec(X["lambda"]), vec(X["transmitance"])))
     return itp.(λ)./100.0
 end
@@ -158,14 +159,14 @@ end
 	Absolute experimental transmitance spectrum of a scandium oxide thin film on a fused
 	silica UV substrate. Interpolates for a valid input wavelength range.
 
-		T = ScandiaSpectrum(λ)
+		T = scandia_spectrum(λ)
 
 			λ: wavelength range (nm), ∈ [190, 1100]
 			T: transmitance
 
 """
-function ScandiaSpectrum(λ::AbstractArray{T1,1}) where {T1<:Real}
-	X = readh5_file("Scandia", :SP)
+function scandia_spectrum(λ::AbstractArray{T1,1}) where {T1<:Real}
+	X = _readh5_file("Scandia", :SP)
 	itp = build_interpolation(hcat(vec(X["lambda"]), vec(X["transmitance"])))
     return itp.(λ)./100.0
 end
@@ -176,18 +177,40 @@ end
 	silica UV substrate. Interpolates for a valid input wavelength range. Measured at 60
 	degrees.
 
-		Ψ, Δ = TantalaSpectrum(λ)
+		Ψ, Δ = tantala_spectrum(λ)
 
 			λ: wavelength range (nm), ∈ [200, 2100]
 			Ψ: psi spectrum
 			Δ: delta spectrum
 
 """
-function TantalaSpectrum(λ::AbstractArray{T1,1}) where {T1<:Real}
-	X = readh5_file("Tantala", :SP)
+function tantala_spectrum(λ::AbstractArray{T1,1}) where {T1<:Real}
+	X = _readh5_file("Tantala", :SP)
 	itp = build_interpolation(hcat(vec(X["lambda"]), vec(X["psi"])))
 	psi = itp.(λ)
 	itp = build_interpolation(hcat(vec(X["lambda"]), vec(X["delta"])))
+	delta = itp.(λ)
+    return psi, delta
+end
+
+"""
+
+	Absolute experimental ellipsomtry spectra of a tantalum oxide thin film on a fused
+	silica UV substrate. Interpolates for a valid input wavelength range. Measured at 60
+	degrees.
+
+		Ψ, Δ = hafnia_ellips(λ)
+
+			λ: wavelength range (nm), ∈ [200, 2100]
+			Ψ: psi spectrum
+			Δ: delta spectrum
+
+"""
+function hafnia_ellips(λ::AbstractArray{T1,1}) where {T1<:Real}
+	X = _readh5_file("HafniaEllips", :SP)
+	itp = build_interpolation(hcat(1240.0./vec(X["lambda"]), vec(X["psi"])))
+	psi = itp.(λ)
+	itp = build_interpolation(hcat(vec(1240.0./X["lambda"]), vec(X["delta"])))
 	delta = itp.(λ)
     return psi, delta
 end

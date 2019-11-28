@@ -21,14 +21,11 @@ export SpectraDB
 
 include("TransferMatrixMethod.jl")
 using .TransferMatrixMethod
-export TMMOptics
+export tmm_optics, TMMOptics
 
 include("FTFSpectrum.jl")
 using .FTFSpectrum
-export SpaceSolutionEMA,
-       TheoreticalSpectrum,
-       NormalizeReflectance,
-       FitTMMOptics,
+export FitTMMOptics,
        Reflectance,
        Transmittance,
        Ellipsometry,
@@ -36,14 +33,19 @@ export SpaceSolutionEMA,
        UseAlpha,
        MeanAbs,
        SumAbs,
-       SumMeanAbs
+       SumMeanAbs,
+       space_solution_ema,
+       theoretical_spectrum,
+       normalize_reflectance,
+       fit_tmm_optics
 
 include("ThreeOmegaMethod.jl")
 using .ThreeOmegaMethod
 export ThreeOmega,
        LayerTOM,
        HeaterGeometry,
-       Source
+       Source,
+       three_omega
 
 include("PlottingTools.jl")
 using .PlottingTools
@@ -65,6 +67,6 @@ export TOMPlot,
 
 include("FitBellCurves.jl")
 using .FitBellCurves
-export FitCurveModel
+export FitCurveModel, fit_curve_model
 
 end # module

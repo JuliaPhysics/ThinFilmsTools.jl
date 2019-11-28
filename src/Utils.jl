@@ -7,22 +7,22 @@ using DSP # conv
 using LinearAlgebra # pinv
 
 export build_interpolation,
-	   readh5_file,
-	   multipleReflections,
-	   findClosest,
-	   bbRadiation,
-	   wavelength2RGB,
-	   movingAverage,
-	   savitzkyGolay,
-	   savitzkyGolay2,
-	   flattenArrays,
-	   arrayArrays,
-	   averagePolarisation,
+	   _readh5_file,
+	   multiple_reflections,
+	   find_closest,
+	   blackbody_radiation,
+	   wavelength2rgb,
+	   moving_average,
+	   savitzky_golay,
+	   savitzky_golay2,
+	   flatten_arrays,
+	   array_arrays,
+	   average_polarisation,
 	   gaussian,
 	   lorentzian,
 	   voigtian,
-	   oscillatorsInput,
-	   unfoldbnd,
+	   _oscillators_input,
+	   unfold_bnd,
 	   Info
 
 function Info()
@@ -31,17 +31,17 @@ function Info()
     "\n Available functions from Utils module:" *
 	"\n " *
 	"\n     build_interpolation(X)" *
-	"\n     multipleReflections(n)" *
-	"\n     findClosest(x, x0)" *
-	"\n     bbRadiation(λ, T)" *
-	"\n     wavelength2RGB(λ)" *
-	"\n     movingAverage(x, w)" *
-	"\n     savitzkyGolay(m, n)" *
-	"\n     savitzkyGolay(m, n, x)" *
-	"\n     savitzkyGolay2(m, n, x)" *
-	"\n     flattenArrays(x)" *
-	"\n     arrayArrays(x, y)" *
-	"\n     averagePolarisation(pol, Xp, Xs)" *
+	"\n     multiple_reflections(n)" *
+	"\n     find_closest(x, x0)" *
+	"\n     blackbody_radiation(λ, T)" *
+	"\n     wavelength2rgb(λ)" *
+	"\n     moving_average(x, w)" *
+	"\n     savitzky_golay(m, n)" *
+	"\n     savitzky_golay(m, n, x)" *
+	"\n     savitzky_golay2(m, n, x)" *
+	"\n     flatten_arrays(x)" *
+	"\n     array_arrays(x, y)" *
+	"\n     average_polarisation(pol, Xp, Xs)" *
 	"\n     gaussian(x, p)" *
 	"\n     lorentzian(x, p)" *
 	"\n     voigtian(x, p)" *
@@ -55,7 +55,7 @@ end
 
 	Find the index of the closest element in an array of reals x to a given real x0.
 
-		idx = Utils.findClosest(x, x0)
+		idx = Utils.find_closest(x, x0)
 
 			x: Data array
 			x0: Element to search in x
@@ -63,13 +63,13 @@ end
 			idx: Index
 
 """
-function findClosest(x::AbstractArray{T1,N1}, x0::T1) where {T1<:Real, N1}
+function find_closest(x::AbstractArray{T1,N1}, x0::T1) where {T1<:Real, N1}
 	idmin = findmin(abs.(x .- x0))[2][1]
 	return idmin
 end
 
 """Read the HDF5 file with the database."""
-function readh5_file(x::String, y::Symbol)
+function _readh5_file(x::String, y::Symbol)
     datapath = joinpath(@__DIR__, "..", "data/")
 	if isequal(y,:RI)
 		fid = "RefractiveIndicesDB.h5"
@@ -107,7 +107,7 @@ end
 	Computes the reflection of a sequence of indices of refraction without
     interference and absorption effects.
 
-		y = Utils.multipleReflections(n)
+		y = Utils.multiple_reflections(n)
 
 			n: Vector with the indices of refraction of the involved layers
 
@@ -116,7 +116,7 @@ end
 	author: Cuchu
 
 """
-function multipleReflections(n::AbstractArray{T1}) where {T1<:Real}
+function multiple_reflections(n::AbstractArray{T1}) where {T1<:Real}
 	r1::Float64 = 0.0
 	r::Float64 = 0.0
 	for i = 1:length(n)-1
@@ -132,7 +132,7 @@ end
 	Returns the spectral radiance (W·sr^-1·m^-3), given the wavelength (m)
     and the absolute temperature (K).
 
-		B = Utils.bbRadiation(λ, T)
+		B = Utils.blackbody_radiation(λ, T)
 
 			λ: range of wavelengths [m]
 			T: range of temperatures [K]
@@ -142,7 +142,7 @@ end
 	Source: https://en.wikipedia.org/wiki/Planck%27s_law
 
 """
-function bbRadiation(λ::AbstractArray{T1}, T::AbstractArray{T1}) where {T1<:Real}
+function blackbody_radiation(λ::AbstractArray{T1}, T::AbstractArray{T1}) where {T1<:Real}
 	h::Float64 = 6.626070040e-34 # Planck's constant, J·s
 	c::Float64 =  299792458.0 # speed of light, m·s
 	kB::Float64 = 1.38064852e-23 # Boltzmann constant, J·K^-1
@@ -159,7 +159,7 @@ end
 
 	Returns an RGB matrix-color based on the wavelength input in nm.
 
-		RBG = Utils.wavelength2RGB(λ)
+		RBG = Utils.wavelength2rgb(λ)
 
 			λ: range of wavelengths [nm]
 
@@ -168,7 +168,7 @@ end
 	Source: https://stackoverflow.com/questions/3407942/rgb-values-of-visible-spectrum
 
 """
-function wavelength2RGB(λ::AbstractArray{<:Real})
+function wavelength2rgb(λ::AbstractArray{<:Real})
     Γ::Float64 = 0.8
     # warm up
     R = Array{Float64, 1}(undef, length(λ))
@@ -218,7 +218,7 @@ end
 
 	Smooth vector with moving average model.
 
-		y = Utils.movingAverage(x, w)
+		y = Utils.moving_average(x, w)
 
 			x: Vector to be smoothed out
 			w: Integer with the window size
@@ -226,7 +226,7 @@ end
 			y: Smoothed output
 
 """
-function movingAverage(x::AbstractVector{T1}, w::T2) where {T1<:Real, T2<:Int64}
+function moving_average(x::AbstractVector{T1}, w::T2) where {T1<:Real, T2<:Int64}
 	xLen::Int64 = length(x)
     y = Vector{Float64}(undef, xLen)
     for i in eachindex(x)
@@ -241,14 +241,14 @@ end
 
 	Implementation of the Savitzky-Golay filter of window half-width M and degree N.
 
-		y = Utils.savitzkyGolay(m, n, x)
+		y = Utils.savitzky_golay(m, n, x)
 			m: is the number of points before and after to interpolate, the full width
 			   of the window is 2m+1.
 			n: is the polynomial order (must be lower than window size).
 			x: unfiltered data vector.
 			y: filtered data vector.
 
-		sgf = savitzkyGolay(m, n)
+		sgf = savitzky_golay(m, n)
 				m: is the number of points before and after to interpolate, the full width
 				   of the window is 2m+1.
 				n: is the polynomial order (must be lower than window size).
@@ -260,18 +260,18 @@ end
 	Notice: this version does not handle well the boundaries of the input vector.
 
 """
-function savitzkyGolay(m::T0, n::T0, x::Array{T1,1}) where {T0<:Int64, T1<:Float64}
+function savitzky_golay(m::T0, n::T0, x::Array{T1,1}) where {T0<:Int64, T1<:Float64}
 	n < m || throw("The window size m must be larger than polynomial order n.")
-    return SavitzkyGolayFilter{m,n}()(x)
+    return savitzky_golayFilter{m,n}()(x)
 end
 
-function savitzkyGolay(m::T0, n::T0) where {T0<:Int64}
+function savitzky_golay(m::T0, n::T0) where {T0<:Int64}
 	n < m || throw("The window size m must be larger than polynomial order n.")
-    return SavitzkyGolayFilter{m,n}()
+    return savitzky_golayFilter{m,n}()
 end
 
-struct SavitzkyGolayFilter{M,N} end
-@generated function (::SavitzkyGolayFilter{M,N})(data::AbstractVector{T}) where {M,N,T}
+struct savitzky_golayFilter{M,N} end
+@generated function (::savitzky_golayFilter{M,N})(data::AbstractVector{T}) where {M,N,T}
     # Create Jacobian matrix
     J = zeros(2M+1, N+1)
     for i=1:2M+1, j=1:N+1
@@ -310,7 +310,7 @@ end
 
 	Polynomial smoothing with the Savitzky Golay filters.
 
-		ysmooth = Utils.savitzkyGolay2(m,n,x; deriv=0)
+		ysmooth = Utils.savitzky_golay2(m,n,x; deriv=0)
 
 			x: array of noisy data to smooth
 			m: Window size must be an odd integer
@@ -322,7 +322,7 @@ end
 	Sources: https://github.com/BBN-Q/Qlab.jl/blob/master/src/SavitskyGolay.jl
 
 """
-function savitzkyGolay2(
+function savitzky_golay2(
 	x::Vector, windowSize::T1, polyOrder::T1;
 	deriv::T1=0,
 ) where {T1<:Int64}
@@ -352,7 +352,7 @@ end
     Convert Array{Array{Real,1},1} to an Array{Float64,1}.
 
 """
-function flattenArrays(xin::Array{Array{T1,1},1}) where {T1<:Real}
+function flatten_arrays(xin::Array{Array{T1,1},1}) where {T1<:Real}
     xout = []
     # Determine the total number of elements of xin
     for i in eachindex(1:length(xin)), j in eachindex(1:length(xin[i]))
@@ -366,7 +366,7 @@ end
     Convert Array{Real,1} to Array{Array{Float64,1},1}.
 
 """
-function arrayArrays(x::Array{T1,1}, _x::Array{Array{T1,1},1}) where{T1<:Real, T2<:Real}
+function array_arrays(x::Array{T1,1}, _x::Array{Array{T1,1},1}) where{T1<:Real, T2<:Real}
     xfinal = deepcopy(_x)
     ki::Int64 = 1
     kf::Int64 = 0
@@ -383,7 +383,7 @@ end
 
     Return the polarisation averaged spectrum.
 
-        X = Utils.averagePolarisation(pol, Xp, Xs)
+        X = Utils.average_polarisation(pol, Xp, Xs)
 
             pol: indicates the polarisation
                  (pol=1.0 => p, pol=0.0 => s, 0.0<=pol<=1.0 => average)
@@ -393,7 +393,7 @@ end
             Xavg: unpolarized quantity = pol*Xp + (1.0 - pol)*Xs
 
 """
-function averagePolarisation(pol::T1, Xp::Array{T1}, Xs::Array{T1}) where {T1<:Float64}
+function average_polarisation(pol::T1, Xp::Array{T1}, Xs::Array{T1}) where {T1<:Float64}
 	X = @. pol*Xp + (1.0 - pol)*Xs
     return X
 end
@@ -421,7 +421,7 @@ end
 
 """
 function gaussian(x::AbstractArray{T1}, p::Array{Array{T1,1},1}) where {T1<:Real}
-    isequal(length(flattenArrays(p)[2:end]), 3*(length(p)-1)) || throw("The inputs are not correct. For the Gaussian curve, each peak has three parameters plus the offset.")
+    isequal(length(flatten_arrays(p)[2:end]), 3*(length(p)-1)) || throw("The inputs are not correct. For the Gaussian curve, each peak has three parameters plus the offset.")
     y = ones(length(x)).*p[1][1] # offset
     for i = 2:length(p)
         @. y += p[i][1]*exp(-((x - p[i][2])/p[i][3])^2)
@@ -452,7 +452,7 @@ end
 
 """
 function lorentzian(x::AbstractArray{T1}, p::Array{Array{T1,1},1}) where {T1<:Real}
-    isequal(length(flattenArrays(p)[2:end]), 3*(length(p)-1)) || throw("The inputs are not correct. For the Lorentzian curve, each peak has three parameters plus the offset.")
+    isequal(length(flatten_arrays(p)[2:end]), 3*(length(p)-1)) || throw("The inputs are not correct. For the Lorentzian curve, each peak has three parameters plus the offset.")
     y = ones(length(x)).*p[1][1] # offset
     for i = 2:length(p)
         @. y += p[i][1]/(1.0 + ((x - p[i][2])/p[i][3])^2)
@@ -488,7 +488,7 @@ end
 
 """
 function voigtian(x::AbstractArray{T1}, p::Array{Array{T1,1},1}) where {T1<:Real}
-    isequal(length(flattenArrays(p)[2:end]), 4*(length(p)-1)) || throw("The inputs are not correct. For the Voigtian curve, each peak has four parameters plus the offset.")
+    isequal(length(flatten_arrays(p)[2:end]), 4*(length(p)-1)) || throw("The inputs are not correct. For the Voigtian curve, each peak has four parameters plus the offset.")
     y = ones(length(x)).*p[1][1] # offset
     for i = 2:length(p)
         @. y += p[i][1]*real(erfcx(-im*((x - p[i][2] + im*p[i][3])/sqrt(2)/p[i][4])))
@@ -506,7 +506,7 @@ end
 		RI.drudelorentz, RI.tauclorentz, RI.forouhibloomer,
 		RI.lorentzplasmon, RI.codylorentz
 
-		x = oscillatorsInput(argin, n)
+		x = _oscillators_input(argin, n)
 
 			argin: Array with two elements.
 				   The first element is an array with the parameters not associated to
@@ -526,7 +526,7 @@ end
 			 1.5, 4.6, 0.1, # osc 3, A3, E03, Γ3
 			],
 		]
-		x = oscillatorsInput(argin, 3)
+		x = _oscillators_input(argin, 3)
 		x = [
 			  [4.0, 3.5],  # ϵinf, Eg
 			  [15.0, 6.0, 1.05], # osc 1, A1, E01, Γ1
@@ -540,7 +540,7 @@ end
 """
 ## Build the input for oscillators models.
 # Each element of x has the parameters for the corresponding oscillator.
-# function oscillatorsInput(argin, n::Int64)
+# function _oscillators_input(argin, n::Int64)
 #     x = argin[1]
 #     numel::Int64 = Int(length(argin[2:end])/n + 1)
 #     k::Int64 = 0
@@ -550,7 +550,7 @@ end
 #     end
 #     return x
 # end
-function oscillatorsInput(argin, n::Int64)
+function _oscillators_input(argin, n::Int64)
     x = [argin[1]]
     numel::Int64 = Int(length(argin[2])/n)
     k::Int64 = 0
@@ -563,13 +563,13 @@ end
 
 """
 
-	unfoldbnd(lb, ub)
+	unfold_bnd(lb, ub)
 
 Returns two arrays with the lower and upper bounds in accepted format for BBO package.
 
 """
-function unfoldbnd(lb, ub)
-    return (collect(zip(flattenArrays(lb), flattenArrays(ub))))
+function unfold_bnd(lb, ub)
+    return (collect(zip(flatten_arrays(lb), flatten_arrays(ub))))
 end
 
 end # Utils

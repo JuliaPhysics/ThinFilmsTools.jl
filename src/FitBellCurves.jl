@@ -1,18 +1,32 @@
 module FitBellCurves
 
 using Optim
-using ..Utils: gaussian, lorentzian, voigtian, flattenArrays, arrayArrays
-using ..FTFSpectrum: objectiveFunction, MeanAbs
+using ..Utils: gaussian, lorentzian, voigtian, flatten_arrays, array_arrays
+using ..FTFSpectrum: _objective_function, MeanAbs
 
-export FitCurveModel
+abstract type FitShapeCurves end
+struct FitCurveModel{T0, T1} <: FitShapeCurves where {T0<:Symbol, T1<:Float64}
+    model::T0
+    xdata::Vector{T1}
+    ydata::Vector{T1}
+    seed::Array{Array{T1,1},1}
+    lb::Array{Array{T1,1},1}
+    ub::Array{Array{T1,1},1}
+    solution
+    ymodel::Vector{T1}
+    optParams::Array{Array{T1,1},1}
+    sigma::Array{T1,1}
+end
 
-function FitCurveModel(
+export FitCurveModel, fit_curve_model
+
+function fit_curve_model(
     model::T0,
     xdata::AbstractVector{T1},
     ydata::AbstractVector{T1},
     seed::Array{Array{T1,1},1};
-    lb::Array{Array{T1,1},1}=-2.0.*arrayArrays((abs.(flattenArrays(seed)).+1.0), seed),
-    ub::Array{Array{T1,1},1}=2.0.*arrayArrays((abs.(flattenArrays(seed)).+1.0), seed),
+    lb::Array{Array{T1,1},1}=-2.0.*array_arrays((abs.(flatten_arrays(seed)).+1.0), seed),
+    ub::Array{Array{T1,1},1}=2.0.*array_arrays((abs.(flatten_arrays(seed)).+1.0), seed),
     σ::Array{T1,1}=ones(length(ydata)),
     alg=SAMIN(),
     options=Optim.Options(
@@ -25,27 +39,27 @@ function FitCurveModel(
 ) where {T0<:Symbol, T1<:Real}
     isequal(length(xdata), length(ydata)) || throw("Input xdata and ydata must have the same length.")
     oftype = MeanAbs()
-    sol = optimize(p->fitMSE(p, model, seed, xdata, ydata, σ, oftype),
-                   flattenArrays(lb), flattenArrays(ub), flattenArrays(seed), alg, options)
-    xopt = arrayArrays(sol.minimizer, seed)
-    sol_ = (
-        model = model,
-        xdata = float.(xdata),
-        ydata = float.(ydata),
-        seed = float.(seed),
-        lb = float.(lb),
-        ub = float.(ub),
-        solution = sol,
-        ymodel = eval(model)(xdata, xopt),
-        optParams = xopt,
-        sigma = σ,
+    sol = optimize(p -> _fit_mse(p, model, seed, xdata, ydata, σ, oftype),
+                   flatten_arrays(lb), flatten_arrays(ub), flatten_arrays(seed), alg, options)
+    xopt = array_arrays(sol.minimizer, seed)
+    sol_ = FitCurveModel(
+                model,
+                float.(xdata),
+                float.(ydata),
+                float.(seed),
+                float.(lb),
+                float.(ub),
+                sol,
+                eval(model)(xdata, xopt),
+                xopt,
+                σ,
     )
     return sol_
 end
 
-function fitMSE(p, model, seed, xdata, ydata, σ, oftype)
-    ŷ = eval(model)(xdata, arrayArrays(p, seed))
-    mse = objectiveFunction(oftype, vec(ŷ), ydata; σ=σ)
+function _fit_mse(p, model, seed, xdata, ydata, σ, oftype)
+    ŷ = eval(model)(xdata, array_arrays(p, seed))
+    mse = _objective_function(oftype, vec(ŷ), ydata; σ=σ)
     return mse
 end
 

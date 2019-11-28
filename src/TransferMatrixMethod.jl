@@ -2,12 +2,55 @@ module TransferMatrixMethod
 
 using Statistics
 using LinearAlgebra
-using ..CommonStructures: getBeamParameters, PlaneWave, LayerTMMO
+using ..CommonStructures: _get_beam_parameters, PlaneWave, LayerTMMO
 
-export TMMOptics
+export TMMOptics, tmm_optics
+
+# Wrap the output into different types
+abstract type Output end
+struct Spectra{T1, T2} <: Output where {T1<:Float64, T2<:ComplexF64}
+    Rp::Array{T1}; Rs::Array{T1}
+    Tp::Array{T1}; Ts::Array{T1}
+    ρp::Array{T2}; ρs::Array{T2}
+    τp::Array{T2}; τs::Array{T2}
+end
+struct Field{T1} <: Output where {T1<:Float64}
+    emfp::Array{T1}
+    emfs::Array{T1}
+end
+struct Bloch{T1, T2} <: Output where {T1<:ComplexF64, T2<:Float64}
+    κp::Array{T1}
+    κs::Array{T1}
+    ω::Array{T2}
+    Λ::T2
+    ωl::T2
+    ωh::T2
+    qz::Array
+end
+struct Misc{T1, T2} <: Output where {T1<:Float64, T2<:ComplexF64}
+    d::Array{T1}
+    ℓ::Array{T1}
+    nλ0::Array{T1}
+    layers_n::Array{T2}
+    λ0::T1
+end
+struct AdmPhase{T1} <: Output where {T1<:ComplexF64}
+    ηp::Array{T1}
+    ηs::Array{T1}
+    δ::Array{T1}
+end
+struct TMMOptics{T1, T2, T3, T4, T5, T6, T7} <: Output where {T1<:Spectra, T2<:Field, T3<:Bloch, T4<:Misc, T5<:AdmPhase, T6<:PlaneWave, T7<:LayerTMMO}
+    Spectra::T1
+    Field::T2
+    Bloch::T3
+    Misc::T4
+    AdmPhase::T5
+    Beam::T6
+    Layers::Array{T7}
+end
 
 ## Data conditioning and main calculations.
-function TMMOptics(
+function tmm_optics(
     beam::T1, layers::Array{T2,N2};
     emfflag::T3=false, h::T4=10, pbgflag::T3=false, λ0::T5=-eps(),
 ) where {T1<:PlaneWave, T2<:LayerTMMO, N2, T3<:Bool, T4<:Int64, T5<:Float64}
@@ -20,14 +63,14 @@ function TMMOptics(
     d = Array{Float64,1}(undef, nLen)
     nλ0 = Array{Float64,1}(undef, nLen)
     layers_n = Array{ComplexF64,2}(undef, length(beam.λ), nLen)
-    buildArrays!(d, layers_n, nλ0, idxλ0, λ0, vec(layers), beam)
+    _build_arrays!(d, layers_n, nλ0, idxλ0, λ0, vec(layers), beam)
     # Get the parameters for beam
-    beam_, _ = getBeamParameters(beam)
+    beam_, _ = _get_beam_parameters(beam)
     # Call transfer matrix method
     if emfflag
-        tmmout = transferMatrixEMF(layers_n, d, beam_, h)
+        tmmout = _transfer_matrix_emf(layers_n, d, beam_, h)
     else
-        tmmout = TransferMatrix(layers_n, d, beam_)
+        tmmout = transfer_matrix(layers_n, d, beam_)
     end
     # Photonic band gap for crystals without defects
     if pbgflag & (nLen > 3)
@@ -40,7 +83,7 @@ function TMMOptics(
         n0, n1, n2 = nλ0[1], nλ0[2], nλ0[3]
         ωh::Float64 = Λ/π/(d1*n1 + d2*n2)*acos(-abs(n1 - n2)/(n1 + n2))
         ωl::Float64 = Λ/π/(d2*sqrt(n2^2 - n0^2) + d1*sqrt(n1^2 - n0^2))*acos(abs((n1^2*sqrt(n2^2 - n0^2) - n2^2*sqrt(n1^2 - n0^2))/(n1^2*sqrt(n2^2 - n0^2) + n2^2*sqrt(n1^2 - n0^2))))
-        photonicDispersion!(κp, κs, ω, Λ, beam_, layers_n[idxλ0, 2:3], d[2:3])
+        _photonic_dispersion!(κp, κs, ω, Λ, beam_, layers_n[idxλ0, 2:3], d[2:3])
     else
         κp = []; κs = []; ω = []; Λ = 0.0; ωl = 0.0; ωh = 0.0; qz = []
     end
@@ -48,14 +91,14 @@ function TMMOptics(
     _ℓ::Array{Float64,2} = (d[2:end-1]/h)*ones.(1, h) # outer product
     ℓ = cumsum([0; _ℓ[:]], dims=1)[1:end-1] # remove last from cumsum
     # Return results
-    sol = (
-        Spectra = tmmout.Spectra,
-        Field = tmmout.Field,
-        AdmPhase = tmmout.AdmPhase,
-        Bloch = (κp = κp, κs = κs, ω = ω, Λ = Λ, ωl = ωl, ωh = ωh, qz = qz),
-        Misc = (d = d, ℓ = ℓ, nλ0 = nλ0, layers_n = layers_n, λ0 = λ0),
-        Beam = (λ = beam.λ, θ = beam.θ, p = beam.p),
-        Layers = layers,
+    sol = TMMOptics(
+            tmmout[1],
+            tmmout[2],
+            Bloch(κp, κs, ω, Λ, ωl, ωh, qz),
+            Misc(d, ℓ, nλ0, layers_n, λ0),
+            tmmout[3],
+            beam,
+            layers
     )
     return sol
 end
@@ -75,7 +118,7 @@ end
     Build the sequence of indices of refraction and thicknesses depending on the input. It follows some logic depending on whether nλ0 was input.
 
 """
-function buildArrays!(
+function _build_arrays!(
     d::Array{T0,1},
     layers_n::Array{T1,2},
     nλ0::Array{T0,1},
@@ -107,31 +150,25 @@ end
     Computes the reflection and transmission coefficients and spectra with the transfer matrix method.
 
 """
-function TransferMatrix(
+function transfer_matrix(
     layers_n::Array{T1,2}, d::Array{T2,1}, beam::T3;
     λLen::T4=length(beam.λ), θLen::T4=length(beam.θ),
 ) where {T1<:ComplexF64, T2<:Float64, T3<:PlaneWave, T4<:Int64}
-    # λ, λLen, θ, θLen = getBeamParameters(beam)
+    # λ, λLen, θ, θLen = _get_beam_parameters(beam)
     nLen::Int64 = size(layers_n, 2)
     τs = Array{ComplexF64,2}(undef, (λLen, θLen))
     τp = similar(τs); ρs = similar(τs); ρp = similar(τs)
     δ = Array{ComplexF64,3}(undef, (λLen, θLen, nLen))
     ηs = similar(δ); ηp = similar(ηs)
     # Calculation of complex coefficients of reflection, transmission and emf
-    fresnelCoefficients!(ηs, ηp, δ, ρs, ρp, τs, τp, layers_n, d, beam, nLen)
+    _fresnel_coefficients!(ηs, ηp, δ, ρs, ρp, τs, τp, layers_n, d, beam, nLen)
     x = (
-        Spectra = (
-            Rp = abs2.(ρp),
-            Rs = abs2.(ρs),
-            Tp = real(@view(ηp[:, :, 1]).*@view(ηp[:, :, end])).*abs2.(τp),
-            Ts = real(@view(ηs[:, :, 1]).*@view(ηs[:, :, end])).*abs2.(τs),
-            ρp = ρp,
-            ρs = ρs,
-            τp = τp,
-            τs = τs,
-        ),
-        Field = (emfp = [], emfs = []),
-        AdmPhase = (ηp = ηp, ηs = ηs, δ = δ),
+         Spectra(abs2.(ρp),
+                 abs2.(ρs),
+                 real(@view(ηp[:, :, 1]).*@view(ηp[:, :, end])).*abs2.(τp),
+                 real(@view(ηs[:, :, 1]).*@view(ηs[:, :, end])).*abs2.(τs), ρp, ρs, τp, τs),
+         Field([], []),
+         AdmPhase(ηp, ηs, δ),
     )
     return x
 end
@@ -141,7 +178,7 @@ end
     Compute the Fresnel coefficients.
 
 """
-function fresnelCoefficients!(
+function _fresnel_coefficients!(
     ηs::Array{T1,3}, ηp::Array{T1,3},
     δ::Array{T1,3},
     ρs::Array{T1,2}, ρp::Array{T1,2},
@@ -181,11 +218,11 @@ end
     Computes the reflection and transmission coefficients, spectra and the electromagnetic field with the transfer matrix method.
 
 """
-function transferMatrixEMF(
+function _transfer_matrix_emf(
     layers_n::Array{T1,2}, d::Array{T2,1}, beam::T3, h::T4;
     λLen::T4=length(beam.λ), θLen::T4=length(beam.θ),
 ) where {T1<:ComplexF64, T2<:Float64, T3<:PlaneWave, T4<:Int64}
-    # λ, λLen, θ, θLen = getBeamParameters(beam)
+    # λ, λLen, θ, θLen = _get_beam_parameters(beam)
     nLen::Int64 = size(layers_n, 2)
     τs = Array{ComplexF64,2}(undef, (λLen, θLen))
     τp = similar(τs); ρs = similar(τs); ρp = similar(τs)
@@ -193,21 +230,15 @@ function transferMatrixEMF(
     ηs = similar(δ); ηp = similar(ηs)
     emfs = Array{Float64,3}(undef, (λLen, θLen, (length(d) - 2)*h)); emfp = similar(emfs)
     # Calculation of complex coefficients of reflection, transmission and emf
-    fresnelCoefficientsEMF!(ηs, ηp, δ, ρs, ρp, τs, τp, emfs, emfp, layers_n, d, beam, nLen, h)
-     x = (
-         Spectra = (
-             Rp = abs2.(ρp),
-             Rs = abs2.(ρs),
-             Tp = real(@view(ηp[:, :, 1]).*@view(ηp[:, :, end])).*abs2.(τp),
-             Ts = real(@view(ηs[:, :, 1]).*@view(ηs[:, :, end])).*abs2.(τs),
-             ρp = ρp,
-             ρs = ρs,
-             τp = τp,
-             τs = τs,
-         ),
-         Field = (emfp = emfp, emfs = emfs),
-         AdmPhase = (ηp = ηp, ηs = ηs, δ = δ),
-     )
+    _fresnel_coefficients_emf!(ηs, ηp, δ, ρs, ρp, τs, τp, emfs, emfp, layers_n, d, beam, nLen, h)
+    x = (
+         Spectra(abs2.(ρp),
+                 abs2.(ρs),
+                 real(@view(ηp[:, :, 1]).*@view(ηp[:, :, end])).*abs2.(τp),
+                 real(@view(ηs[:, :, 1]).*@view(ηs[:, :, end])).*abs2.(τs), ρp, ρs, τp, τs),
+         Field(emfp, emfs),
+         AdmPhase(ηp, ηs, δ),
+    )
     return x
 end
 
@@ -216,7 +247,7 @@ end
     Compute the Fresnel coefficients and the electromagnetic field.
 
 """
-function fresnelCoefficientsEMF!(
+function _fresnel_coefficients_emf!(
     ηs::Array{T1,3}, ηp::Array{T1,3},
     δ::Array{T1,3},
     ρs::Array{T1,2}, ρp::Array{T1,2},
@@ -249,9 +280,9 @@ function fresnelCoefficientsEMF!(
         ρp[l, a] = ρ(ηp[l, a, 1], ηp[l, a, end], Ψp)
         τs[l, a] = τ(ηs[l, a, 1], ηs[l, a, end], Ψs)
         τp[l, a] = τ(ηp[l, a, 1], ηp[l, a, end], Ψp)
-        # Compute the emfield
-        emfs[l, a, :] .= emfield(@view(layers_n[l, :]), d, @view(δ[l, a, :]), @view(ηs[l, a, :]), Ψs, nLen, h)
-        emfp[l, a, :] .= emfield(@view(layers_n[l, :]), d, @view(δ[l, a, :]), @view(ηp[l, a, :]), Ψp, nLen, h)
+        # Compute the _emfield
+        emfs[l, a, :] .= _emfield(@view(layers_n[l, :]), d, @view(δ[l, a, :]), @view(ηs[l, a, :]), Ψs, nLen, h)
+        emfp[l, a, :] .= _emfield(@view(layers_n[l, :]), d, @view(δ[l, a, :]), @view(ηp[l, a, :]), Ψp, nLen, h)
     end
     return nothing
 end
@@ -286,7 +317,7 @@ end
     Computes the inverse total transfer matrix for the whole structure at each wavelenth and angle of incidence and return the field.
 
 """
-function emfield(
+function _emfield(
     N::SubArray{T1,1},
     d::Array{T2,1},
     δ::SubArray{T1,1},
@@ -301,8 +332,8 @@ function emfield(
     # Divide the phase shift by h but keep η as is for each layer
     mδ::Array{ComplexF64} = δ/h
     _m1::Array = Ξ.(mδ, η)
-    gElements!(g11, g12, m0, _m1, m1, Ψ, nLen, h)
-    fi = fieldIntensity(g11, g12, η[1], η[end], Ψ)
+    _g_elements!(g11, g12, m0, _m1, m1, Ψ, nLen, h)
+    fi = _field_intensity(g11, g12, η[1], η[end], Ψ)
     return fi
 end
 
@@ -311,7 +342,7 @@ end
 	Compute the elements of the G matrix.
 
 """
-function gElements!(
+function _g_elements!(
     g11::Array{T1,1}, g12::Array{T1,1},
     m0::Array{T1,2},
     _m1::Array{Array{T1,2},1},
@@ -336,7 +367,7 @@ end
 	Compute the field intensity.
 
 """
-function fieldIntensity(
+function _field_intensity(
     g11::Array{T1,1}, g12::Array{T1,1}, η1::T1, ηf::T1, Ψ::Array{T1,2},
 ) where {T1<:ComplexF64}
     fi = abs2.((g11 .+ ηf.*g12)./(0.25*(η1*Ψ[1,1] + Ψ[2,1] + η1*ηf*Ψ[1,2] + ηf*Ψ[2,2])))
@@ -363,7 +394,7 @@ end
     two different dielectric layers.
 
 """
-function photonicDispersion!(
+function _photonic_dispersion!(
     κp::Array{T1,2}, κs::Array{T1,2},
     ω::Array{T2,1},
     Λ::T2,
@@ -376,8 +407,8 @@ function photonicDispersion!(
     cosθ1::Vector{ComplexF64} = cos.(beam.θ)
     cosθ2::Vector{ComplexF64} = cosϑ.(n[1], n[2], cosθ1)
     # Prefactor for Bloch wavevector
-    factor_s = admFactor.(ζs.(n[1], cosθ1), ζs.(n[2], cosθ2))
-    factor_p = admFactor.(ζp.(n[1], cosθ1), ζp.(n[2], cosθ2))
+    factor_s = _adm_factor.(ζs.(n[1], cosθ1), ζs.(n[2], cosθ2))
+    factor_p = _adm_factor.(ζp.(n[1], cosθ1), ζp.(n[2], cosθ2))
     # Bloch wavevectors
     @inbounds for a in eachindex(cosθ1), b in eachindex(ω)
         κp[b, a] = acos(cosκ(d[1]*ω[b]*n[1]*cosθ1[a], d[2]*ω[b]*n[2]*cosθ2[a], factor_p[a]))/Λ
@@ -391,7 +422,7 @@ end
 	Prefactor for bloch wavevector.
 
 """
-admFactor(η1::T1, η2::T1) where {T1<:ComplexF64} = 0.5*(η1^2 + η2^2)/η1/η2
+_adm_factor(η1::T1, η2::T1) where {T1<:ComplexF64} = 0.5*(η1^2 + η2^2)/η1/η2
 
 """
 

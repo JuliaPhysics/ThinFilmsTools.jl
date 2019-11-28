@@ -3,7 +3,7 @@ module RI
 include(joinpath(@__DIR__, "_expint.jl"))
 # using .ExponentialIntegration
 
-export lorentzlorenz,
+export lorentz_lorenz,
 	   bruggeman,
        looyenga,
        maxwell,
@@ -11,12 +11,12 @@ export lorentzlorenz,
        gedf,
        gem,
 	   sellmeier,
-	   cauchyurbach,
-	   drudelorentz,
-	   tauclorentz,
-	   forouhibloomer,
-	   lorentzplasmon,
-	   codylorentz,
+	   cauchy_urbach,
+	   drude_lorentz,
+	   tauc_lorentz,
+	   forouhi_bloomer,
+	   lorentz_plasmon,
+	   cody_lorentz,
        Info
 
 function Info()
@@ -26,18 +26,18 @@ function Info()
 	"\n " *
     "\n     bruggeman(p, n; df=1/3) -> EMA" *
     "\n     looyenga(p, n; df=1/3) -> EMA" *
-    "\n     lorentzlorenz(p, n) -> EMA" *
+    "\n     lorentz_lorenz(p, n) -> EMA" *
     "\n     maxwell(p, n; df=1/3) -> EMA" *
     "\n     monecke(p, n; dfm=:spheres, c=0.0) -> EMA" *
     "\n     gedf(x, n) -> EMA" *
     "\n     gem(x, n) -> EMA" *
     "\n     sellmeier(x, λ)" *
-    "\n     cauchyurbach(x, λ)" *
-	"\n     drudelorentz(x, ħω)" *
-	"\n     tauclorentz(x, ħω)" *
-	"\n     forouhibloomer(x, ħω)" *
-	"\n     lorentzplasmon(x, ħω)" *
-	"\n     codylorentz(x, ħω; cme=:dipole)" *
+    "\n     cauchy_urbach(x, λ)" *
+	"\n     drude_lorentz(x, ħω)" *
+	"\n     tauc_lorentz(x, ħω)" *
+	"\n     forouhi_bloomer(x, ħω)" *
+	"\n     lorentz_plasmon(x, ħω)" *
+	"\n     cody_lorentz(x, ħω; cme=:dipole)" *
 	"\n " *
 	"\n     To use any of these functions type: ?RI.function" *
 	"\n " *
@@ -62,7 +62,7 @@ end
 
     Returns the effective index of refraction of a mixture of two liquids.
 
-        neff = RI.lorentzlorenz(p, n)
+        neff = RI.lorentz_lorenz(p, n)
 
 			p: proportion (real number, 0<p<1) of material n[:,1].
 			n: column-array with the complex indices of refraction of the materials in the
@@ -75,7 +75,7 @@ end
 				Thin Solid Films 519 (2011) 2994-2997
 
 """
-function lorentzlorenz(
+function lorentz_lorenz(
     p::T0, n::Array{T1,2},
 ) where {T0<:Real, T1<:ComplexF64}
 	ϵ = n.^2
@@ -407,7 +407,7 @@ end
     Returns the index of refraction using the Cauchy-Urbach model:
 	n = Aₙ + Bₙ*1e4/λ^2 + Cₙ*1e9/λ^4 + im*α₀*exp((1240.0/λ - E₀)/Eᵤ).
 
-        n = RI.cauchyurbach(x, λ)
+        n = RI.cauchy_urbach(x, λ)
 
             x: Array containing the six values used in the model.
                (x = [
@@ -424,7 +424,7 @@ end
 			Colorado State University, 2010. Page 60.
 
 """
-function cauchyurbach(x::AbstractArray{T}, λ::AbstractArray{T}) where {T<:Float64}
+function cauchy_urbach(x::AbstractArray{T}, λ::AbstractArray{T}) where {T<:Float64}
 	Aₙ, Bₙ, Cₙ, α₀, E₀, Eᵤ = x
 	# n = @. Aₙ + Bₙ*1e4/λ^2 + Cₙ*1e9/λ^4 + im*Aₖ*exp(Bₖ + (1240.0/λ/Cₖ))
 	# n = @. Aₙ + Bₙ*1e4/λ^2 + Cₙ*1e9/λ^4 + im*Aₖ*exp(Bₖ*(1.0/λ - 1.0/Cₖ))
@@ -436,7 +436,7 @@ end
 
     Returns the index of refraction using the Drude-Lorentz oscillator model.
 
-        n = RI.drudelorentz(x, ħω)
+        n = RI.drude_lorentz(x, ħω)
 
             x: Array of array containing the values used in the model.
                (x = [
@@ -454,7 +454,7 @@ end
              Stenzel, Optical characterization of thin solid films - 2018
 
 """
-function drudelorentz(
+function drude_lorentz(
     x::Array{Array{T0,1},1}, ħω::AbstractArray{T1},
 ) where {T0<:Real, T1<:Real}
     ϵ = zeros(ComplexF64, length(vec(ħω)))
@@ -472,7 +472,7 @@ end
 
     Returns the index of refraction using the Tauc-Lorentz dispersion model.
 
-        n = RI.tauclorentz(x, ħω)
+        n = RI.tauc_lorentz(x, ħω)
 
             x: Array of array containing the values used in the model.
                (x = [
@@ -491,7 +491,7 @@ end
              J. Phys.: Condens. Matter 20 015216, 2008 (doi.org/10.1088/0953-8984/20/01/015216)
 
 """
-function tauclorentz(
+function tauc_lorentz(
     x::Array{Array{T0,1},1}, ħω::AbstractArray{T1},
 ) where {T0<:Real, T1<:Real}
 	ϵ = zeros(ComplexF64, length(vec(ħω)))
@@ -529,7 +529,7 @@ end
     Returns the index of refraction using the Forouhi-Bloomer model.
     Example marerials: Ta2O5, HfO2, Si3N4, Al2O3, a-Si, AlN.
 
-        n = RI.forouhibloomer(x, ħω)
+        n = RI.forouhi_bloomer(x, ħω)
 
 		x: Array of array containing the values used in the model.
 		   (x = [
@@ -547,7 +547,7 @@ end
 			Physical Review B, 38, 1865 (1988)
 
 """
-function forouhibloomer(
+function forouhi_bloomer(
     x::Array{Array{T0,1},1}, ħω::AbstractArray{T1},
 ) where {T0<:Real, T1<:Real}
 	N = zeros(ComplexF64, length(vec(ħω)))
@@ -570,7 +570,7 @@ end
 
     Returns the index of refraction using the Lorentz oscillator with plasmon damping.
 
-        n = RI.lorentzplasmon(x, ħω)
+        n = RI.lorentz_plasmon(x, ħω)
 
 			x: Array of array containing the values used in the model.
 		   		(x = [
@@ -588,7 +588,7 @@ end
 			 J. Appl. Phys. 116, 233105 (2014)
 
 """
-function lorentzplasmon(
+function lorentz_plasmon(
 	x::Array{Array{T0,1},1}, ħω::AbstractArray{T1},
 ) where {T0<:Real, T1<:Real}
 	ϵ = zeros(ComplexF64, length(vec(ħω)))
@@ -606,7 +606,7 @@ end
 
     Returns the index of refraction using the Cody-Lorentz dispersion model.
 
-        n = RI.codylorentz(x, ħω; cme=:dipole)
+        n = RI.cody_lorentz(x, ħω; cme=:dipole)
 
             x: Array of array containing the values used in the model.
                (x = [
@@ -643,12 +643,12 @@ end
 """
 # 1. The parameter Eu is calculated as described in Malkova et al., and the real part of the
 # dielectric function is assumed to be the same as described in Ferlauto, considering that Eu is a contant.
-function codylorentz(
+function cody_lorentz(
     x::Array{Array{T0,1},1}, ħω::AbstractArray{T1};
 	cme::T2=:dipole,
 ) where {T0<:Real, T1<:Real, T2<:Symbol}
-	isequal(cme, :dipole) && return _codylorentz_dipole(float.(x), vec(float.(ħω)))
-	isequal(cme, :momentum) && return _codylorentz_momentum(float.(x), vec(float.(ħω)))
+	isequal(cme, :dipole) && return _cody_lorentz_dipole(float.(x), vec(float.(ħω)))
+	isequal(cme, :momentum) && return _cody_lorentz_momentum(float.(x), vec(float.(ħω)))
 end
 
 # Lorentz oscillator function _L and variable band edge function _G
@@ -658,7 +658,7 @@ _L(A::T1, E0::T1, Γ::T1, ħω::T1) where {T1<:Float64} = A*E0*Γ*ħω/((ħω^2 
 _Ld(E0::T1, Γ::T1, ħω::T1) where {T1<:Float64} = (ħω^2 - E0^2)^2 + (Γ*ħω)^2
 
 # Determination of IcL assuming constant dipole matrix element
-function _codylorentz_dipole(x::Array{Array{T1,1},1}, ħω::Array{T1,1}) where {T1<:Float64}
+function _cody_lorentz_dipole(x::Array{Array{T1,1},1}, ħω::Array{T1,1}) where {T1<:Float64}
 	ϵinf, Eg, Et, Ep, Eu = x[1]
 	G = _G.(ħω, Eg, Ep)
 	ϵ = zeros(ComplexF64, length(vec(ħω)))
@@ -711,7 +711,7 @@ function _matrix_element_dipole(
 end
 
 # Determination of ItL assuming constant momentum matrix element
-function _codylorentz_momentum(x::Array{Array{T1,1},1}, ħω::Array{T1,1}) where {T1<:Float64}
+function _cody_lorentz_momentum(x::Array{Array{T1,1},1}, ħω::Array{T1,1}) where {T1<:Float64}
 	ϵinf, Eg, Et, Ep, Eu = x[1]
 	G = _G.(ħω, Eg)
 	ϵ = zeros(ComplexF64, length(vec(ħω)))

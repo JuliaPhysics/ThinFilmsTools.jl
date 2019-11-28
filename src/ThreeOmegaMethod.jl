@@ -2,10 +2,9 @@ module ThreeOmegaMethod
 
 using QuadGK
 
-export ThreeOmega,
-       LayerTOM,
-       HeaterGeometry,
-       Source
+export ThreeOmega, LayerTOM, HeaterGeometry, Source
+
+export three_omega
 
 abstract type LayerTOMInformation end
 struct LayerTOM{T1} <: LayerTOMInformation where {T1<:Float64}
@@ -28,7 +27,15 @@ struct Source{T1} <: HeaterSource where {T1<:Float64}
     f::Array{T1}
 end
 
-function ThreeOmega(
+abstract type OutputT end
+struct ThreeOmega{T1} <: OutputT where {T1<:Float64}
+    f::Array{T1}
+    ΔThreal::Array{T1}
+    ΔThimag::Array{T1}
+    integerror::Array{T1}
+end
+
+function three_omega(
     Layers::Array{T1,N1},
     heater::T2,
     source::T3,
@@ -47,11 +54,11 @@ function ThreeOmega(
     # Lambda parameters
     λ = [lambda(Layers[i].ky, Layers[i].kxy, Layers[i].ky / Layers[i].ρC) for i = 1 : numLayers]
     # Construct B parameter for the system of LayerTOMs
-    B = concatenateB(λ, Layers, thresistances, numLayers)
+    B = _concatenate_B(λ, Layers, thresistances, numLayers)
     # Construct integration term. The half term comes from the heater at the top of the stack
     F::Function = (η,ω) -> (1.0./λ[end](η,ω).*(B(η,ω)[1] + B(η,ω)[2])./(0.5*B(η,ω)[2] - 0.5*B(η,ω)[1]).*(sin.(heater.b*η)./(heater.b*η)).^2)
     # return integration
-    sol = integrateTemperature(
+    sol = _integrate_temperature(
             source.f,
             int_limit,
             F,
@@ -85,7 +92,7 @@ function U(λ::T0, ky::T1, d::T1) where {T0<:Function, T1<:Float64}
 end
 
 """Integration of the temperature term."""
-function integrateTemperature(
+function _integrate_temperature(
     f::Array{T0,N0},
     int_limit::T0,
     F::T1,
@@ -102,9 +109,9 @@ function integrateTemperature(
         int_error[i] = temp0[2]
         ΔTh[i] = ( plπ*temp1 + ρh[1]*plb ) ./ ( 1 + ρh[2]*h_param[i] * (ρh[1] + temp1/plb)  )
     end
-    sol = (f=f, ΔThreal=real(ΔTh), ΔThimag=imag(ΔTh), int_error=int_error)
+    sol = ThreeOmega(f, real(ΔTh), imag(ΔTh), int_error)
     return sol
-end # function integrateTemperature()
+end # function _integrate_temperature()
 
 """
 
@@ -112,7 +119,7 @@ end # function integrateTemperature()
     the substrate is semi-infinite.
 
 """
-function concatenateB(
+function _concatenate_B(
     λ::Array{T0,N0},
     Layers::Array{T1,N1},
     thresistances::Array{T2,N2},
@@ -131,6 +138,6 @@ function concatenateB(
         (η,ω) -> B(η,ω) * [0.; 1.]
     end # B = let B = B
     return B
-end # function concatenateB()
+end # function _concatenate_B()
 
 end # module

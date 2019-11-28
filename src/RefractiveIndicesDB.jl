@@ -1,6 +1,6 @@
 module RIdb
 
-using ..Utils: build_interpolation, readh5_file
+using ..Utils: build_interpolation, _readh5_file
 
 export aluminum,
        air,
@@ -10,13 +10,13 @@ export aluminum,
        glass,
        gold,
        silicon,
-       silicontemperature,
+       silicon_temperature,
        silver,
        sno2f,
        h2o,
        etoh,
-       fusedsilicauv,
-       fusedsilicauv2,
+       fused_silica_uv,
+       fused_silica_uv_2,
        Info
 
 function Info()
@@ -32,13 +32,13 @@ function Info()
         "\n     glass(λ), λ ∈ [0.25, 2.5] (μm)" *
         "\n     gold(λ), λ ∈ [34.15, 10240] (nm)" *
         "\n     silicon(λ), λ ∈ [163.15, 25000] (nm)" *
-        "\n     silicontemperature(λ, T), λ ∈ [264, 826.5], T ∈ [20, 450]" *
+        "\n     silicon_temperature(λ, T), λ ∈ [264, 826.5], T ∈ [20, 450]" *
         "\n     silver(λ), λ ∈ [0.124, 9919] (nm)" *
         "\n     sno2f(λ), λ ∈ [308.25, 2490.9] (nm), fluor doped!" *
         "\n     h2o(λ), λ ∈ [10.0, 1e10] (nm)" *
         "\n     etoh(λ), λ ∈ [476.5, 830] (nm)" *
-        "\n     fusedsilicauv(λ), λ ∈ [0.21, 6.7] (μm)" *
-        "\n     fusedsilicauv2(λ), λ ∈ [170.0, 3240] (nm)" *
+        "\n     fused_silica_uv(λ), λ ∈ [0.21, 6.7] (μm)" *
+        "\n     fused_silica_uv_2(λ), λ ∈ [170.0, 3240] (nm)" *
         "\n "
     return println(tmp1)
 end
@@ -103,7 +103,7 @@ end
 
     Returns the index of refraction of fused silica UV in complex format, for a given range of wavelengths in μm, using the Sellmeier equation.
 
-        n = RIdb.fusedsilicauv2(λ)
+        n = RIdb.fused_silica_uv_2(λ)
 
             λ: wavelength range (μm), ∈ [0.21, 6.7] (μm)
 
@@ -113,7 +113,7 @@ end
 
 
 """
-function fusedsilicauv2(λ::AbstractVector{T}) where {T<:Real}
+function fused_silica_uv_2(λ::AbstractVector{T}) where {T<:Real}
     λ = λ.^2
     n = sqrt.(Complex.(1.0 .+ (0.6961663.*λ./(λ .- 0.0684043)) .+ (0.4079426.*λ./(λ .- 0.1162414)) .+ (0.8974794.*λ./(λ .- 9.896161))))
     return n
@@ -154,7 +154,7 @@ end
 
 """
 function aluminum(λ::AbstractVector{T}) where {T<:Real}
-    readf = readh5_file("aluminum", :RI)
+    readf = _readh5_file("aluminum", :RI)
     spl_n = build_interpolation(hcat(vec(readf["lambda"]).*1e9, vec(readf["n"])))
     spl_k = build_interpolation(hcat(vec(readf["lambda"]).*1e9, vec(readf["k"])))
     n = spl_n.(λ) .+ im.*spl_k.(λ)
@@ -176,7 +176,7 @@ end
 
 """
 function bk7(λ::AbstractVector{T}) where {T<:Real}
-    readf = readh5_file("bk7", :RI)
+    readf = _readh5_file("bk7", :RI)
     spl_n = build_interpolation(hcat(vec(readf["lambda"]).*1e9, vec(readf["n"])))
     spl_k = build_interpolation(hcat(vec(readf["lambda"]).*1e9, vec(readf["k"])))
     n = spl_n.(λ) .+ im.*spl_k.(λ)
@@ -198,7 +198,7 @@ end
 
 """
 function chrome(λ::AbstractVector{T}) where {T<:Real}
-    readf = readh5_file("chrome", :RI)
+    readf = _readh5_file("chrome", :RI)
     spl_n = build_interpolation(hcat(vec(readf["lambda"]), vec(readf["n"])))
     spl_k = build_interpolation(hcat(vec(readf["lambda"]), vec(readf["k"])))
     n = spl_n.(λ) .+ im.*spl_k.(λ)
@@ -220,7 +220,7 @@ end
 
 """
 function gold(λ::AbstractVector{T}) where {T<:Real}
-    readf = readh5_file("gold", :RI)
+    readf = _readh5_file("gold", :RI)
     spl_n = build_interpolation(hcat(vec(readf["lambda"]), vec(readf["n"])))
     spl_k = build_interpolation(hcat(vec(readf["lambda"]), vec(readf["k"])))
     n = spl_n.(λ) .+ im.*spl_k.(λ)
@@ -242,7 +242,7 @@ end
 
 """
 function silicon(λ::AbstractVector{T}) where {T<:Real}
-    readf = readh5_file("silicon", :RI)
+    readf = _readh5_file("silicon", :RI)
     spl_n = build_interpolation(hcat(vec(readf["lambda"]).*1e9, vec(readf["n"])))
     spl_k = build_interpolation(hcat(vec(readf["lambda"]).*1e9, vec(readf["k"])))
     n = spl_n.(λ) .+ im.*spl_k.(λ)
@@ -254,7 +254,7 @@ end
     Returns the index of refraction of crystalline silicon in complex format,
     for a given range of wavelengths in nm and a one temperature value.
 
-        n = RIdb.silicontemperature(λ,T)
+        n = RIdb.silicon_temperature(λ,T)
 
             λ: wavelength range (nm), ∈ [264, 826.5]
             T: value of temperature (C), ∈ [20, 450] (scalar)
@@ -264,9 +264,9 @@ end
     Source: http://refractiveindex.info/
 
 """
-function silicontemperature(λ::AbstractVector{T}, t::S) where {T<:Real, S<:Real}
+function silicon_temperature(λ::AbstractVector{T}, t::S) where {T<:Real, S<:Real}
     (20 < t < 450) || throw("Temperature range is invalid: 20 < T < 450 in C.")
-    readf = readh5_file("silicontemperature", :RI)
+    readf = _readh5_file("silicontemperature", :RI)
     lambda = sort(vec(readf["lambda"]))
     # https://discourse.julialang.org/t/a-question-on-extrapolation-with-interpolations-jl/3669/4
     lambda = [prevfloat(lambda[1]);lambda[2:end-1];nextfloat(lambda[end])]
@@ -310,7 +310,7 @@ end
 
 """
 function silver(λ::AbstractVector{T}) where {T<:Real}
-    readf = readh5_file("silver", :RI)
+    readf = _readh5_file("silver", :RI)
     spl_n = build_interpolation(hcat(vec(readf["lambda"]), vec(readf["n"])))
     spl_k = build_interpolation(hcat(vec(readf["lambda"]), vec(readf["k"])))
     n = spl_n.(λ) .+ im.*spl_k.(λ)
@@ -332,7 +332,7 @@ end
 
 """
 function sno2f(λ::AbstractVector{T}) where {T<:Real}
-    readf = readh5_file("sno2f", :RI)
+    readf = _readh5_file("sno2f", :RI)
     spl_n = build_interpolation(hcat(vec(readf["lambda"]).*1e9, vec(readf["n"])))
     spl_k = build_interpolation(hcat(vec(readf["lambda"]).*1e9, vec(readf["k"])))
     n = spl_n.(λ) .+ im.*spl_k.(λ)
@@ -353,7 +353,7 @@ end
 
 """
 function h2o(λ::AbstractVector{T}) where {T<:Real}
-    readf = readh5_file("h2o", :RI)
+    readf = _readh5_file("h2o", :RI)
     spl_n = build_interpolation(hcat(vec(readf["lambda"]).*1e3, vec(readf["n"])))
     spl_k = build_interpolation(hcat(vec(readf["lambda"]).*1e3, vec(readf["k"])))
     n = spl_n.(λ) .+ im.*spl_k.(λ)
@@ -364,9 +364,9 @@ end
 
     Returns the index of refraction of fused silica UV graded in complex format,
     for a given range of wavelengths in nm. This function accounts for lower
-    wavelengths than fusedsilicauv.
+    wavelengths than fused_silica_uv.
 
-        n = RIdb.fusedsilicauv(λ)
+        n = RIdb.fused_silica_uv(λ)
 
             λ: wavelength range (nm), ∈ [170.0, 3240] (nm)
 
@@ -375,8 +375,8 @@ end
     Source: http://www.janis.com/Libraries/Window_Transmissions/FusedSilicaUVGrade_SiO2_TransmissionCurveDataSheet.sflb.ashx
 
 """
-function fusedsilicauv(λ::AbstractVector{T}) where {T<:Real}
-    readf = readh5_file("fusedsilicauv", :RI)
+function fused_silica_uv(λ::AbstractVector{T}) where {T<:Real}
+    readf = _readh5_file("fusedsilicauv", :RI)
     spl_n = build_interpolation(hcat(vec(readf["lambda"]), vec(readf["n"])))
     spl_k = build_interpolation(hcat(vec(readf["lambda"]), vec(readf["k"])))
     n = spl_n.(λ) .+ im.*spl_k.(λ)

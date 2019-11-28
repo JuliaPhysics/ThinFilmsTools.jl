@@ -6,9 +6,8 @@ export ModelFit,
        BoundariesFit,
        PlaneWave,
        LayerTMMO,
-       getBeamParameters,
-       FitProcedure,
-       oscillatorsInput
+       _get_beam_parameters,
+       FitProcedure
 
 ## Defines the abstract type for all the fitting.
 abstract type FitProcedure end
@@ -96,7 +95,7 @@ end
 # end
 
 ## Returns the parameters with the correct format for the beam suitable for the calculations.
-function getBeamParameters(beam::PlaneWave)
+function _get_beam_parameters(beam::PlaneWave)
     beam_ = PlaneWave(float.(beam.λ), deg2rad.(beam.θ))
     x = (λLen=length(beam.λ), θLen=length(beam.θ))
     return beam_, x
