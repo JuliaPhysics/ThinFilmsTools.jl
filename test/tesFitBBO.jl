@@ -29,7 +29,7 @@ ub[1][3] = 6.0
 solOptim = fit_tmm_optics(
     Transmittance(Texp), seed, beam, layers;
     alg=:BBO,
-    SearchRange=Utils.unfoldbnd(lb,ub),
+    SearchRange=Utils.unfold_bnd(lb,ub),
     Method=:de_rand_1_bin,
 )
 
