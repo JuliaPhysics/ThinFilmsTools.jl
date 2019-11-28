@@ -50,7 +50,7 @@ ub[1][3] = 6.0
 solOptim = fit_tmm_optics(
     spectype, seed, beam, layers;
     alg=:BBO,
-    SearchRange=Utils.unfoldbnd(lb,ub),
+    SearchRange=Utils.unfold_bnd(lb,ub),
 )
 
 plot(FitSpectrumEllip(),
