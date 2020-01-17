@@ -1,7 +1,7 @@
 module RI
 
-include(joinpath(@__DIR__, "_expint.jl"))
-# using .ExponentialIntegration
+include(joinpath(@__DIR__, "EiFunction.jl"))
+import .EiFunction: expint
 
 export lorentz_lorenz,
 	   bruggeman,
@@ -17,7 +17,7 @@ export lorentz_lorenz,
 	   forouhi_bloomer,
 	   lorentz_plasmon,
 	   cody_lorentz,
-       Info
+       InfoF
 
 function Info()
     tmp1 = "\n " *
