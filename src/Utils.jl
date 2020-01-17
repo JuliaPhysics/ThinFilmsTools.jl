@@ -3,7 +3,6 @@ module Utils
 using Interpolations
 using HDF5
 using SpecialFunctions
-using DSP # conv
 using LinearAlgebra # pinv
 
 export build_interpolation,
@@ -14,7 +13,6 @@ export build_interpolation,
 	   wavelength2rgb,
 	   moving_average,
 	   savitzky_golay,
-	   savitzky_golay2,
 	   flatten_arrays,
 	   array_arrays,
 	   average_polarisation,
@@ -304,47 +302,6 @@ struct savitzky_golayFilter{M,N} end
         )
     end
     return expr
-end
-
-"""
-
-	Polynomial smoothing with the Savitzky Golay filters.
-
-		ysmooth = Utils.savitzky_golay2(m,n,x; deriv=0)
-
-			x: array of noisy data to smooth
-			m: Window size must be an odd integer
-			n: Polynomial order must me lower than window size
-			    deriv: Derivative order to slice out
-
-			ysmooth: smoothed data
-
-	Sources: https://github.com/BBN-Q/Qlab.jl/blob/master/src/SavitskyGolay.jl
-
-"""
-function savitzky_golay2(
-	x::Vector, windowSize::T1, polyOrder::T1;
-	deriv::T1=0,
-) where {T1<:Int64}
-	isodd(windowSize) || throw("Window size must be an odd integer.")
-	polyOrder < windowSize || throw("Polynomial order must me less than window size.")
-	halfWindow = Int( ceil((windowSize-1)/2) )
-	# Setup the S matrix of basis vectors
-	S = zeros.(windowSize, polyOrder+1)
-	for ct = 0:polyOrder
-		S[:,ct+1] = (-halfWindow:halfWindow).^(ct)
-	end
-	## Compute the filter coefficients for all orders
-	# From the scipy code it seems pinv(S) and taking rows should be enough
-	G = S * pinv(S' * S)
-	# Slice out the derivative order we want
-	filterCoeffs = G[:,deriv+1]*factorial(deriv)
-	# Pad the signal with the endpoints and convolve with filter
-	paddedX = [x[1]*ones(halfWindow); x; x[end]*ones(halfWindow)]
-	y = conv(filterCoeffs[end:-1:1], paddedX)
-	# Return the valid midsection
-	y = y[2*halfWindow+1:end-2*halfWindow]
-	return y
 end
 
 """
