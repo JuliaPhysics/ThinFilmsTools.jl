@@ -36,7 +36,6 @@ function Info()
 	"\n     moving_average(x, w)" *
 	"\n     savitzky_golay(m, n)" *
 	"\n     savitzky_golay(m, n, x)" *
-	"\n     savitzky_golay2(m, n, x)" *
 	"\n     flatten_arrays(x)" *
 	"\n     array_arrays(x, y)" *
 	"\n     average_polarisation(pol, Xp, Xs)" *
