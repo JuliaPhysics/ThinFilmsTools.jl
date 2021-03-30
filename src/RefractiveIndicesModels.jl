@@ -1,22 +1,21 @@
 module RI
 
-include(joinpath(@__DIR__, "EiFunction.jl"))
-import .EiFunction: expint
+import SpecialFunctions: expint
 
 export lorentz_lorenz,
-	   bruggeman,
+       bruggeman,
        looyenga,
        maxwell,
        monecke,
        gedf,
        gem,
-	   sellmeier,
-	   cauchy_urbach,
-	   drude_lorentz,
-	   tauc_lorentz,
-	   forouhi_bloomer,
-	   lorentz_plasmon,
-	   cody_lorentz,
+       sellmeier,
+       cauchy_urbach,
+       drude_lorentz,
+       tauc_lorentz,
+       forouhi_bloomer,
+       lorentz_plasmon,
+       cody_lorentz,
        InfoF
 
 function Info()
