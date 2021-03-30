@@ -11,7 +11,7 @@ export build_interpolation,
 	   find_closest,
 	   blackbody_radiation,
 	   wavelength2rgb,
-	   moving_average,
+	   simple_moving_average,
 	   savitzky_golay,
 	   flatten_arrays,
 	   array_arrays,
@@ -33,7 +33,7 @@ function Info()
 	"\n     find_closest(x, x0)" *
 	"\n     blackbody_radiation(λ, T)" *
 	"\n     wavelength2rgb(λ)" *
-	"\n     moving_average(x, w)" *
+	"\n     simple_moving_average(x)" *
 	"\n     savitzky_golay(m, n)" *
 	"\n     savitzky_golay(m, n, x)" *
 	"\n     flatten_arrays(x)" *
@@ -213,9 +213,9 @@ end
 
 """
 
-	Smooth vector with moving average model.
+	Smooth vector with simple moving average model.
 
-		y = Utils.moving_average(x, w)
+		y = Utils.simple_moving_average(x; w=1)
 
 			x: Vector to be smoothed out
 			w: Integer with the window size
@@ -223,15 +223,15 @@ end
 			y: Smoothed output
 
 """
-function moving_average(x::AbstractVector{T1}, w::T2) where {T1<:Real, T2<:Int64}
-	xLen::Int64 = length(x)
-    y = Vector{Float64}(undef, xLen)
-    for i in eachindex(x)
-        lo = max(1,i - w)
-        hi = min(xLen,i + w)
-        y[i] = sum(x[lo:hi])./xLen
+function simple_moving_average(y::AbstractVector{T1}; w::T2=1) where {T1<:Real, T2<:Int64}
+    y2 = [y[1]*ones(w); y; y[end]*ones(w)]
+	m = 2*w + 1
+	w = Int(w + 1)
+	y_ = similar(y)
+    for i in w:length(y2)-(w-1)
+        y_[i-w+1] = sum(y2[i-w+1:i+w-1])
     end
-    return y
+    return y_ ./ m
 end
 
 """
