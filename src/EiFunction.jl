@@ -44,8 +44,8 @@ end
 # return (p,q): the polynomials p(x) / q(x) corresponding to E₁_cf(x, a...),
 # but without the exp(-x) term
 function E₁_cfpoly(n::Integer, ::Type{T}=BigInt) where T<:Real
-    q = Polynomials.Poly(T[1])
-    p = x = Polynomials.Poly(T[0,1])
+    q = Polynomials.Polynomial(T[1])
+    p = x = Polynomials.Polynomial(T[0,1])
     for i in n:-1:1
         p, q = x*p+(1+i)*q, p # from cf = x + (1+i)/cf = x + (1+i)*q/p
         p, q = p + i*q, p     # from cf = 1 + i/cf = 1 + i*q/p
