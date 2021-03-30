@@ -12,6 +12,7 @@ export build_interpolation,
 	   blackbody_radiation,
 	   wavelength2rgb,
 	   simple_moving_average,
+	   exponential_moving_average,
 	   savitzky_golay,
 	   flatten_arrays,
 	   array_arrays,
@@ -34,6 +35,7 @@ function Info()
 	"\n     blackbody_radiation(λ, T)" *
 	"\n     wavelength2rgb(λ)" *
 	"\n     simple_moving_average(x)" *
+	"\n     exponential_moving_average(x)" *
 	"\n     savitzky_golay(m, n)" *
 	"\n     savitzky_golay(m, n, x)" *
 	"\n     flatten_arrays(x)" *
@@ -239,10 +241,10 @@ end
 
 	Smooth vector with exponential moving average model.
 
-		y = Utils.exponential_moving_average(x; =1)
+		y = Utils.exponential_moving_average(x; α=1.0)
 
 			x: Vector to be smoothed out
-			w: Integer with the window size
+			α: Weight
 
 			y: Smoothed output
 	Ref: https://en.wikipedia.org/wiki/Moving_average#Exponential_moving_average
