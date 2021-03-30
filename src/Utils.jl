@@ -221,17 +221,40 @@ end
 			w: Integer with the window size
 
 			y: Smoothed output
+	Ref: https://en.wikipedia.org/wiki/Moving_average#Simple_moving_average_(boxcar_filter)
 
 """
 function simple_moving_average(y::AbstractVector{T1}; w::T2=1) where {T1<:Real, T2<:Int64}
-    y2 = [y[1]*ones(w); y; y[end]*ones(w)]
-	m = 2*w + 1
-	w = Int(w + 1)
-	y_ = similar(y)
-    for i in w:length(y2)-(w-1)
-        y_[i-w+1] = sum(y2[i-w+1:i+w-1])
+    _y = [y[1]*ones(w); y; y[end]*ones(w)]
+    m = float(2*w + 1)
+    w = Int(w + 1)
+    y_ = similar(y)
+    for i in w:length(_y)-(w-1)
+        y_[i-w+1] = sum(_y[i-w+1:i+w-1])
     end
     return y_ ./ m
+end
+
+"""
+
+	Smooth vector with exponential moving average model.
+
+		y = Utils.exponential_moving_average(x; =1)
+
+			x: Vector to be smoothed out
+			w: Integer with the window size
+
+			y: Smoothed output
+	Ref: https://en.wikipedia.org/wiki/Moving_average#Exponential_moving_average
+
+"""
+function exponential_moving_average(y::AbstractVector{T1}; α::T1=1.0) where {T1<:Real}
+    y_ = similar(y)
+    y_[1] = y[1]
+    for i in 2:length(y)
+        y_[i] = α*y[i] + (1.0 - α)*y_[i-1]
+    end
+    return y_
 end
 
 """
