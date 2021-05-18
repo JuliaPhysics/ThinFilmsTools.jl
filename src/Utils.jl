@@ -37,7 +37,6 @@ function Info()
 	"\n     simple_moving_average(x)" *
 	"\n     exponential_moving_average(x)" *
 	"\n     savitzky_golay(m, n)" *
-	"\n     savitzky_golay(m, n, x)" *
 	"\n     flatten_arrays(x)" *
 	"\n     array_arrays(x, y)" *
 	"\n     average_polarisation(pol, Xp, Xs)" *
@@ -263,69 +262,52 @@ end
 
 	Implementation of the Savitzky-Golay filter of window half-width M and degree N.
 
-		y = Utils.savitzky_golay(m, n, x)
-			m: is the number of points before and after to interpolate, the full width
-			   of the window is 2m+1.
-			n: is the polynomial order (must be lower than window size).
-			x: unfiltered data vector.
-			y: filtered data vector.
-
-		sgf = savitzky_golay(m, n)
-				m: is the number of points before and after to interpolate, the full width
-				   of the window is 2m+1.
-				n: is the polynomial order (must be lower than window size).
-				sgf: Savitzky-Golay filter object.
-					 Then you can use it as: sgf(x)
-
-	Adapted from https://gist.github.com/jiahao/b8b5ac328c18b7ae8a17
-
-	Notice: this version does not handle well the boundaries of the input vector.
+		y = Utils.savitzky_golay(signal, window_size, order; deriv=0, rate=1)
+			order: is the polynomial order (must be lower than window_size).
+			signal: unfiltered data vector.
+			sg: solution
+				y: filtered signal
+				params: input parameters
+				coeff: coefficients
 
 """
-function savitzky_golay(m::T0, n::T0, x::Array{T1,1}) where {T0<:Int64, T1<:Float64}
-	n < m || throw("The window size m must be larger than polynomial order n.")
-    return savitzky_golayFilter{m,n}()(x)
+function savitzky_golay(y::AbstractVector, window_size::T, order::T; deriv::T=0, rate::T=1) where T <: Real
+
+    p = _check_inputs_sg(y, window_size, order, deriv, rate)
+
+    # Determine order range and half window size
+    order_range = 0 : p.order
+    hw = Int((p.w - 1) / 2)
+
+    # Compute coefficients
+    c = [k^i for k in -hw:hw, i in order_range]
+    m = pinv(c)[p.deriv+1,:] * (p.rate)^p.deriv * factorial(p.deriv)
+
+    # Pad the signal at the extremes with values taken from the signal itself
+    initvals = p.y[1] .- abs.(reverse(p.y[2:hw+1]) .- p.y[1] )
+    endvals = p.y[end] .+ abs.(reverse(p.y[end-hw:end-1] .- p.y[end]) )
+    y_ = vcat(initvals, p.y, endvals)
+
+    return (y=_convolve_1d(y_, m), params=p, coeff=m)
 end
 
-function savitzky_golay(m::T0, n::T0) where {T0<:Int64}
-	n < m || throw("The window size m must be larger than polynomial order n.")
-    return savitzky_golayFilter{m,n}()
+function _check_inputs_sg(y, w, o, d, r)
+    isodd(w) || throw(ArgumentError("w must be an even number."))
+    w ≥ 1 || throw(ArgumentError("w must greater than or equal to 1."))
+    w ≥ o + 2 || throw(ArgumentError("w too small for the polynomial order chosen (w ≥ order + 2)."))
+    length(y) > 1 || throw(ArgumentError("vector x must have more than one element."))
+    return (y=Float64.(y), w=Int64(w), order=Int64(o), deriv=Int64(d), rate=Float64(r))
 end
 
-struct savitzky_golayFilter{M,N} end
-@generated function (::savitzky_golayFilter{M,N})(data::AbstractVector{T}) where {M,N,T}
-    # Create Jacobian matrix
-    J = zeros(2M+1, N+1)
-    for i=1:2M+1, j=1:N+1
-        J[i, j] = (i-M-1)^(j-1)
+function _convolve_1d(u::Vector, v::Vector)
+    m = length(u)
+    n = length(v)
+    m > n || throw(ArgumentError("length of signal u must be greater than length of kernel v."))
+    w = zeros(m + n - 1)
+    @inbounds for j in 1:m, k in 1:n
+        w[j+k-1] += u[j]*v[k]
     end
-    e₁ = zeros(N+1)
-    e₁[1] = 1.0
-    # Compute filter coefficients
-    C = J' \ e₁
-    # Evaluate filter on data matrix
-    To = typeof(C[1] * one(T)) # Calculate type of output
-    expr = quote
-        n = size(data, 1)
-        smoothed = zeros($To, n)
-        @inbounds for i in eachindex(smoothed)
-            smoothed[i] += $(C[M+1])*data[i]
-        end
-        smoothed
-    end
-    for j=1:M
-        insert!(expr.args[6].args[3].args[2].args, 1,
-            :(if i - $j ≥ 1
-                smoothed[i] += $(C[M+1-j])*data[i-$j]
-            end)
-        )
-        push!(expr.args[6].args[3].args[2].args,
-            :(if i + $j ≤ n
-                smoothed[i] += $(C[M+1+j])*data[i+$j]
-            end)
-        )
-    end
-    return expr
+    return w[n:end-n+1]
 end
 
 """
