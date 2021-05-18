@@ -269,6 +269,10 @@ end
 				y: filtered signal
 				params: input parameters
 				coeff: coefficients
+	
+	References:
+ 	https://scipy-cookbook.readthedocs.io/items/SavitzkyGolay.html
+ 	https://stackoverflow.com/a/48421852
 
 """
 function savitzky_golay(y::AbstractVector, window_size::T, order::T; deriv::T=0, rate::T=1) where T <: Real
