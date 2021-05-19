@@ -273,9 +273,13 @@ end
 	References:
  	https://scipy-cookbook.readthedocs.io/items/SavitzkyGolay.html
  	https://stackoverflow.com/a/48421852
+	https://gist.github.com/jiahao/b8b5ac328c18b7ae8a17
 
 """
-function savitzky_golay(y::AbstractVector, window_size::T, order::T; deriv::T=0, rate::T=1) where T <: Real
+function savitzky_golay(
+    y::AbstractVector, window_size::T0, order::T0;
+    deriv::T0=0, rate::T1=1.0,
+    ) where {T0 <: Int64, T1 <: Real}
 
     p = _check_inputs_sg(y, window_size, order, deriv, rate)
 
@@ -284,15 +288,16 @@ function savitzky_golay(y::AbstractVector, window_size::T, order::T; deriv::T=0,
     hw = Int((p.w - 1) / 2)
 
     # Compute coefficients
-    c = [k^i for k in -hw:hw, i in order_range]
-    m = pinv(c)[p.deriv+1,:] * (p.rate)^p.deriv * factorial(p.deriv)
+    J = [k^i for k in -hw:hw, i in order_range]
+    c = J' \ [1.0; zeros(length(order_range)-1)]
+    c .*= (p.rate)^p.deriv * factorial(p.deriv)
 
     # Pad the signal at the extremes with values taken from the signal itself
     initvals = p.y[1] .- abs.(reverse(p.y[2:hw+1]) .- p.y[1] )
     endvals = p.y[end] .+ abs.(reverse(p.y[end-hw:end-1] .- p.y[end]) )
     y_ = vcat(initvals, p.y, endvals)
 
-    return (y=_convolve_1d(y_, m), params=p, coeff=m)
+    return (y=_convolve_1d(y_, c), params=p, coeff=c)
 end
 
 function _check_inputs_sg(y, w, o, d, r)
@@ -300,7 +305,7 @@ function _check_inputs_sg(y, w, o, d, r)
     w ≥ 1 || throw(ArgumentError("w must greater than or equal to 1."))
     w ≥ o + 2 || throw(ArgumentError("w too small for the polynomial order chosen (w ≥ order + 2)."))
     length(y) > 1 || throw(ArgumentError("vector x must have more than one element."))
-    return (y=Float64.(y), w=Int64(w), order=Int64(o), deriv=Int64(d), rate=Float64(r))
+    return (y=Float64.(y), w=w, order=o, deriv=d, rate=Float64(r))
 end
 
 function _convolve_1d(u::Vector, v::Vector)
