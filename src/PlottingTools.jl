@@ -43,7 +43,7 @@ struct TOMPlot end
     seriestype  :=  :path
     linestyle --> [:solid :dashdot]
     xlabel --> "Frequency [Hz]"
-    ylabel --> "Temperature rise [C]"
+    ylabel --> "Temperature rise [°C]"
     label --> ["Real" "Imag"]
     xscale --> :log10
     # tickfont --> font(12)
@@ -95,7 +95,7 @@ struct SpectrumAngle1D end
 @recipe function f(::SpectrumAngle1D, θ, S; s=(640,480))
     seriestype  :=  :path
     linestyle --> :solid # :dash :dashdot]
-    xlabel --> L"Angle of incidence [$\degree$]"
+    xlabel --> "Angle of incidence [°]"
     # ylabel --> "Reflectance"
     # xlim --> (θ[1], θ[end])
     # ylim --> (0.0, 1.0)
@@ -126,7 +126,7 @@ struct Spectrum2D end
     levels --> num_levels
     # color --> colormap("RdBu")
     xlabel --> "Wavelength [nm]"
-    ylabel --> L"Angle of incidence [$\degree$]"
+    ylabel --> "Angle of incidence [°]"
     # xlim --> (λ[1], λ[end])
     # ylim --> (θ[1], θ[end])
     # tickfont --> font(12)
@@ -183,7 +183,7 @@ struct EMFAngle2D end
     fill --> true
     levels --> num_levels
     # color --> colormap("RdBu")
-    xlabel --> L"Angle of incidence [$\degree$]"
+    xlabel --> "Angle of incidence [°]"
     ylabel --> "Depth profile [nm]"
     # title --> "EMF Intensity"
     # tickfont --> font(12)
@@ -329,7 +329,7 @@ struct RIprofile end
     block1 = [x[i] .+ vcat(0.0, w[i], w[i], 0.0) for i=1:length(x)]
     block2 = [y[i] .+ vcat(0.0, 0.0, h[i], h[i]) for i=1:length(x)]
     xlabel --> "Thickness profile [nm]"
-    ylabel --> L"Refractive index at $\lambda_0$"
+    ylabel --> "Refractive index at λ₀"
     @series begin
         seriestype := :shape
         linewidth --> 0.0
@@ -421,8 +421,8 @@ end
 struct PBGDispersion1Dalt end
 @recipe function f(::PBGDispersion1Dalt, Bloch; kpart=:real, s=(640,480))
     ω = Bloch.ω .* Bloch.Λ ./ 2.0 ./ π # frequency range normalized
-    xlabel --> L"K_{Bloch}\Lambda/\pi"
-    ylabel --> L"\omega\Lambda/(2\pi)"
+    xlabel --> "KΛ/π"
+    ylabel --> "ωΛ/(2π)"
     # title --> "p/TM     s/TE"
     xticks --> (-1:0.5:1, string.([1.0, 0.5, 0.0, 0.5, 1.0]))
     yticks --> ([0.], [" "])
@@ -463,8 +463,8 @@ end
 struct PBGDispersion1Dimre end
 @recipe function f(::PBGDispersion1Dimre, Bloch; wave=:p, s=(640,480))
     ω = Bloch.ω .* Bloch.Λ ./ 2.0 ./ π # frequency range normalized
-    xlabel --> L"K_{Bloch}\Lambda/\pi"
-    ylabel --> L"\omega\Lambda/(2\pi)"
+    xlabel --> "KΛ/π"
+    ylabel --> "ωΛ/(2π)"
     xticks --> (-1:0.5:1, string.([1.0, 0.5, 0.0, 0.5, 1.0]))
     yticks --> ([0.], [" "])
     size --> s
@@ -519,8 +519,8 @@ struct PBGDispersion1D end
     end
     seriestype := :path
     linestyle --> :solid
-    xlabel --> L"K_{Bloch}\Lambda/\pi"
-    ylabel --> L"\omega\Lambda/(2\pi)"
+    xlabel --> "KΛ/π"
+    ylabel --> "ωΛ/(2π)"
     label --> ""
     size --> s
     isequal(kpart, :real) ? real.(κ) : imag.(κ), ω
@@ -551,8 +551,8 @@ struct PBGDispersion2Dalt end
     κs[abs.(κs) .< 1.0] .= 1.0 # propagating s wave
     κs[abs.(κs) .> 1.0] .= 0.0 # evanescent s wave
     size --> s
-    xlabel --> L"Parallel wavevector, $q_z$ (2$\pi$/$\Lambda$)"
-    ylabel --> L"$\omega\Lambda/(2\pi)$"
+    xlabel --> "Parallel wavevector, qz (2π/Λ)"
+    ylabel --> "ωΛ/(2π)$"
     title --> "p/TM-wave                        s/TE-wave"
     grid --> true
     # legend --> false
@@ -603,7 +603,7 @@ struct PBGDispersion2Dalt end
         linestyle --> :dash
         linewidth --> 1.5
         linecolor --> RGBA(0.0, 0.0, 0.0, 0.7)
-        label --> L"\omega_h"
+        label --> "ωₕ"
         [-qz[end], qz[end]], [ωh, ωh]
     end
     @series begin
@@ -611,7 +611,7 @@ struct PBGDispersion2Dalt end
         linestyle --> :dashdot
         linewidth --> 1.5
         linecolor --> RGBA(0.0, 0.0, 0.0, 0.7)
-        label --> L"\omega_l"
+        label --> "ωₗ"
         [-qz[end], qz[end]], [ωl, ωl]
     end
 end
@@ -651,8 +651,8 @@ struct PBGDispersion2D end
     κ[abs.(κ) .< 1.0] .= 1.0 # propagating wave
     κ[abs.(κ) .> 1.0] .= 0.0 # evanescent wave
     size --> s
-    xlabel --> L"Parallel wavevector, $q_z$ (2$\pi$/$\Lambda$)"
-    ylabel --> L"\omega\Lambda/(2\pi)"
+    xlabel --> "Parallel wavevector, qz (2π/Λ)"
+    ylabel --> "ωΛ/(2π)$"
     grid --> true
     # legend --> false
     gridstyle --> :dot
@@ -682,7 +682,7 @@ struct PBGDispersion2D end
         linestyle --> :dash
         linewidth --> 1.5
         linecolor --> RGBA(0.0, 0.0, 0.0, 0.7)
-        label --> L"$\omega_h$"
+        label --> "ωₕ"
         [0.0, qz[end]], [ωh, ωh]
     end
     @series begin
@@ -690,7 +690,7 @@ struct PBGDispersion2D end
         linestyle --> :dashdot
         linewidth --> 1.0
         linecolor --> RGBA(0.0, 0.0, 0.0, 0.7)
-        label --> L"$\omega_l$"
+        label --> "ωₗ"
         [0.0, qz[end]], [ωl, ωl]
     end
 end
