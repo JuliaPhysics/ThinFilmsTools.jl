@@ -552,7 +552,7 @@ struct PBGDispersion2Dalt end
     κs[abs.(κs) .> 1.0] .= 0.0 # evanescent s wave
     size --> s
     xlabel --> "Parallel wavevector, qz (2π/Λ)"
-    ylabel --> "ωΛ/(2π)$"
+    ylabel --> "ωΛ/(2π)"
     title --> "p/TM-wave                        s/TE-wave"
     grid --> true
     # legend --> false
@@ -652,7 +652,7 @@ struct PBGDispersion2D end
     κ[abs.(κ) .> 1.0] .= 0.0 # evanescent wave
     size --> s
     xlabel --> "Parallel wavevector, qz (2π/Λ)"
-    ylabel --> "ωΛ/(2π)$"
+    ylabel --> "ωΛ/(2π)"
     grid --> true
     # legend --> false
     gridstyle --> :dot
