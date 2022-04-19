@@ -414,3 +414,6 @@ deps = ["LinearAlgebra", "SparseArrays"]
 git-tree-sha1 = "bbb9f7fd6fbdd9582e77c0b698312c543de5eb71"
 uuid = "efce3f68-66dc-5838-9240-27a6d6f5f9b6"
 version = "0.5.0"
+
+[compat]
+julia = "1"
