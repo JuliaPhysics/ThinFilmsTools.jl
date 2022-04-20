@@ -1,7 +1,7 @@
 name = "ThinFilmsTools"
 uuid = "e990187e-78db-4ef6-b01c-c671a8d7225b"
 authors = ["lnacquaroli "]
-version = "0.8.0"
+version = "0.9.0"
 
 [deps]
 BlackBoxOptim = "a134a8b2-14d6-55f6-9291-3336d3ab0209"
