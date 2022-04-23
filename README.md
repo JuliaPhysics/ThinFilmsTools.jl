@@ -11,10 +11,10 @@ Check [julia language](https://julialang.org/) for how to install and setup the 
 
 ## Installation
 
-This package is not yet registered. It can be installed in Julia with the following ([see further](https://docs.julialang.org/en/v1/stdlib/Pkg/index.html#Adding-unregistered-packages-1)):
+This package is registered and can be installed in Julia with the following:
 ```julia
 julia> ]
-pkg> add https://github.com/lnacquaroli/ThinFilmsTools.jl
+pkg> add ThinFilmsTools
 ```
 
 [ThinFilmsTools.jl](https://github.com/lnacquaroli/ThinFilmsTools.jl/wiki/Home) is compatible with Julia version 1.1 or later.
