@@ -276,7 +276,7 @@ end
     Convert Array{Real,1} to Array{Array{Float64,1},1}.
 
 """
-function array_arrays(x::Array{T1,1}, _x::Array{Array{T1,1},1}) where{T1<:Real, T2<:Real}
+function array_arrays(x::Array{T1,1}, _x::Array{Array{T1,1},1}) where{T1<:Real}
     xfinal = deepcopy(_x)
     ki::Int64 = 1
     kf::Int64 = 0
