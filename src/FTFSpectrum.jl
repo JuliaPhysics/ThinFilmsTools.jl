@@ -20,7 +20,8 @@ export space_solution_ema,
        UseAlpha,
        MeanAbs,
        SumAbs,
-       SumMeanAbs
+       SumMeanAbs,
+       FitTMMOptics
 
 ## Definition of subtypes
 mutable struct Ellipsometry{T1,T2} <: FitProcedure where {T1<:Real, T2<:Real}

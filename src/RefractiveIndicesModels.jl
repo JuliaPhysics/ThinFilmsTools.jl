@@ -16,7 +16,7 @@ export lorentz_lorenz,
        forouhi_bloomer,
        lorentz_plasmon,
        cody_lorentz,
-       InfoF
+       Info
 
 function Info()
     tmp1 = "\n " *
