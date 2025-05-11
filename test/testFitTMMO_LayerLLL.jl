@@ -37,7 +37,8 @@ Rexp = get_reflectance(Reflectance(), beam.λ, incident, emergent)
 
 seed = [3300, 0.85]
 options = Optim.Options(
-    g_abstol=1e-8, g_reltol=1e-8, iterations=10^5, store_trace=true, show_trace=false,
+    g_abstol=1e-8, iterations=10^5, store_trace=true, show_trace=false,
+    # g_reltol=1e-8,    # g_reltol no longer supported in Optim.jl
 )
 
 solOptim = fit_tmm_optics(

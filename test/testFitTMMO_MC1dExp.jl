@@ -33,7 +33,8 @@ order = [1, # incident medium
 Rexp = SpectraDB.fp_spectrum(beam.λ)
 
 options = Optim.Options(
-    g_abstol=1e-8, g_reltol=1e-8, iterations=10^5, show_trace=true, store_trace=false,
+    g_abstol=1e-8, iterations=10^5, show_trace=true, store_trace=false,
+    #g_reltol=1e-8,    # g_reltol no longer supported in Optim.jl
 );
 
 # Seeds for each ModelFit layer defined above (No alpha)

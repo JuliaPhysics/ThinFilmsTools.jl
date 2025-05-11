@@ -50,7 +50,8 @@ sol = space_solution_ema(Reflectance(Rexp), b, beam, layers)
 seed = vcat(sol.optThickness, sol.optParams)
 
 options = Optim.Options(
-    g_abstol=1e-8, g_reltol=1e-8, iterations=10^5, store_trace=true, show_trace=true,
+    g_abstol=1e-8, iterations=10^5, store_trace=true, show_trace=true,
+    #g_reltol=1e-8,    # g_reltol no longer supported in Optim.jl
 )
 
 solOptim = fit_tmm_optics(

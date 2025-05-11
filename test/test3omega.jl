@@ -26,5 +26,3 @@ function main()
 end
 
 sol = main()
-
-

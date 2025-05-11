@@ -28,7 +28,8 @@ order = [
 Rexp = SpectraDB.bragg_spectrum(beam.λ)
 
 options = Optim.Options(
-    g_abstol=1e-8, g_reltol=1e-8, iterations=10^5, show_trace=true, store_trace=false,
+    g_abstol=1e-8, iterations=10^5, show_trace=true, store_trace=false,
+    #g_reltol=1e-8,    # g_reltol no longer supported in Optim.jl
 );
 
 # Seeds for each ModelFit layer defined above (without alpha)
@@ -53,4 +54,3 @@ solOptim2 = fit_tmm_optics(
     Reflectance(Rexp), seed2, beam, layers;
     order=order, options=options, alg=SAMIN(), lb=0.5.*seed2, ub=1.5.*seed2, alpha=true,
 )
-
