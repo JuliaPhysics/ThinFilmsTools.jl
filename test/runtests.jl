@@ -6,15 +6,31 @@ using Test
     @testset "Aqua" begin
         Aqua.test_all(ThinFilmsTools)
     end
-    include("test3omega.jl")
+    @testset "test3omega" begin
+        include("test3omega.jl")
+    end
 
-    include("testTMMO.jl")
+    @testset "testTMMO" begin
+        include("testTMMO.jl")
+    end
 
-    include("testFitTMMO_DBRExp.jl")
-    include("testFitTMMO_LayerLLL.jl")
-    include("testFitTMMO_LayerLLLSpaceSolution.jl")
-    include("testFitTMMO_MC1dExp.jl")
-    include("testFitBBO.jl")
+    @testset "testFitTMMO_DBRExp" begin
+        include("testFitTMMO_DBRExp.jl")
+    end
+    @testset "testFitTMMO_LayerLLL" begin
+        include("testFitTMMO_LayerLLL.jl")
+    end
+    @testset "testFitTMMO_LayerLLLSpaceSolution" begin
+        include("testFitTMMO_LayerLLLSpaceSolution.jl")
+    end
+    @testset "testFitTMMO_MC1dExp" begin
+        include("testFitTMMO_MC1dExp.jl")
+    end
+    @testset "testFitBBO" begin
+        include("testFitBBO.jl")
+    end
 
-    include("testFitCurves.jl")
+    @testset "testFitCurves" begin
+        include("testFitCurves.jl")
+    end
 end
