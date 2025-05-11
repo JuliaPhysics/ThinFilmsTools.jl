@@ -101,8 +101,8 @@ function _integrate_temperature(
     plb::T0,
     h_param::Array{T2,N0},
 ) where {T0<:Float64, N0, T1<:Function, T2<:ComplexF64, N2}
-    ΔTh = Array{ComplexF64,1}(undef, length(f))
-    int_error = Array{Float64,1}(undef, length(f))
+    ΔTh = Vector{ComplexF64}(undef, length(f))
+    int_error = Vector{Float64}(undef, length(f))
     @inbounds for i in eachindex(f)
         temp0::Tuple{ComplexF64,Float64} = quadgk((η) -> F(η, 2*π*f[i]), 0, int_limit, rtol=sqrt.(eps()))
         temp1::ComplexF64 = temp0[1]

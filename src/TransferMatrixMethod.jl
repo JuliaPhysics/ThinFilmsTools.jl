@@ -60,9 +60,9 @@ function tmm_optics(
     idxλ0 = findmin(abs.(beam.λ .- λ0))[2][1]
     # Build the sequence of n and d depending on the input
     nLen = length(vec(layers))
-    d = Array{Float64,1}(undef, nLen)
-    nλ0 = Array{Float64,1}(undef, nLen)
-    layers_n = Array{ComplexF64,2}(undef, length(beam.λ), nLen)
+    d = Vector{Float64}(undef, nLen)
+    nλ0 = Vector{Float64}(undef, nLen)
+    layers_n = Matrix{ComplexF64}(undef, length(beam.λ), nLen)
     _build_arrays!(d, layers_n, nλ0, idxλ0, λ0, vec(layers), beam)
     # Get the parameters for beam
     beam_, _ = _get_beam_parameters(beam)
@@ -74,10 +74,10 @@ function tmm_optics(
     end
     # Photonic band gap for crystals without defects
     if pbgflag & (nLen > 3)
-        ω = Array{Float64,1}(undef, length(beam_.λ))
-        κp = Array{ComplexF64,2}(undef, (length(beam_.λ), length(beam_.θ)))
+        ω = Vector{Float64}(undef, length(beam_.λ))
+        κp = Matrix{ComplexF64}(undef, (length(beam_.λ), length(beam_.θ)))
         κs = similar(κp)
-        qz::Array{Float64,1} = sin.(beam_.θ).*π./2.0 # parallel wavevector qz
+        qz::Vector{Float64} = sin.(beam_.θ).*π./2.0 # parallel wavevector qz
         Λ::Float64 = sum(d[2:3])
         d1, d2 = d[2], d[3]
         n0, n1, n2 = nλ0[1], nλ0[2], nλ0[3]
@@ -88,7 +88,7 @@ function tmm_optics(
         κp = []; κs = []; ω = []; Λ = 0.0; ωl = 0.0; ωh = 0.0; qz = []
     end
     # Provide the multilayer depth considering the h division
-    _ℓ::Array{Float64,2} = (d[2:end-1]/h)*ones.(1, h) # outer product
+    _ℓ::Matrix{Float64} = (d[2:end-1]/h)*ones.(1, h) # outer product
     ℓ = cumsum([0; _ℓ[:]], dims=1)[1:end-1] # remove last from cumsum
     # Return results
     sol = TMMOptics(
@@ -119,14 +119,14 @@ end
 
 """
 function _build_arrays!(
-    d::Array{T0,1},
-    layers_n::Array{T1,2},
-    nλ0::Array{T0,1},
+    d::Vector{T0},
+    layers_n::Matrix{T1},
+    nλ0::Vector{T0},
     idxλ0::T4,
     λ0::T0,
-    layers::Array{T2,1},
+    layers::Vector{T2},
     beam::T5,
-) where {T0<:Float64, T1<:ComplexF64, T2<:LayerTMMO, T3<:Bool, T4<:Int64, T5<:PlaneWave}
+) where {T0<:Float64, T1<:ComplexF64, T2<:LayerTMMO, T4<:Int64, T5<:PlaneWave}
     @inbounds for s in eachindex(layers)
         # Refractive index
         @views layers_n[:, s] = layers[s].n
@@ -151,12 +151,12 @@ end
 
 """
 function transfer_matrix(
-    layers_n::Array{T1,2}, d::Array{T2,1}, beam::T3;
+    layers_n::Matrix{T1}, d::Vector{T2}, beam::T3;
     λLen::T4=length(beam.λ), θLen::T4=length(beam.θ),
 ) where {T1<:ComplexF64, T2<:Float64, T3<:PlaneWave, T4<:Int64}
     # λ, λLen, θ, θLen = _get_beam_parameters(beam)
     nLen::Int64 = size(layers_n, 2)
-    τs = Array{ComplexF64,2}(undef, (λLen, θLen))
+    τs = Matrix{ComplexF64}(undef, (λLen, θLen))
     τp = similar(τs); ρs = similar(τs); ρp = similar(τs)
     δ = Array{ComplexF64,3}(undef, (λLen, θLen, nLen))
     ηs = similar(δ); ηp = similar(ηs)
@@ -181,15 +181,15 @@ end
 function _fresnel_coefficients!(
     ηs::Array{T1,3}, ηp::Array{T1,3},
     δ::Array{T1,3},
-    ρs::Array{T1,2}, ρp::Array{T1,2},
-    τs::Array{T1,2}, τp::Array{T1,2},
-    layers_n::Array{T1,2},
-    d::Array{T2,1},
+    ρs::Matrix{T1}, ρp::Matrix{T1},
+    τs::Matrix{T1}, τp::Matrix{T1},
+    layers_n::Matrix{T1},
+    d::Vector{T2},
     beam::T3,
     nLen::T4,
 ) where {T1<:ComplexF64, T2<:Float64, T3<:PlaneWave, T4<:Int64}
-    cosϕ = Array{ComplexF64,1}(undef, nLen)
-    I2d = Array{ComplexF64,2}(I,2,2) # Identity 2x2 matrix
+    cosϕ = Vector{ComplexF64}(undef, nLen)
+    I2d = Matrix{ComplexF64}(I,2,2) # Identity 2x2 matrix
     @inbounds for a in eachindex(beam.θ), l in eachindex(beam.λ)
         # Angle of incidence inside each layer according to the cosine Snell law, to avoid cutoff of total internal reflection with complex angles
         cosϕ[1] = cos(beam.θ[a])
@@ -202,8 +202,8 @@ function _fresnel_coefficients!(
         # Phase shift of the thickness
         @. δ[l, a, :] = 2.0*π*@view(layers_n[l, :])*d*cosϕ/beam.λ[l]
         # Total transfer matrix
-        Ψp::Array{ComplexF64,2} = reduce(*, [[I2d]; Φ.(@view(δ[l, a, 2:end-1]), @view(ηp[l, a, 2:end-1]))])
-        Ψs::Array{ComplexF64,2} = reduce(*, [[I2d]; Φ.(@view(δ[l, a, 2:end-1]), @view(ηs[l, a, 2:end-1]))])
+        Ψp::Matrix{ComplexF64} = reduce(*, [[I2d]; Φ.(@view(δ[l, a, 2:end-1]), @view(ηp[l, a, 2:end-1]))])
+        Ψs::Matrix{ComplexF64} = reduce(*, [[I2d]; Φ.(@view(δ[l, a, 2:end-1]), @view(ηs[l, a, 2:end-1]))])
         # Compute the Fresnell coefficients
         ρs[l, a] = ρ(ηs[l, a, 1], ηs[l, a, end], Ψs)
         ρp[l, a] = ρ(ηp[l, a, 1], ηp[l, a, end], Ψp)
@@ -219,12 +219,12 @@ end
 
 """
 function _transfer_matrix_emf(
-    layers_n::Array{T1,2}, d::Array{T2,1}, beam::T3, h::T4;
+    layers_n::Matrix{T1}, d::Vector{T2}, beam::T3, h::T4;
     λLen::T4=length(beam.λ), θLen::T4=length(beam.θ),
 ) where {T1<:ComplexF64, T2<:Float64, T3<:PlaneWave, T4<:Int64}
     # λ, λLen, θ, θLen = _get_beam_parameters(beam)
     nLen::Int64 = size(layers_n, 2)
-    τs = Array{ComplexF64,2}(undef, (λLen, θLen))
+    τs = Matrix{ComplexF64}(undef, (λLen, θLen))
     τp = similar(τs); ρs = similar(τs); ρp = similar(τs)
     δ = Array{ComplexF64,3}(undef, (λLen, θLen, nLen))
     ηs = similar(δ); ηp = similar(ηs)
@@ -250,17 +250,17 @@ end
 function _fresnel_coefficients_emf!(
     ηs::Array{T1,3}, ηp::Array{T1,3},
     δ::Array{T1,3},
-    ρs::Array{T1,2}, ρp::Array{T1,2},
-    τs::Array{T1,2}, τp::Array{T1,2},
+    ρs::Matrix{T1}, ρp::Matrix{T1},
+    τs::Matrix{T1}, τp::Matrix{T1},
     emfs::Array{T2,3}, emfp::Array{T2,3},
-    layers_n::Array{T1,2},
-    d::Array{T2,1},
+    layers_n::Matrix{T1},
+    d::Vector{T2},
     beam::T3,
     nLen::T4,
     h::T4,
 ) where {T1<:ComplexF64, T2<:Float64, T3<:PlaneWave, T4<:Int64}
-    cosϕ = Array{ComplexF64,1}(undef, nLen)
-    I2d = Array{ComplexF64,2}(I, 2, 2) # Identity 2x2 matrix
+    cosϕ = Vector{ComplexF64}(undef, nLen)
+    I2d = Matrix{ComplexF64}(I, 2, 2) # Identity 2x2 matrix
     @inbounds for a in eachindex(beam.θ), l in eachindex(beam.λ)
         # Angle of incidence inside each layer according to the cosine Snell law, to avoid cutoff of total internal reflection with complex angles
         cosϕ[1] = cos(beam.θ[a])
@@ -273,8 +273,8 @@ function _fresnel_coefficients_emf!(
         # Phase shift of the thickness
         @. δ[l, a, :] = 2.0*π*@view(layers_n[l, :])*d*cosϕ/beam.λ[l]
         # Total transfer matrix
-        Ψp::Array{ComplexF64,2} = reduce(*, [[I2d]; Φ.(@view(δ[l, a, 2:end-1]), @view(ηp[l, a, 2:end-1]))])
-        Ψs::Array{ComplexF64,2} = reduce(*, [[I2d]; Φ.(@view(δ[l, a, 2:end-1]), @view(ηs[l, a, 2:end-1]))])
+        Ψp::Matrix{ComplexF64} = reduce(*, [[I2d]; Φ.(@view(δ[l, a, 2:end-1]), @view(ηp[l, a, 2:end-1]))])
+        Ψs::Matrix{ComplexF64} = reduce(*, [[I2d]; Φ.(@view(δ[l, a, 2:end-1]), @view(ηs[l, a, 2:end-1]))])
         # Compute the Fresnell coefficients
         ρs[l, a] = ρ(ηs[l, a, 1], ηs[l, a, end], Ψs)
         ρp[l, a] = ρ(ηp[l, a, 1], ηp[l, a, end], Ψp)
@@ -302,12 +302,12 @@ end
 
 """
 # Reflection coefficient
-function ρ(η0::T1, ηm::T1, Ψ::Array{T1,2}) where {T1<:ComplexF64}
+function ρ(η0::T1, ηm::T1, Ψ::Matrix{T1}) where {T1<:ComplexF64}
     r = (η0*Ψ[1,1] - Ψ[2,1] + η0*ηm*Ψ[1,2] - ηm*Ψ[2,2])/(η0*Ψ[1,1] + Ψ[2,1] + η0*ηm*Ψ[1,2] + ηm*Ψ[2,2])
     return r
 end
 # Transmission coefficient
-function τ(η0::T1, ηm::T1, Ψ::Array{T1,2}) where {T1<:ComplexF64}
+function τ(η0::T1, ηm::T1, Ψ::Matrix{T1}) where {T1<:ComplexF64}
     t = 2.0/(η0*Ψ[1,1] + Ψ[2,1] + η0*ηm*Ψ[1,2] + ηm*Ψ[2,2])
     return t
 end
@@ -319,16 +319,16 @@ end
 """
 function _emfield(
     N::SubArray{T1,1},
-    d::Array{T2,1},
+    d::Vector{T2},
     δ::SubArray{T1,1},
     η::SubArray{T1,1},
-    Ψ::Array{T1,2},
+    Ψ::Matrix{T1},
     nLen::T3,
     h::T3,
 ) where {T1<:ComplexF64, T2<:Float64, T3<:Int64}
-    m0 = Array{ComplexF64,2}(undef, 2, 2)
-    m1 = Array{ComplexF64,2}(I, 2, 2) # Identity 2x2 matrix
-    g11 = Array{ComplexF64,1}(undef, (nLen - 2)*h); g12 = similar(g11)
+    m0 = Matrix{ComplexF64}(undef, 2, 2)
+    m1 = Matrix{ComplexF64}(I, 2, 2) # Identity 2x2 matrix
+    g11 = Vector{ComplexF64}(undef, (nLen - 2)*h); g12 = similar(g11)
     # Divide the phase shift by h but keep η as is for each layer
     mδ::Array{ComplexF64} = δ/h
     _m1::Array = Ξ.(mδ, η)
@@ -339,15 +339,15 @@ end
 
 """
 
-	Compute the elements of the G matrix.
+    Compute the elements of the G matrix.
 
 """
 function _g_elements!(
-    g11::Array{T1,1}, g12::Array{T1,1},
-    m0::Array{T1,2},
-    _m1::Array{Array{T1,2},1},
-    m1::Array{T1,2},
-    Ψ::Array{T1,2},
+    g11::Vector{T1}, g12::Vector{T1},
+    m0::Matrix{T1},
+    _m1::Vector{Matrix{T1}},
+    m1::Matrix{T1},
+    Ψ::Matrix{T1},
     nLen::T2,
     h::T2,
 ) where {T1<:ComplexF64, T2<:Int64}
@@ -364,11 +364,11 @@ end
 
 """
 
-	Compute the field intensity.
+    Compute the field intensity.
 
 """
 function _field_intensity(
-    g11::Array{T1,1}, g12::Array{T1,1}, η1::T1, ηf::T1, Ψ::Array{T1,2},
+    g11::Vector{T1}, g12::Vector{T1}, η1::T1, ηf::T1, Ψ::Matrix{T1},
 ) where {T1<:ComplexF64}
     fi = abs2.((g11 .+ ηf.*g12)./(0.25*(η1*Ψ[1,1] + Ψ[2,1] + η1*ηf*Ψ[1,2] + ηf*Ψ[2,2])))
     return fi
@@ -376,7 +376,7 @@ end
 
 """
 
-	Calculates the inverse of optical transfer matrix of a layer.
+    Calculates the inverse of optical transfer matrix of a layer.
 
         T = Ξ(φ, η)
 
@@ -395,12 +395,12 @@ end
 
 """
 function _photonic_dispersion!(
-    κp::Array{T1,2}, κs::Array{T1,2},
-    ω::Array{T2,1},
+    κp::Matrix{T1}, κs::Matrix{T1},
+    ω::Vector{T2},
     Λ::T2,
     beam::T3,
-    n::Array{T1,1},
-    d::Array{T2,1},
+    n::Vector{T1},
+    d::Vector{T2},
 ) where {T1<:ComplexF64, T2<:Float64, T3<:PlaneWave}
     @. ω = 2*π/beam.λ # Angular frequency
     # Angle of incidence of the second layer with Snell's law of cosine
@@ -419,21 +419,21 @@ end
 
 """
 
-	Prefactor for bloch wavevector.
+    Prefactor for bloch wavevector.
 
 """
 _adm_factor(η1::T1, η2::T1) where {T1<:ComplexF64} = 0.5*(η1^2 + η2^2)/η1/η2
 
 """
 
-	Bloch wavevector.
+    Bloch wavevector.
 
 """
 cosκ(a1::T1, a2::T1, f::T1) where {T1<:ComplexF64} = cos(a1)*cos(a2) - f*sin(a1)*sin(a2)
 
 """
 
-	Snell's law in cosine form. Returns the cosine already.
+    Snell's law in cosine form. Returns the cosine already.
 
 """
 function cosϑ(n1::T1, n2::T1, cosθ::T2) where {T1<:ComplexF64, T2<:Number}
@@ -443,7 +443,7 @@ end
 
 """
 
-	Admittance of the medium for p and s polarizations.
+    Admittance of the medium for p and s polarizations.
 
 """
 ζp(n::T1, cosθ::T2) where {T1<:ComplexF64, T2<:Number} = n/cosθ

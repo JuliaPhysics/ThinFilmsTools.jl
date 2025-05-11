@@ -9,13 +9,13 @@ struct FitCurveModel{T0, T1} <: FitShapeCurves where {T0<:Symbol, T1<:Float64}
     model::T0
     xdata::Vector{T1}
     ydata::Vector{T1}
-    seed::Array{Array{T1,1},1}
-    lb::Array{Array{T1,1},1}
-    ub::Array{Array{T1,1},1}
+    seed::Vector{Vector{T1}}
+    lb::Vector{Vector{T1}}
+    ub::Vector{Vector{T1}}
     solution
     ymodel::Vector{T1}
-    optParams::Array{Array{T1,1},1}
-    sigma::Array{T1,1}
+    optParams::Vector{Vector{T1}}
+    sigma::Vector{T1}
 end
 
 export FitCurveModel, fit_curve_model
@@ -24,10 +24,10 @@ function fit_curve_model(
     model::T0,
     xdata::AbstractVector{T1},
     ydata::AbstractVector{T1},
-    seed::Array{Array{T1,1},1};
-    lb::Array{Array{T1,1},1}=-2.0.*array_arrays((abs.(flatten_arrays(seed)).+1.0), seed),
-    ub::Array{Array{T1,1},1}=2.0.*array_arrays((abs.(flatten_arrays(seed)).+1.0), seed),
-    σ::Array{T1,1}=ones(length(ydata)),
+    seed::Vector{Vector{T1}};
+    lb::Vector{Vector{T1}}=-2.0.*array_arrays((abs.(flatten_arrays(seed)).+1.0), seed),
+    ub::Vector{Vector{T1}}=2.0.*array_arrays((abs.(flatten_arrays(seed)).+1.0), seed),
+    σ::Vector{T1}=ones(length(ydata)),
     alg=SAMIN(),
     options=Optim.Options(
             g_abstol=1e-8,

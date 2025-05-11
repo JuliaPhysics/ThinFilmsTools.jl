@@ -75,7 +75,7 @@ end
 
 """
 function lorentz_lorenz(
-    p::T0, n::Array{T1,2},
+    p::T0, n::Matrix{T1},
 ) where {T0<:Real, T1<:ComplexF64}
 	ϵ = n.^2
 	ϵeff = @. @views (2.0*p*ϵ[:,1] + ϵ[:,1]*ϵ[:,2] - 2.0*p*ϵ[:,2] + 2.0*ϵ[:,2])/(ϵ[:,1] + p*(ϵ[:,2] - ϵ[:,1]) + 2.0)
@@ -116,8 +116,8 @@ end
 
 """
 function bruggeman(
-	p::T0, n::Array{T1,2};
-	df=1.0/3.0,
+    p::T0, n::Matrix{T1};
+    df=1.0/3.0,
 ) where {T0<:Real, T1<:ComplexF64}
     L = isequal(df, -1) ? :perpendicular : float(df)
     ϵeff = _bruggeman(float.([p, 1.0-p]), n.^2, L)
@@ -125,7 +125,7 @@ function bruggeman(
 end
 
 function _bruggeman(
-	p::Array{T0,1}, ϵ::Array{T1,2}, df::T0,
+    p::Vector{T0}, ϵ::Matrix{T1}, df::T0,
 ) where {T0<:Float64, T1<:ComplexF64}
 	β = @. @views ϵ[:,1]*(p[1]/df - 1.0) + ϵ[:,2]*(p[2]/df - 1.0)
 	ϵeff = @. @views 0.5*(β + sqrt(β^2 + 4*ϵ[:,1]*ϵ[:,2]*(1/df - 1.0)))/(1.0/df - 1.0)
@@ -133,7 +133,7 @@ function _bruggeman(
 end
 
 function _bruggeman(
-	p::Array{T0,1}, ϵ::Array{T1,2}, df::T2,
+    p::Vector{T0}, ϵ::Matrix{T1}, df::T2,
 ) where {T0<:Float64, T1<:ComplexF64, T2<:Symbol}
 	ϵeff = @. @views ϵ[:,1]*p[1] + ϵ[:,2]*p[2]
 	return ϵeff
@@ -174,8 +174,8 @@ end
 
 """
 function looyenga(
-	p::Array{T0,N0}, n::Array{T1,2};
-	df=1.0/3.0,
+    p::Array{T0,N0}, n::Matrix{T1};
+    df=1.0/3.0,
 ) where {T0<:Real, N0, T1<:ComplexF64}
     p = float.(vec(p))
     _checkInputs_np(p, n)
@@ -184,7 +184,7 @@ function looyenga(
 end
 
 function _looyenga(
-	p::Vector{T0}, ϵ::Array{T1,2}, df::T0,
+    p::Vector{T0}, ϵ::Matrix{T1}, df::T0,
 ) where {T0<:Float64, T1<:ComplexF64}
 	ϵeff = zeros(ComplexF64, size(ϵ,1))
 	for i in collect(1:size(ϵ,2))
@@ -195,7 +195,7 @@ function _looyenga(
 end
 
 function _looyenga(
-	p::Vector{T0}, ϵ::Array{T1,2}, df::Array{Array{T0,1},1},
+    p::Vector{T0}, ϵ::Matrix{T1}, df::Vector{Vector{T0}},
 ) where {T0<:Float64, T1<:ComplexF64}
 	_checkInputs_ndf(ϵ, df)
 	ϵeff = zeros(ComplexF64, size(ϵ,1))
@@ -239,8 +239,8 @@ end
 
 """
 function maxwell(
-	p::Array{T0,N0}, n::Array{T1,2};
-	df::T0=1.0/3.0,
+    p::Array{T0,N0}, n::Matrix{T1};
+    df::T0=1.0/3.0,
 ) where {T0<:Real, N0, T1<:ComplexF64}
 	_checkInputs_np(p, n)
 	ϵ = n.^2
@@ -283,8 +283,8 @@ end
 
 """
 function monecke(
-	p::T0, n::Array{T1,2};
-	dfm::T2=:spheres, c::T0=0.0,
+    p::T0, n::Matrix{T1};
+    dfm::T2=:spheres, c::T0=0.0,
 ) where {T0<:Real, T1<:ComplexF64, T2<:Symbol}
     x = float.([p c])
     ϵ = n.^2
@@ -299,7 +299,7 @@ function monecke(
 end
 
 function _monecke_spheres(
-	x::Array{T0,2}, ϵ::Array{T1,2},
+    x::Matrix{T0}, ϵ::Matrix{T1},
 ) where {T0<:Float64, T1<:ComplexF64}
 	p = x[1]
 	β = @. @views (ϵ[:,2] - ϵ[:,1])/(2.0*ϵ[:,1] + ϵ[:,2])
@@ -308,7 +308,7 @@ function _monecke_spheres(
 end
 
 function _monecke_cylinders(
-	x::Array{T0,2}, ϵ::Array{T1,2},
+    x::Matrix{T0}, ϵ::Matrix{T1},
 ) where {T0<:Float64, T1<:ComplexF64}
 	p, c = x # Physical Review B, Vol 55, No 11, 1997-I, p 6739
 	s = @. @views ϵ[:,1]/(ϵ[:,1] - ϵ[:,2])
@@ -339,8 +339,8 @@ end
     Source: Appl. Phys. Lett. 108, 102902 (2016); doi: 10.1063/1.4943639.
 
 """
-function gedf(x::AbstractArray{S}, n::Array{T,2}) where {S<:Float64, T<:ComplexF64}
-	p, β = x
+function gedf(x::AbstractArray{S}, n::Matrix{T}) where {S<:Float64, T<:ComplexF64}
+    p, β = x
     ϵ = n.^2
 	ϵeff = @. @views ϵ[:,2]*(ϵ[:,1] + (β*ϵ[:,2]) + (β*p*ϵ[:,1]) - (β*p*ϵ[:,2])) / (ϵ[:,1] + (β*ϵ[:,2]) - (p*ϵ[:,1]) + (p*ϵ[:,2]))
     return sqrt.(ϵeff)
@@ -368,8 +368,8 @@ end
     Source: Carbon 40 (2002) 2801–2815.
 
 """
-function gem(x::AbstractArray{S}, n::Array{T,2}) where {S<:Float64, T<:ComplexF64}
-	ϕ, ϕc, tp = x
+function gem(x::AbstractArray{S}, n::Matrix{T}) where {S<:Float64, T<:ComplexF64}
+    ϕ, ϕc, tp = x
     α = (1-ϕc)/ϕc
     β = 1/tp
 	ϵ = (n.^2).^β
@@ -454,7 +454,7 @@ end
 
 """
 function drude_lorentz(
-    x::Array{Array{T0,1},1}, ħω::AbstractArray{T1},
+    x::Vector{Vector{T0}}, ħω::AbstractArray{T1},
 ) where {T0<:Real, T1<:Real}
     ϵ = zeros(ComplexF64, length(vec(ħω)))
 	ϵinf = x[1][1]
@@ -491,7 +491,7 @@ end
 
 """
 function tauc_lorentz(
-    x::Array{Array{T0,1},1}, ħω::AbstractArray{T1},
+    x::Vector{Vector{T0}}, ħω::AbstractArray{T1},
 ) where {T0<:Real, T1<:Real}
 	ϵ = zeros(ComplexF64, length(vec(ħω)))
 	ϵinf, Eg = x[1]
@@ -547,7 +547,7 @@ end
 
 """
 function forouhi_bloomer(
-    x::Array{Array{T0,1},1}, ħω::AbstractArray{T1},
+    x::Vector{Vector{T0}}, ħω::AbstractArray{T1},
 ) where {T0<:Real, T1<:Real}
 	N = zeros(ComplexF64, length(vec(ħω)))
 	ninf, Egap = x[1]
@@ -588,7 +588,7 @@ end
 
 """
 function lorentz_plasmon(
-	x::Array{Array{T0,1},1}, ħω::AbstractArray{T1},
+    x::Vector{Vector{T0}}, ħω::AbstractArray{T1},
 ) where {T0<:Real, T1<:Real}
 	ϵ = zeros(ComplexF64, length(vec(ħω)))
 	ϵinf, ħωp, Γ = x[1]
@@ -643,8 +643,8 @@ end
 # 1. The parameter Eu is calculated as described in Malkova et al., and the real part of the
 # dielectric function is assumed to be the same as described in Ferlauto, considering that Eu is a contant.
 function cody_lorentz(
-    x::Array{Array{T0,1},1}, ħω::AbstractArray{T1};
-	cme::T2=:dipole,
+    x::Vector{Vector{T0}}, ħω::AbstractArray{T1};
+    cme::T2=:dipole,
 ) where {T0<:Real, T1<:Real, T2<:Symbol}
 	isequal(cme, :dipole) && return _cody_lorentz_dipole(float.(x), vec(float.(ħω)))
 	isequal(cme, :momentum) && return _cody_lorentz_momentum(float.(x), vec(float.(ħω)))

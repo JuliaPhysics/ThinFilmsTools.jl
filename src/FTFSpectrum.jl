@@ -25,28 +25,25 @@ export space_solution_ema,
 
 ## Definition of subtypes
 mutable struct Ellipsometry{T1,T2} <: FitProcedure where {T1<:Real, T2<:Real}
-    X::Array{T1,2}
-    Xexp::Array{T2,2}
-    function Ellipsometry(
-        X::Array{T1,2};
-        Xexp::Array{T2,2}=zeros(size(X)),
-    ) where {T1<:Real, T2<:Real}
+    X::Matrix{T1}
+    Xexp::Matrix{T2}
+    function Ellipsometry(X::Matrix{T1}; Xexp::Matrix{T2}=zeros(size(X))) where {T1<:Real, T2<:Real}
       return new{T1,T2}(X, Xexp)
     end
 end
 Ellipsometry() = Ellipsometry([]; Xexp=zeros(1,2))
 
 struct Reflectance{T1} <: FitProcedure where {T1<:Real}
-    Xexp::Array{T1,1}
-    function Reflectance(Xexp::Array{T1,1}) where {T1<:Real}
+    Xexp::Vector{T1}
+    function Reflectance(Xexp::Vector{T1}) where {T1<:Real}
       return new{T1}(Xexp)
     end
 end
 Reflectance() = Reflectance([0.0])
 
 struct Transmittance{T1} <: FitProcedure where {T1<:Real}
-    Xexp::Array{T1,1}
-    function Transmittance(Xexp::Array{T1,1}) where {T1<:Real}
+    Xexp::Vector{T1}
+    function Transmittance(Xexp::Vector{T1}) where {T1<:Real}
       return new{T1}(Xexp)
     end
 end
@@ -83,7 +80,7 @@ end
 struct FitTMMOptics{T1,T2,T3} <: FitProcedure where {T1<:Float64, T2<:PlaneWave, T3<:NamedTuple}
     spectrumFit::Array{T1}
     spectrumExp::Array{T1}
-    optParams::Array{Array{T1,1},1}
+    optParams::Vector{Vector{T1}}
     objfunMin::T1
     beam::T2
     layers::Array
@@ -110,7 +107,7 @@ end
 
 """
 function normalize_reflectance(
-    λ::AbstractArray{T0,1}, Rexp::Array{T1,2}, Rthe::Array{T1,2}, Rref::Array{T1,2},
+    λ::AbstractVector{T0}, Rexp::Matrix{T1}, Rthe::Matrix{T1}, Rref::Matrix{T1},
 ) where {T0<:Real, T1<:Float64}
     # Interpolate for the λ range
     spl_exp = build_interpolation(Rexp)
@@ -139,7 +136,7 @@ end
 
 """
 function theoretical_spectrum(
-    specType::T0, beam::T1, N1::Array{T2,1}, N2::Array{T2,1},
+    specType::T0, beam::T1, N1::Vector{T2}, N2::Vector{T2},
 ) where {T0<:FitProcedure, T1<:PlaneWave, T2<:ComplexF64}
     beam_, _ = _get_beam_parameters(beam)
     X = _compute_transfer_matrix(specType, vec([0. 100.0 0.]), [N1 N2 N2], beam_)
@@ -333,8 +330,8 @@ function fit_tmm_optics(
     # Get the parameters for beam
     beam_, _ = _get_beam_parameters(beam)
     # Warm-up
-    N = Array{ComplexF64,2}(undef, length(beam_.λ), length(vec(order)))
-    d = Array{Float64,1}(undef, length(vec(order)))
+    N = Matrix{ComplexF64}(undef, length(beam_.λ), length(vec(order)))
+    d = Vector{Float64}(undef, length(vec(order)))
     # Check alpha input
     α = alpha ? UseAlpha() : NoAlpha()
     # Build the indices vector for the seeds
@@ -429,17 +426,17 @@ function _run_fitting_procedure end
 function _run_fitting_procedure(
     alg::T1,
     specType::T2,
-    xinit::Array{Array{T3,1},1},
+    xinit::Vector{Vector{T3}},
     beam::T4,
     σ::Array{T3},
     layers::Array,
-    order::Array{T5,1},
+    order::Vector{T5},
     options,
-    lb::Array{Array{T3,1},1},
-    ub::Array{Array{T3,1},1},
-    d::Array{T3,1},
-    N::Array{T6,2},
-    idxSeed::Array{T5,1},
+    lb::Vector{Vector{T3}},
+    ub::Vector{Vector{T3}},
+    d::Vector{T3},
+    N::Matrix{T6},
+    idxSeed::Vector{T5},
     alpha::T7,
     oftype::T8,
 ) where {T1<:SAMIN, T2<:FitProcedure, T3<:Float64, T4<:PlaneWave, T5<:Int64, T6<:ComplexF64, T7<:DoNotAlpha, T8<:FitProcedure}
@@ -463,17 +460,17 @@ end
 function _run_fitting_procedure(
     alg::T1,
     specType::T2,
-    xinit::Array{Array{T3,1},1},
+    xinit::Vector{Vector{T3}},
     beam::T4,
     σ::Array{T3},
     layers::Array,
-    order::Array{T5,1},
+    order::Vector{T5},
     options,
-    lb::Array{Array{T3,1},1},
-    ub::Array{Array{T3,1},1},
-    d::Array{T3,1},
-    N::Array{T6,2},
-    idxSeed::Array{T5,1},
+    lb::Vector{Vector{T3}},
+    ub::Vector{Vector{T3}},
+    d::Vector{T3},
+    N::Matrix{T6},
+    idxSeed::Vector{T5},
     alpha::T7,
     oftype::T8,
 ) where {T1<:SAMIN, T2<:FitProcedure, T3<:Float64, T4<:PlaneWave, T5<:Int64, T6<:ComplexF64, T7<:DoAlpha, T8<:FitProcedure}
@@ -499,17 +496,17 @@ end
 function _run_fitting_procedure(
     alg::T1,
     specType::T2,
-    xinit::Array{Array{T3,1},1},
+    xinit::Vector{Vector{T3}},
     beam::T4,
     σ::Array{T3},
     layers::Array,
-    order::Array{T5,1},
+    order::Vector{T5},
     options,
-    lb::Array{Array{T3,1},1},
-    ub::Array{Array{T3,1},1},
-    d::Array{T3,1},
-    N::Array{T6,2},
-    idxSeed::Array{T5,1},
+    lb::Vector{Vector{T3}},
+    ub::Vector{Vector{T3}},
+    d::Vector{T3},
+    N::Matrix{T6},
+    idxSeed::Vector{T5},
     alpha::T7,
     oftype::T8,
 ) where {T1<:NelderMead, T2<:FitProcedure, T3<:Float64, T4<:PlaneWave, T5<:Int64, T6<:ComplexF64, T7<:DoNotAlpha, T8<:FitProcedure}
@@ -531,17 +528,17 @@ end
 function _run_fitting_procedure(
     alg::T1,
     specType::T2,
-    xinit::Array{Array{T3,1},1},
+    xinit::Vector{Vector{T3}},
     beam::T4,
     σ::Array{T3},
     layers::Array,
-    order::Array{T5,1},
+    order::Vector{T5},
     options,
-    lb::Array{Array{T3,1},1},
-    ub::Array{Array{T3,1},1},
-    d::Array{T3,1},
-    N::Array{T6,2},
-    idxSeed::Array{T5,1},
+    lb::Vector{Vector{T3}},
+    ub::Vector{Vector{T3}},
+    d::Vector{T3},
+    N::Matrix{T6},
+    idxSeed::Vector{T5},
     alpha::T7,
     oftype::T8,
 ) where {T1<:NelderMead, T2<:FitProcedure, T3<:Float64, T4<:PlaneWave, T5<:Int64, T6<:ComplexF64, T7<:DoAlpha, T8<:FitProcedure}
@@ -565,17 +562,17 @@ end
 function _run_fitting_procedure(
     alg::T1,
     specType::T2,
-    xinit::Array{Array{T3,1},1},
+    xinit::Vector{Vector{T3}},
     beam::T4,
     σ::Array{T3},
     layers::Array,
-    order::Array{T5,1},
+    order::Vector{T5},
     options,
-    lb::Array{Array{T3,1},1},
-    ub::Array{Array{T3,1},1},
-    d::Array{T3,1},
-    N::Array{T6,2},
-    idxSeed::Array{T5,1},
+    lb::Vector{Vector{T3}},
+    ub::Vector{Vector{T3}},
+    d::Vector{T3},
+    N::Matrix{T6},
+    idxSeed::Vector{T5},
     alpha::T7,
     oftype::T8,
 ) where {T1<:LBFGS, T2<:FitProcedure, T3<:Float64, T4<:PlaneWave, T5<:Int64, T6<:ComplexF64, T7<:DoNotAlpha, T8<:FitProcedure}
@@ -597,17 +594,17 @@ end
 function _run_fitting_procedure(
     alg::T1,
     specType::T2,
-    xinit::Array{Array{T3,1},1},
+    xinit::Vector{Vector{T3}},
     beam::T4,
     σ::Array{T3},
     layers::Array,
-    order::Array{T5,1},
+    order::Vector{T5},
     options,
-    lb::Array{Array{T3,1},1},
-    ub::Array{Array{T3,1},1},
-    d::Array{T3,1},
-    N::Array{T6,2},
-    idxSeed::Array{T5,1},
+    lb::Vector{Vector{T3}},
+    ub::Vector{Vector{T3}},
+    d::Vector{T3},
+    N::Matrix{T6},
+    idxSeed::Vector{T5},
     alpha::T7,
     oftype::T8,
 ) where {T1<:LBFGS, T2<:FitProcedure, T3<:Float64, T4<:PlaneWave, T5<:Int64, T6<:ComplexF64, T7<:DoAlpha, T8<:FitProcedure}
@@ -631,17 +628,17 @@ end
 function _run_fitting_procedure(
     alg::T1,
     specType::T2,
-    xinit::Array{Array{T3,1},1},
+    xinit::Vector{Vector{T3}},
     beam::T4,
     σ::Array{T3},
     layers::Array,
-    order::Array{T5,1},
+    order::Vector{T5},
     options,
-    lb::Array{Array{T3,1},1},
-    ub::Array{Array{T3,1},1},
-    d::Array{T3,1},
-    N::Array{T6,2},
-    idxSeed::Array{T5,1},
+    lb::Vector{Vector{T3}},
+    ub::Vector{Vector{T3}},
+    d::Vector{T3},
+    N::Matrix{T6},
+    idxSeed::Vector{T5},
     alpha::T7,
     oftype::T8,
 ) where {T1<:NewtonTrustRegion, T2<:FitProcedure, T3<:Float64, T4<:PlaneWave, T5<:Int64, T6<:ComplexF64, T7<:DoNotAlpha, T8<:FitProcedure}
@@ -663,17 +660,17 @@ end
 function _run_fitting_procedure(
     alg::T1,
     specType::T2,
-    xinit::Array{Array{T3,1},1},
+    xinit::Vector{Vector{T3}},
     beam::T4,
     σ::Array{T3},
     layers::Array,
-    order::Array{T5,1},
+    order::Vector{T5},
     options,
-    lb::Array{Array{T3,1},1},
-    ub::Array{Array{T3,1},1},
-    d::Array{T3,1},
-    N::Array{T6,2},
-    idxSeed::Array{T5,1},
+    lb::Vector{Vector{T3}},
+    ub::Vector{Vector{T3}},
+    d::Vector{T3},
+    N::Matrix{T6},
+    idxSeed::Vector{T5},
     alpha::T7,
     oftype::T8,
 ) where {T1<:NewtonTrustRegion, T2<:FitProcedure, T3<:Float64, T4<:PlaneWave, T5<:Int64, T6<:ComplexF64, T7<:DoAlpha, T8<:FitProcedure}
@@ -696,14 +693,14 @@ end
 # BBO
 function _run_fitting_procedure_bbo(
     specType::T2,
-    xinit::Array{Array{T3,1},1},
+    xinit::Vector{Vector{T3}},
     beam::T4,
     σ::Array{T3},
     layers::Array,
-    order::Array{T5,1},
-    d::Array{T3,1},
-    N::Array{T6,2},
-    idxSeed::Array{T5,1},
+    order::Vector{T5},
+    d::Vector{T3},
+    N::Matrix{T6},
+    idxSeed::Vector{T5},
     alpha::T7,
     oftype::T8,
     optbbo,
@@ -746,14 +743,14 @@ end
 # BBO, alpha
 function _run_fitting_procedure_bbo(
     specType::T2,
-    xinit::Array{Array{T3,1},1},
+    xinit::Vector{Vector{T3}},
     beam::T4,
     σ::Array{T3},
     layers::Array,
-    order::Array{T5,1},
-    d::Array{T3,1},
-    N::Array{T6,2},
-    idxSeed::Array{T5,1},
+    order::Vector{T5},
+    d::Vector{T3},
+    N::Matrix{T6},
+    idxSeed::Vector{T5},
     alpha::T7,
     oftype::T8,
     optbbo,
@@ -811,16 +808,16 @@ function _fit_objfun end
 
 # No alpha
 function _fit_objfun(
-    x::Array{T1,1},
+    x::Vector{T1},
     specType::T2,
     beam::T3,
     σ::Array{T1},
     layers::Array,
-    order::Array{T4,1},
-    xinit::Array{Array{T1,1},1},
-    d::Array{T1,1},
-    N::Array{T5,2},
-    idxSeed::Array{T4,1},
+    order::Vector{T4},
+    xinit::Vector{Vector{T1}},
+    d::Vector{T1},
+    N::Matrix{T5},
+    idxSeed::Vector{T4},
     alpha::T6,
     oftype::T7,
 ) where {T1<:Float64, T2<:FitProcedure, T3<:PlaneWave, T4<:Int64, T5<:ComplexF64, T6<:DoNotAlpha, T7<:FitProcedure}
@@ -832,16 +829,16 @@ end
 
 # Alpha
 function _fit_objfun(
-    x::Array{T1,1},
+    x::Vector{T1},
     specType::T2,
     beam::T3,
     σ::Array{T1},
     layers::Array,
-    order::Array{T4,1},
-    xinit::Array{Array{T1,1},1},
-    d::Array{T1,1},
-    N::Array{T5,2},
-    idxSeed::Array{T4,1},
+    order::Vector{T4},
+    xinit::Vector{Vector{T1}},
+    d::Vector{T1},
+    N::Matrix{T5},
+    idxSeed::Vector{T4},
     alpha::T6,
     oftype::T7,
 ) where {T1<:Float64, T2<:FitProcedure, T3<:PlaneWave, T4<:Int64, T5<:ComplexF64, T6<:DoAlpha, T7<:FitProcedure}
@@ -857,7 +854,7 @@ function _compute_transfer_matrix end
 
 # Transmittance
 function _compute_transfer_matrix(
-    specType::T0, d::Array{T1,1}, N::Array{T2,2}, beam::T3,
+    specType::T0, d::Vector{T1}, N::Matrix{T2}, beam::T3,
 ) where {T0<:Transmittance, T1<:Float64, T2<:ComplexF64, T3<:PlaneWave}
     spectra = transfer_matrix(N, d, beam)[1]
     avg = average_polarisation(beam.p, spectra.Tp, spectra.Ts)
@@ -866,7 +863,7 @@ end
 
 # Reflectance
 function _compute_transfer_matrix(
-    specType::T0, d::Array{T1,1}, N::Array{T2,2}, beam::T3,
+    specType::T0, d::Vector{T1}, N::Matrix{T2}, beam::T3,
 ) where {T0<:Reflectance, T1<:Float64, T2<:ComplexF64, T3<:PlaneWave}
     spectra = transfer_matrix(N, d, beam)[1]
     avg = average_polarisation(beam.p, spectra.Rp, spectra.Rs)
@@ -875,10 +872,10 @@ end
 
 # Ellipsometry
 function _compute_transfer_matrix(
-    specType::T0, d::Array{T1,1}, N::Array{T2,2}, beam::T3,
+    specType::T0, d::Vector{T1}, N::Matrix{T2}, beam::T3,
 ) where {T0<:Ellipsometry, T1<:Float64, T2<:ComplexF64, T3<:PlaneWave}
     spectra = transfer_matrix(N, d, beam)[1]
-    ρ::Array{ComplexF64,1} = vec(spectra.ρp./spectra.ρs)
+    ρ::Vector{ComplexF64} = vec(spectra.ρp./spectra.ρs)
     return hcat(-real.(ρ), imag.(ρ))
     # ρnorm = @. real(ρ*conj(ρ))
     # return ρnorm
@@ -923,7 +920,7 @@ end
 
 ## Returns the index of refraction for the selected model. RI is imported from RefractiveIndicesModels.jl.
 function _refractive_index_MR(
-    layer::T1, argin::AbstractArray{T2,1}, λ::Array{T2,1},
+    layer::T1, argin::AbstractVector{T2}, λ::Vector{T2},
 ) where {T1<:ModelFit, T2<:Float64}
     if layer.model == :bruggeman
         _errorParametersEMA(layer)
@@ -949,7 +946,7 @@ function _refractive_index_MR(
     elseif layer.model == :sellmeier
         return RI.sellmeier(argin, λ./1e3) # Sellmeier eq takes λ in μm
     elseif layer.model == :cauchyurbach
-    	return RI.cauchy_urbach(argin, λ)
+        return RI.cauchy_urbach(argin, λ)
     elseif layer.model == :drudelorentz
         argin_ = [argin[1], argin[2:end]]
         x = _oscillators_input(argin, 3)
@@ -957,7 +954,7 @@ function _refractive_index_MR(
     elseif layer.model == :tauclorentz
         argin_ = [argin[1:2], argin[3:end]]
         x = _oscillators_input(argin_, 3)
-    	return RI.tauc_lorentz(x, 1240.0./λ)
+        return RI.tauc_lorentz(x, 1240.0./λ)
     elseif layer.model == :forouhibloomer
         argin_ = [argin[1:2], argin[3:end]]
         x = _oscillators_input(argin_, 3)
@@ -981,13 +978,13 @@ end
 
 ## Construct the multilayers parameters to optimise depending on their type (LayerTMMO, ModelFit).
 function _multilayer_parameters!(
-    N::Array{T1,2},
-    d::Array{T2,1},
-    x::Array{Array{T2,1},1},
+    N::Matrix{T1},
+    d::Vector{T2},
+    x::Vector{Vector{T2}},
     beam::T3,
     layers::Array,
-    order::Array{T4,1},
-    idxSeed::Array{T4,1},
+    order::Vector{T4},
+    idxSeed::Vector{T4},
 ) where{T1<:ComplexF64, T2<:Float64, T3<:PlaneWave, T4<:Int64}
     k::Int64 = 1
     for i in eachindex(order)
@@ -1018,7 +1015,7 @@ function _indicesSeed(layers, order)
 end
 
 ## Linear decrease of thickness.
-function _monotonic_lin!(d::Array{T1,1}, α::T1) where {T1<:Float64}
+function _monotonic_lin!(d::Vector{T1}, α::T1) where {T1<:Float64}
     # d .*= α.^(1:length(d))
     # Only for the second active layer until the one before the substrate
     d .*= [1.0; 1.0; α.^(3:length(d)-1); 1.0]

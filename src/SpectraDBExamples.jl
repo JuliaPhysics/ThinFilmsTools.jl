@@ -45,8 +45,8 @@ end
 			R: reflectance
 
 """
-function sl1_exp_spectrum(λ::AbstractArray{T1,1}) where {T1<:Real}
-	X = _readh5_file("SL1sample", :SP)
+function sl1_exp_spectrum(λ::AbstractVector{T1}) where {T1<:Real}
+    X = _readh5_file("SL1sample", :SP)
     itp = build_interpolation(hcat(vec(X["lambda"]), vec(X["reflectance"])))
     return itp.(λ)
 end
@@ -62,9 +62,9 @@ end
 			R: reflectance
 
 """
-function sl1_ref_spectrum(λ::AbstractArray{T1,1}) where {T1<:Real}
-	X = _readh5_file("SL1reference", :SP)
-	itp = build_interpolation(hcat(vec(X["lambda"]), vec(X["reflectance"])))
+function sl1_ref_spectrum(λ::AbstractVector{T1}) where {T1<:Real}
+    X = _readh5_file("SL1reference", :SP)
+    itp = build_interpolation(hcat(vec(X["lambda"]), vec(X["reflectance"])))
     return itp.(λ)
 end
 
@@ -79,9 +79,9 @@ end
 			R: reflectance
 
 """
-function sl2_exp_spectrum(λ::AbstractArray{T1,1}) where {T1<:Real}
-	X = _readh5_file("SL2sample", :SP)
-	itp = build_interpolation(hcat(vec(X["lambda"]), vec(X["reflectance"])))
+function sl2_exp_spectrum(λ::AbstractVector{T1}) where {T1<:Real}
+    X = _readh5_file("SL2sample", :SP)
+    itp = build_interpolation(hcat(vec(X["lambda"]), vec(X["reflectance"])))
     return itp.(λ)
 end
 
@@ -114,9 +114,9 @@ end
 			R: reflectance
 
 """
-function bragg_spectrum(λ::AbstractArray{T1,1}) where {T1<:Real}
-	X = _readh5_file("Bragg", :SP)
-	itp = build_interpolation(hcat(vec(X["lambda"]), vec(X["reflectance"])))
+function bragg_spectrum(λ::AbstractVector{T1}) where {T1<:Real}
+    X = _readh5_file("Bragg", :SP)
+    itp = build_interpolation(hcat(vec(X["lambda"]), vec(X["reflectance"])))
     return itp.(λ)
 end
 
@@ -131,9 +131,9 @@ end
 			R: reflectance
 
 """
-function fp_spectrum(λ::AbstractArray{T1,1}) where {T1<:Real}
-	X = _readh5_file("MicroCavity", :SP)
-	itp = build_interpolation(hcat(vec(X["lambda"]), vec(X["reflectance"])))
+function fp_spectrum(λ::AbstractVector{T1}) where {T1<:Real}
+    X = _readh5_file("MicroCavity", :SP)
+    itp = build_interpolation(hcat(vec(X["lambda"]), vec(X["reflectance"])))
     return itp.(λ)
 end
 
@@ -148,9 +148,9 @@ end
 			T: transmitance
 
 """
-function hafnia_spectrum(λ::AbstractArray{T1,1}) where {T1<:Real}
-	X = _readh5_file("Hafnia", :SP)
-	itp = build_interpolation(hcat(vec(X["lambda"]), vec(X["transmitance"])))
+function hafnia_spectrum(λ::AbstractVector{T1}) where {T1<:Real}
+    X = _readh5_file("Hafnia", :SP)
+    itp = build_interpolation(hcat(vec(X["lambda"]), vec(X["transmitance"])))
     return itp.(λ)./100.0
 end
 
@@ -165,9 +165,9 @@ end
 			T: transmitance
 
 """
-function scandia_spectrum(λ::AbstractArray{T1,1}) where {T1<:Real}
-	X = _readh5_file("Scandia", :SP)
-	itp = build_interpolation(hcat(vec(X["lambda"]), vec(X["transmitance"])))
+function scandia_spectrum(λ::AbstractVector{T1}) where {T1<:Real}
+    X = _readh5_file("Scandia", :SP)
+    itp = build_interpolation(hcat(vec(X["lambda"]), vec(X["transmitance"])))
     return itp.(λ)./100.0
 end
 
@@ -184,12 +184,12 @@ end
 			Δ: delta spectrum
 
 """
-function tantala_spectrum(λ::AbstractArray{T1,1}) where {T1<:Real}
-	X = _readh5_file("Tantala", :SP)
-	itp = build_interpolation(hcat(vec(X["lambda"]), vec(X["psi"])))
-	psi = itp.(λ)
-	itp = build_interpolation(hcat(vec(X["lambda"]), vec(X["delta"])))
-	delta = itp.(λ)
+function tantala_spectrum(λ::AbstractVector{T1}) where {T1<:Real}
+    X = _readh5_file("Tantala", :SP)
+    itp = build_interpolation(hcat(vec(X["lambda"]), vec(X["psi"])))
+    psi = itp.(λ)
+    itp = build_interpolation(hcat(vec(X["lambda"]), vec(X["delta"])))
+    delta = itp.(λ)
     return psi, delta
 end
 
@@ -206,12 +206,12 @@ end
 			Δ: delta spectrum
 
 """
-function hafnia_ellips(λ::AbstractArray{T1,1}) where {T1<:Real}
-	X = _readh5_file("HafniaEllips", :SP)
-	itp = build_interpolation(hcat(1240.0./vec(X["lambda"]), vec(X["psi"])))
-	psi = itp.(λ)
-	itp = build_interpolation(hcat(vec(1240.0./X["lambda"]), vec(X["delta"])))
-	delta = itp.(λ)
+function hafnia_ellips(λ::AbstractVector{T1}) where {T1<:Real}
+    X = _readh5_file("HafniaEllips", :SP)
+    itp = build_interpolation(hcat(1240.0./vec(X["lambda"]), vec(X["psi"])))
+    psi = itp.(λ)
+    itp = build_interpolation(hcat(vec(1240.0./X["lambda"]), vec(X["delta"])))
+    delta = itp.(λ)
     return psi, delta
 end
 

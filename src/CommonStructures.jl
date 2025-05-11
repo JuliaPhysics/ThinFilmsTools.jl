@@ -18,13 +18,13 @@ struct ModelFit{T1,T2,T3,T4,T5} <: FitProcedure where{T1<:Symbol, T2<:Real, T3<:
     df::T2
     dfm::T1
     c::T3
-    N::NamedTuple{(:ninc, :nhost),Tuple{Array{T4,1},Array{T5,1}}} # effective medium equations, EMA
+    N::NamedTuple{(:ninc, :nhost),Tuple{Vector{T4},Vector{T5}}} # effective medium equations, EMA
     function ModelFit(
         model::T1;
         df::T2=1.0/3.0,
         dfm::T1=:spheres,
         c::T3=0.0,
-        N::NamedTuple{(:ninc, :nhost),Tuple{Array{T4,1},Array{T5,1}}}=(ninc=[],nhost=[]),
+        N::NamedTuple{(:ninc, :nhost),Tuple{Vector{T4},Vector{T5}}}=(ninc=[],nhost=[]),
     ) where {T1<:Symbol, T2<:Real, T3<:Real, T4<:Any, T5<:Any}
         length(N) == 2 || throw("length(N) == 2, one vector for each index of refraction:
         N=(n1, n2), where n1 and n2 are vectors.")
@@ -66,12 +66,12 @@ end
 ## Material type definition with geometrical (physical) and optical thickness.
 abstract type Material end
 struct LayerTMMO{T1,T2,T3,T4} <: Material where {T1<:ComplexF64, T2<:Symbol, T3<:Real, T4<:Number}
-    n::Array{T1,1}
+    n::Vector{T1}
     type::T2
     d::T3
     nλ0::Array{T4}
     function LayerTMMO(
-        n::AbstractArray{T1,1};
+        n::AbstractVector{T1};
         type::T2=:GT,
         d::T3=1.0/4.0,
         nλ0::Array{T4}=[-eps()],

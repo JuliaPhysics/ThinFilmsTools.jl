@@ -90,7 +90,7 @@ end
             itp: interpolation object
 
 """
-function build_interpolation(X::Array{T1,2}) where {T1<:Float64}
+function build_interpolation(X::Matrix{T1}) where {T1<:Float64}
     # Sort by ascending wavelength
     X = X[sortperm(X[:,1]),:]
     knots = (sort(vec(X[:,1])),)
@@ -142,7 +142,7 @@ function blackbody_radiation(λ::AbstractArray{T1}, T::AbstractArray{T1}) where 
     h::Float64 = 6.626070040e-34 # Planck's constant, J·s
     c::Float64 =  299792458.0 # speed of light, m·s
     kB::Float64 = 1.38064852e-23 # Boltzmann constant, J·K^-1
-    R = Array{Float64,2}(undef,length(λ),length(T))
+    R = Matrix{Float64}(undef,length(λ),length(T))
     num::Array = 2.0*h*c*c./λ.^5
     den::Array = h*c./(kB.*λ)
     for i in eachindex(T)
@@ -167,7 +167,7 @@ end
 function wavelength2rgb(λ::AbstractArray{<:Real})
     Γ::Float64 = 0.8
     # warm up
-    R = Array{Float64, 1}(undef, length(λ))
+    R = Vector{Float64}(undef, length(λ))
     G = similar(R)
     B = similar(R)
     intensityCorrection = similar(R)
@@ -258,10 +258,10 @@ end
 
 """
 
-    Convert Array{Array{Real,1},1} to an Array{Float64,1}.
+    Convert Vector{Vector{Real}} to an Vector{Float64}.
 
 """
-function flatten_arrays(xin::Array{Array{T1,1},1}) where {T1<:Real}
+function flatten_arrays(xin::Vector{Vector{T1}}) where {T1<:Real}
     xout = []
     # Determine the total number of elements of xin
     for i in eachindex(1:length(xin)), j in eachindex(1:length(xin[i]))
@@ -272,10 +272,10 @@ end
 
 """
 
-    Convert Array{Real,1} to Array{Array{Float64,1},1}.
+    Convert Vector{Real} to Vector{Vector{Float64}}.
 
 """
-function array_arrays(x::Array{T1,1}, _x::Array{Array{T1,1},1}) where{T1<:Real}
+function array_arrays(x::Vector{T1}, _x::Vector{Vector{T1}}) where{T1<:Real}
     xfinal = deepcopy(_x)
     ki::Int64 = 1
     kf::Int64 = 0
@@ -329,8 +329,9 @@ end
     Source: https://en.wikipedia.org/wiki/Normal_distribution
 
 """
-function gaussian(x::AbstractArray{T1}, p::Array{Array{T1,1},1}) where {T1<:Real}
-    isequal(length(flatten_arrays(p)[2:end]), 3*(length(p)-1)) || throw("The inputs are not correct. For the Gaussian curve, each peak has three parameters plus the offset.")
+function gaussian(x::AbstractArray{T1}, p::Vector{Vector{T1}}) where {T1<:Real}
+    isequal(length(flatten_arrays(p)[2:end]), 3*(length(p)-1)) || throw(
+        "The inputs are not correct. For the Gaussian curve, each peak has three parameters plus the offset.")
     y = ones(length(x)).*p[1][1] # offset
     for i = 2:length(p)
         @. y += p[i][1]*exp(-((x - p[i][2])/p[i][3])^2)
@@ -360,8 +361,9 @@ end
     Source: https://en.wikipedia.org/wiki/Cauchy_distribution
 
 """
-function lorentzian(x::AbstractArray{T1}, p::Array{Array{T1,1},1}) where {T1<:Real}
-    isequal(length(flatten_arrays(p)[2:end]), 3*(length(p)-1)) || throw("The inputs are not correct. For the Lorentzian curve, each peak has three parameters plus the offset.")
+function lorentzian(x::AbstractArray{T1}, p::Vector{Vector{T1}}) where {T1<:Real}
+    isequal(length(flatten_arrays(p)[2:end]), 3*(length(p)-1)) || throw(
+        "The inputs are not correct. For the Lorentzian curve, each peak has three parameters plus the offset.")
     y = ones(length(x)).*p[1][1] # offset
     for i = 2:length(p)
         @. y += p[i][1]/(1.0 + ((x - p[i][2])/p[i][3])^2)
@@ -396,8 +398,9 @@ end
     Source: https://en.wikipedia.org/wiki/Voigt_profile
 
 """
-function voigtian(x::AbstractArray{T1}, p::Array{Array{T1,1},1}) where {T1<:Real}
-    isequal(length(flatten_arrays(p)[2:end]), 4*(length(p)-1)) || throw("The inputs are not correct. For the Voigtian curve, each peak has four parameters plus the offset.")
+function voigtian(x::AbstractArray{T1}, p::Vector{Vector{T1}}) where {T1<:Real}
+    isequal(length(flatten_arrays(p)[2:end]), 4*(length(p)-1)) || throw(
+        "The inputs are not correct. For the Voigtian curve, each peak has four parameters plus the offset.")
     y = ones(length(x)).*p[1][1] # offset
     for i = 2:length(p)
         @. y += p[i][1]*real(erfcx(-im*((x - p[i][2] + im*p[i][3])/sqrt(2)/p[i][4])))
