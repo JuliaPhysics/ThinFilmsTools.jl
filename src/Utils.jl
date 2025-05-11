@@ -6,73 +6,73 @@ using SpecialFunctions
 using LinearAlgebra # pinv
 
 export build_interpolation,
-	   _readh5_file,
-	   multiple_reflections,
-	   find_closest,
-	   blackbody_radiation,
-	   wavelength2rgb,
-	   simple_moving_average,
-	   exponential_moving_average,
-	   savitzky_golay,
-	   flatten_arrays,
-	   array_arrays,
-	   average_polarisation,
-	   gaussian,
-	   lorentzian,
-	   voigtian,
-	   _oscillators_input,
-	   unfold_bnd,
-	   Info
+       _readh5_file,
+       multiple_reflections,
+       find_closest,
+       blackbody_radiation,
+       wavelength2rgb,
+       simple_moving_average,
+       exponential_moving_average,
+       savitzky_golay,
+       flatten_arrays,
+       array_arrays,
+       average_polarisation,
+       gaussian,
+       lorentzian,
+       voigtian,
+       _oscillators_input,
+       unfold_bnd,
+       Info
 
 function Info()
     tmp1 = "\n " *
-	"\n " *
+    "\n " *
     "\n Available functions from Utils module:" *
-	"\n " *
-	"\n     build_interpolation(X)" *
-	"\n     multiple_reflections(n)" *
-	"\n     find_closest(x, x0)" *
-	"\n     blackbody_radiation(λ, T)" *
-	"\n     wavelength2rgb(λ)" *
-	"\n     simple_moving_average(x)" *
-	"\n     exponential_moving_average(x)" *
-	"\n     flatten_arrays(x)" *
-	"\n     array_arrays(x, y)" *
-	"\n     average_polarisation(pol, Xp, Xs)" *
-	"\n     gaussian(x, p)" *
-	"\n     lorentzian(x, p)" *
-	"\n     voigtian(x, p)" *
-	"\n "
-	"\n     To use any of these functions type: ?Utils.function" *
-	"\n "
-	return println(tmp1)
+    "\n " *
+    "\n     build_interpolation(X)" *
+    "\n     multiple_reflections(n)" *
+    "\n     find_closest(x, x0)" *
+    "\n     blackbody_radiation(λ, T)" *
+    "\n     wavelength2rgb(λ)" *
+    "\n     simple_moving_average(x)" *
+    "\n     exponential_moving_average(x)" *
+    "\n     flatten_arrays(x)" *
+    "\n     array_arrays(x, y)" *
+    "\n     average_polarisation(pol, Xp, Xs)" *
+    "\n     gaussian(x, p)" *
+    "\n     lorentzian(x, p)" *
+    "\n     voigtian(x, p)" *
+    "\n "
+    "\n     To use any of these functions type: ?Utils.function" *
+    "\n "
+    return println(tmp1)
 end
 
 """
 
-	Find the index of the closest element in an array of reals x to a given real x0.
+    Find the index of the closest element in an array of reals x to a given real x0.
 
-		idx = Utils.find_closest(x, x0)
+        idx = Utils.find_closest(x, x0)
 
-			x: Data array
-			x0: Element to search in x
+            x: Data array
+            x0: Element to search in x
 
-			idx: Index
+            idx: Index
 
 """
 function find_closest(x::AbstractArray{T1,N1}, x0::T1) where {T1<:Real, N1}
-	idmin = findmin(abs.(x .- x0))[2][1]
-	return idmin
+    idmin = findmin(abs.(x .- x0))[2][1]
+    return idmin
 end
 
 """Read the HDF5 file with the database."""
 function _readh5_file(x::String, y::Symbol)
     datapath = joinpath(@__DIR__, "..", "data/")
-	if isequal(y,:RI)
-		fid = "RefractiveIndicesDB.h5"
-	elseif isequal(y,:SP)
-		fid = "ExampleSpectraDB.h5"
-	end
+    if isequal(y,:RI)
+        fid = "RefractiveIndicesDB.h5"
+    elseif isequal(y,:SP)
+        fid = "ExampleSpectraDB.h5"
+    end
     readf = h5open(joinpath(datapath,fid),"r") do file
         read(file,x)
     end
@@ -81,88 +81,88 @@ end
 
 """
 
-	Build interpolation objects from Matrix. Uses a Gridded(Linear()) grid.
+    Build interpolation objects from Matrix. Uses a Gridded(Linear()) grid.
 
-		itp = Utils.build_interpolation(X)
+        itp = Utils.build_interpolation(X)
 
-			X: Matrix array with first column as independent variable and
+            X: Matrix array with first column as independent variable and
                second column as dependent one
 
-			itp: interpolation object
+            itp: interpolation object
 
 """
 function build_interpolation(X::Array{T1,2}) where {T1<:Float64}
-	# Sort by ascending wavelength
-	X = X[sortperm(X[:,1]),:]
+    # Sort by ascending wavelength
+    X = X[sortperm(X[:,1]),:]
     knots = (sort(vec(X[:,1])),)
-	itp = interpolate(knots, vec(X[:,2]), Gridded(Linear()))
+    itp = interpolate(knots, vec(X[:,2]), Gridded(Linear()))
     return itp
 end
 
 """
 
-	Computes the reflection of a sequence of indices of refraction without
+    Computes the reflection of a sequence of indices of refraction without
     interference and absorption effects.
 
-		y = Utils.multiple_reflections(n)
+        y = Utils.multiple_reflections(n)
 
-			n: Vector with the indices of refraction of the involved layers
+            n: Vector with the indices of refraction of the involved layers
 
-			y: Reflection
+            y: Reflection
 
-	author: Cuchu
+    author: Cuchu
 
 """
 function multiple_reflections(n::AbstractArray{T1}) where {T1<:Real}
-	r1::Float64 = 0.0
-	r::Float64 = 0.0
-	for i = 1:length(n)-1
-		r2 = ((n[i] - n[i+1])/(n[i] + n[i+1]))^2
-		r = (r1 + r2 - 2.0*r1*r2)/(1.0 - r1*r2)
-		r1 = r
-	end
-	return r
+    r1::Float64 = 0.0
+    r::Float64 = 0.0
+    for i = 1:length(n)-1
+        r2 = ((n[i] - n[i+1])/(n[i] + n[i+1]))^2
+        r = (r1 + r2 - 2.0*r1*r2)/(1.0 - r1*r2)
+        r1 = r
+    end
+    return r
 end
 
 """
 
-	Returns the spectral radiance (W·sr^-1·m^-3), given the wavelength (m)
+    Returns the spectral radiance (W·sr^-1·m^-3), given the wavelength (m)
     and the absolute temperature (K).
 
-		B = Utils.blackbody_radiation(λ, T)
+        B = Utils.blackbody_radiation(λ, T)
 
-			λ: range of wavelengths [m]
-			T: range of temperatures [K]
+            λ: range of wavelengths [m]
+            T: range of temperatures [K]
 
-			B: spectral radiance [W·sr^-1·m^-3]
+            B: spectral radiance [W·sr^-1·m^-3]
 
-	Source: https://en.wikipedia.org/wiki/Planck%27s_law
+    Source: https://en.wikipedia.org/wiki/Planck%27s_law
 
 """
 function blackbody_radiation(λ::AbstractArray{T1}, T::AbstractArray{T1}) where {T1<:Real}
-	h::Float64 = 6.626070040e-34 # Planck's constant, J·s
-	c::Float64 =  299792458.0 # speed of light, m·s
-	kB::Float64 = 1.38064852e-23 # Boltzmann constant, J·K^-1
-	R = Array{Float64,2}(undef,length(λ),length(T))
-	num::Array = 2.0*h*c*c./λ.^5
-	den::Array = h*c./(kB.*λ)
-	for i in eachindex(T)
-		R[:,i] .= num./expm1.(den./T[i])
-	end
-	return R
+    h::Float64 = 6.626070040e-34 # Planck's constant, J·s
+    c::Float64 =  299792458.0 # speed of light, m·s
+    kB::Float64 = 1.38064852e-23 # Boltzmann constant, J·K^-1
+    R = Array{Float64,2}(undef,length(λ),length(T))
+    num::Array = 2.0*h*c*c./λ.^5
+    den::Array = h*c./(kB.*λ)
+    for i in eachindex(T)
+        R[:,i] .= num./expm1.(den./T[i])
+    end
+    return R
 end
 
 """
 
-	Returns an RGB matrix-color based on the wavelength input in nm.
+    Returns an RGB matrix-color based on the wavelength input in nm.
 
-		RBG = Utils.wavelength2rgb(λ)
+        RBG = Utils.wavelength2rgb(λ)
 
-			λ: range of wavelengths [nm]
+            λ: range of wavelengths [nm]
 
-	Wavelength range: 380nm and 780nm, black otherwise.
+    Wavelength range: 380nm and 780nm, black otherwise.
 
-	Source: https://stackoverflow.com/questions/3407942/rgb-values-of-visible-spectrum
+    Source: https://stackoverflow.com/questions/3407942/rgb-values-of-visible-spectrum
 
 """
 function wavelength2rgb(λ::AbstractArray{<:Real})
@@ -213,15 +213,15 @@ end
 
 """
 
-	Smooth vector with simple moving average model.
+    Smooth vector with simple moving average model.
 
-		y = Utils.simple_moving_average(x; w=1)
+        y = Utils.simple_moving_average(x; w=1)
 
-			x: Vector to be smoothed out
-			w: Integer with the window size
+            x: Vector to be smoothed out
+            w: Integer with the window size
 
-			y: Smoothed output
-	Ref: https://en.wikipedia.org/wiki/Moving_average#Simple_moving_average_(boxcar_filter)
+            y: Smoothed output
+    Ref: https://en.wikipedia.org/wiki/Moving_average#Simple_moving_average_(boxcar_filter)
 
 """
 function simple_moving_average(y::AbstractVector{T1}; w::T2=1) where {T1<:Real, T2<:Int64}
@@ -237,15 +237,15 @@ end
 
 """
 
-	Smooth vector with exponential moving average model.
+    Smooth vector with exponential moving average model.
 
-		y = Utils.exponential_moving_average(x; α=1.0)
+        y = Utils.exponential_moving_average(x; α=1.0)
 
-			x: Vector to be smoothed out
-			α: Weight
+            x: Vector to be smoothed out
+            α: Weight
 
-			y: Smoothed output
-	Ref: https://en.wikipedia.org/wiki/Moving_average#Exponential_moving_average
+            y: Smoothed output
+    Ref: https://en.wikipedia.org/wiki/Moving_average#Exponential_moving_average
 
 """
 function exponential_moving_average(y::AbstractVector{T1}; α::T1=1.0) where {T1<:Real}
@@ -304,30 +304,30 @@ end
 
 """
 function average_polarisation(pol::T1, Xp::Array{T1}, Xs::Array{T1}) where {T1<:Float64}
-	X = @. pol*Xp + (1.0 - pol)*Xs
+    X = @. pol*Xp + (1.0 - pol)*Xs
     return X
 end
 
 """
 
-	Multipeak Gaussian PDF curve.
+    Multipeak Gaussian PDF curve.
 
-		modelg = Utils.gaussian(x, p)
+        modelg = Utils.gaussian(x, p)
 
-			x = vector with data of the x-axis
-			p = [
-				  [p0], # offset
-				  [A1, μ1, σ1], # first peak
-				  [A2, μ2, σ2], # second peak
-				  ..., # so on
-				]
-				p0: offset of the total curve
-				Ai: amplitude of peak i
-				μi: position of peak i (mean or expectation of the distribution)
-				σi: standard deviation of peak i
-				i = 1,...,n
+            x = vector with data of the x-axis
+            p = [
+                  [p0], # offset
+                  [A1, μ1, σ1], # first peak
+                  [A2, μ2, σ2], # second peak
+                  ..., # so on
+                ]
+                p0: offset of the total curve
+                Ai: amplitude of peak i
+                μi: position of peak i (mean or expectation of the distribution)
+                σi: standard deviation of peak i
+                i = 1,...,n
 
-	Source: https://en.wikipedia.org/wiki/Normal_distribution
+    Source: https://en.wikipedia.org/wiki/Normal_distribution
 
 """
 function gaussian(x::AbstractArray{T1}, p::Array{Array{T1,1},1}) where {T1<:Real}
@@ -341,24 +341,24 @@ end
 
 """
 
-	Multipeak Cauchy-Lorentz PDF curve.
+    Multipeak Cauchy-Lorentz PDF curve.
 
-		modell = Utils.lorentzian(x, p)
+        modell = Utils.lorentzian(x, p)
 
-			x = vector with data of the x-axis
-			p = [
-				  [p0], # offset
-				  [A1, μ1, Γ1], # first peak
-				  [A2, μ2, Γ2], # second peak
-				  ..., # so on
-				]
-				p0: offset of the total curve
-				Ai: amplitude of peak i
-				μi: position of peak i (location parameter)
-				Γi: half-width at half-maximum (HWHM) of peak i
-				i = 1,...,n
+            x = vector with data of the x-axis
+            p = [
+                  [p0], # offset
+                  [A1, μ1, Γ1], # first peak
+                  [A2, μ2, Γ2], # second peak
+                  ..., # so on
+                ]
+                p0: offset of the total curve
+                Ai: amplitude of peak i
+                μi: position of peak i (location parameter)
+                Γi: half-width at half-maximum (HWHM) of peak i
+                i = 1,...,n
 
-	Source: https://en.wikipedia.org/wiki/Cauchy_distribution
+    Source: https://en.wikipedia.org/wiki/Cauchy_distribution
 
 """
 function lorentzian(x::AbstractArray{T1}, p::Array{Array{T1,1},1}) where {T1<:Real}
@@ -372,29 +372,29 @@ end
 
 """
 
-	Single peak Voigt PDF curve. The function is computed using the Faddeeva's
+    Single peak Voigt PDF curve. The function is computed using the Faddeeva's
     function through the scaled complementary error function of x.
 
-		modelv = Utils.voigtian(x, p)
+        modelv = Utils.voigtian(x, p)
 
-			x = vector with data of the x-axis
-			p = [
-				  [p0], # offset
-				  [A1, μ1, σ1, Γ1], # first peak
-				  [A2, μ2, σ2, Γ2], # second peak
-				  ..., # so on
-				]
-				p0: offset of the total curve
-				Ai: amplitude of the curve
-				μi: position of peak i (location parameter)
-				σi: Gaussian standard deviation of peak i
-				Γi: Lorentzian half-width at half-maximum (HWHM) of peak i
-				i = 1,...,n
+            x = vector with data of the x-axis
+            p = [
+                  [p0], # offset
+                  [A1, μ1, σ1, Γ1], # first peak
+                  [A2, μ2, σ2, Γ2], # second peak
+                  ..., # so on
+                ]
+                p0: offset of the total curve
+                Ai: amplitude of the curve
+                μi: position of peak i (location parameter)
+                σi: Gaussian standard deviation of peak i
+                Γi: Lorentzian half-width at half-maximum (HWHM) of peak i
+                i = 1,...,n
 
-		The μ parameter has been included in a custom fashion to allow the
+        The μ parameter has been included in a custom fashion to allow the
         distribution to be uncentered.
 
-	Source: https://en.wikipedia.org/wiki/Voigt_profile
+    Source: https://en.wikipedia.org/wiki/Voigt_profile
 
 """
 function voigtian(x::AbstractArray{T1}, p::Array{Array{T1,1},1}) where {T1<:Real}
@@ -408,44 +408,44 @@ end
 
 """
 
-	Build the input for oscillators models. Each index of refraction associated with
-	Lorentz can be modelled with arbitrary numbers of oscillators. This function provides a
-	way to construct a valid input for them.
+    Build the input for oscillators models. Each index of refraction associated with
+    Lorentz can be modelled with arbitrary numbers of oscillators. This function provides a
+    way to construct a valid input for them.
 
-	The input for the following models can be constructed are:
-		RI.drudelorentz, RI.tauclorentz, RI.forouhibloomer,
-		RI.lorentzplasmon, RI.codylorentz
+    The input for the following models can be constructed are:
+        RI.drudelorentz, RI.tauclorentz, RI.forouhibloomer,
+        RI.lorentzplasmon, RI.codylorentz
 
-		x = _oscillators_input(argin, n)
+        x = _oscillators_input(argin, n)
 
-			argin: Array with two elements.
-				   The first element is an array with the parameters not associated to
-				   oscillators, while the second element contains an array with all the
-				   parameters of the oscillators.
-			n: number of parameters in each oscillator
-			x: Array to input in RI modelled with Lorentz.
+            argin: Array with two elements.
+                   The first element is an array with the parameters not associated to
+                   oscillators, while the second element contains an array with all the
+                   parameters of the oscillators.
+            n: number of parameters in each oscillator
+            x: Array to input in RI modelled with Lorentz.
 
-	For instance, the Tauc-Lorentz model accepts inputs with two parameters
-	(length(argin[1]) == 2) not associated with the oscillator and three (n=3) forming
-	each oscillator. Say you want to pass a three oscillator model input to the
-	Tauc-Lorentz:
-		argin = [
-			[4.0, 3.5],  # ϵinf, Eg
-			[15.0, 6.0, 1.05, # osc 1, A1, E01, Γ1
-			 8.41, 4.5, 0.2, # osc 2, A2, E02, Γ2
-			 1.5, 4.6, 0.1, # osc 3, A3, E03, Γ3
-			],
-		]
-		x = _oscillators_input(argin, 3)
-		x = [
-			  [4.0, 3.5],  # ϵinf, Eg
-			  [15.0, 6.0, 1.05], # osc 1, A1, E01, Γ1
-			  [8.41, 4.5, 0.2], # osc 2, A2, E02, Γ2
-			  [1.5, 4.6, 0.1], # osc 3, A3, E03, Γ3
-		]
-		RI.tauclorentz(x, λ)
+    For instance, the Tauc-Lorentz model accepts inputs with two parameters
+    (length(argin[1]) == 2) not associated with the oscillator and three (n=3) forming
+    each oscillator. Say you want to pass a three oscillator model input to the
+    Tauc-Lorentz:
+        argin = [
+            [4.0, 3.5],  # ϵinf, Eg
+            [15.0, 6.0, 1.05, # osc 1, A1, E01, Γ1
+             8.41, 4.5, 0.2, # osc 2, A2, E02, Γ2
+             1.5, 4.6, 0.1, # osc 3, A3, E03, Γ3
+            ],
+        ]
+        x = _oscillators_input(argin, 3)
+        x = [
+              [4.0, 3.5],  # ϵinf, Eg
+              [15.0, 6.0, 1.05], # osc 1, A1, E01, Γ1
+              [8.41, 4.5, 0.2], # osc 2, A2, E02, Γ2
+              [1.5, 4.6, 0.1], # osc 3, A3, E03, Γ3
+        ]
+        RI.tauclorentz(x, λ)
 
-	Notice: Careful with the number of parameteres in each model.
+    Notice: Careful with the number of parameteres in each model.
 
 """
 ## Build the input for oscillators models.
@@ -473,7 +473,7 @@ end
 
 """
 
-	unfold_bnd(lb, ub)
+    unfold_bnd(lb, ub)
 
 Returns two arrays with the lower and upper bounds in accepted format for BBO package.
 
