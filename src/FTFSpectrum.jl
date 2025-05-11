@@ -182,7 +182,7 @@ end
 function space_solution_ema(
     specType::T0, b::T1, beam::T2, layers::Array;
     oftype::T4=MeanAbs(),
-) where{T0<:FitProcedure, T1<:BoundariesFit, T2<:PlaneWave, T3<:Float64, T4<:FitProcedure}
+) where{T0<:FitProcedure, T1<:BoundariesFit, T2<:PlaneWave, T4<:FitProcedure}
     # Generate grids
     _d = LinRange(b.odlo, b.odup, b.Nod)
     _p = LinRange(b.plo, b.pup, b.Np)
