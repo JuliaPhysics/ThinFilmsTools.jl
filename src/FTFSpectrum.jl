@@ -323,7 +323,7 @@ function fit_tmm_optics(
     SearchSpace=false,
     NumRepetitions=1,
     RandomizeRngSeed=true,
-) where{T0<:FitProcedure, T1<:PlaneWave, T3<:Int64, N3, T4<:Real, T5<:Bool, T6<:Symbol, T7<:FitProcedure}
+) where{T0<:FitProcedure, T1<:PlaneWave, T3<:Int64, N3, T4<:Real, T5<:Bool, T7<:FitProcedure}
     isa(layers[order[1]], LayerTMMO) || throw("The first layer of the system cannot be ModelFit type. Check the order parameter.")
     isa(layers[order[end]], LayerTMMO) || throw("The last layer of the system cannot be ModelFit type. Check the order parameter.")
     if sum(isa.(layers, ModelFit)) < 1
