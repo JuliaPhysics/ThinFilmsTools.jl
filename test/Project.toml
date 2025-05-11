@@ -6,3 +6,4 @@ ThinFilmsTools = "e990187e-78db-4ef6-b01c-c671a8d7225b"
 
 [compat]
 Aqua = "0.8"
+Optim = "1"
